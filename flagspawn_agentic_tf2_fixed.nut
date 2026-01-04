@@ -72,7 +72,7 @@ function GetPlayerState(player)
 // ============================================================
 // FLAG POOL INITIALIZATION
 // ============================================================
-function ::flagspawn.InitPools()
+::flagspawn.InitPools <- function()
 {
     FS_Log("Initializing flag pools");
 
@@ -95,7 +95,7 @@ function ::flagspawn.InitPools()
 // ============================================================
 // POOL ACCESS
 // ============================================================
-function ::flagspawn.TakePooledFlag(team)
+::flagspawn.TakePooledFlag <- function(team)
 {
     local pool = ::flagspawn.flagPools[team];
     if (pool.len() == 0)
@@ -109,7 +109,7 @@ function ::flagspawn.TakePooledFlag(team)
 // ============================================================
 // SPAWNER TOUCH (STEAL)
 // ============================================================
-function ::flagspawn.OnSpawnerTouch(player, baseTeam)
+::flagspawn.OnSpawnerTouch <- function(player, baseTeam)
 {
     if (!player || !player.IsPlayer())
         return;
@@ -150,7 +150,7 @@ function ::flagspawn.OnSpawnerTouch(player, baseTeam)
 // ============================================================
 // CAPTURE TOUCH (BANK)
 // ============================================================
-function ::flagspawn.OnCaptureTouch(player, baseTeam)
+::flagspawn.OnCaptureTouch <- function(player, baseTeam)
 {
     if (!player || !player.IsPlayer())
         return;
@@ -183,7 +183,7 @@ function ::flagspawn.OnCaptureTouch(player, baseTeam)
 // ============================================================
 // GAME INIT
 // ============================================================
-function ::flagspawn.Init()
+::flagspawn.Init <- function()
 {
     FS_Log("Init");
     ::flagspawn.InitPools();
