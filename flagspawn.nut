@@ -61,7 +61,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_CARRY_MERGE_RECONCILE <- true; // merge if multiple carried flags are attached
 ::flagspawn.ENABLE_DROPPED_MERGE <- true; // merge dropped flags when overlapping
 ::flagspawn.DROPPED_MERGE_RADIUS <- 28.0; // units; tune to your slab size
+::flagspawn.ENABLE_CARRY_DROP_MERGE <- true; // merge dropped flags into carried on proximity
+::flagspawn.CARRY_DROP_MERGE_RADIUS <- 36.0; // units; tune for pickup feel
 ::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
+::flagspawn.CARRY_POINTS_PROP_NAME <- "m_nNumCarriedPoints"; // override if needed for your TF2 build
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -424,6 +427,33 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     return -1;
 };
 
+::flagspawn._GetPlayerCarriedPoints <- function(player) {
+    if (!player) return 0;
+    local names = [
+        ::flagspawn.CARRY_POINTS_PROP_NAME,
+        "m_nNumCarriedPoints",
+        "m_nNumCarriedPointsTotal"
+    ];
+    foreach (n in names) {
+        if (!n || n.len() == 0) continue;
+        try { return NetProps.GetPropInt(player, n); } catch(e) {}
+    }
+    return 0;
+};
+
+::flagspawn._SetPlayerCarriedPoints <- function(player, v) {
+    if (!player) return;
+    local names = [
+        ::flagspawn.CARRY_POINTS_PROP_NAME,
+        "m_nNumCarriedPoints",
+        "m_nNumCarriedPointsTotal"
+    ];
+    foreach (n in names) {
+        if (!n || n.len() == 0) continue;
+        try { NetProps.SetPropInt(player, n, v); return; } catch(e) {}
+    }
+};
+
 ::flagspawn.DebugCarryProps <- function(playerEidx) {
     local player = null;
     try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
@@ -438,6 +468,14 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ];
     foreach (n in names) {
         try { ::flagspawn.Log("carryprop " + n + "=" + NetProps.GetPropInt(player, n)); } catch(e) {}
+    }
+    local pn = [
+        ::flagspawn.CARRY_POINTS_PROP_NAME,
+        "m_nNumCarriedPoints",
+        "m_nNumCarriedPointsTotal"
+    ];
+    foreach (n in pn) {
+        try { ::flagspawn.Log("carrypoints " + n + "=" + NetProps.GetPropInt(player, n)); } catch(e2) {}
     }
 };
 
@@ -508,11 +546,45 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._IsMergeableDrop <- function(flag) {
     if (!flag) return false;
     if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
-    if (::flagspawn._FlagOwner(flag) != null) return false;
     local parent = null;
     try { parent = flag.GetMoveParent(); } catch(e) { parent = null; }
     if (parent != null) return false;
     return true;
+};
+
+::flagspawn.DebugListFlags <- function() {
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        local owner = ::flagspawn._FlagOwner(f);
+        local parent = null; try { parent = f.GetMoveParent(); } catch(e0) { parent = null; }
+        local status = null; try { status = NetProps.GetPropInt(f, "m_nFlagStatus"); } catch(e1) { status = null; }
+        local org = ::flagspawn._GetEntOrigin(f);
+        local pos = org ? ::flagspawn._VecStr(org) : "null";
+        ::flagspawn.Log("FLAG: " + ::flagspawn._SafeName(f) +
+            " owner=" + ::flagspawn._SafeName(owner) +
+            " parent=" + ::flagspawn._SafeName(parent) +
+            " status=" + status +
+            " pos=" + pos +
+            " hidden=" + ::flagspawn._IsFlagHiddenInPool(f));
+    }
+};
+
+::flagspawn.DebugMergeProbe <- function(playerEidx) {
+    local player = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    if (!player) return;
+    local carried = ::flagspawn._ResolveCarriedFlag(player);
+    local points = ::flagspawn._GetPlayerCarriedPoints(player);
+    ::flagspawn.Log("MERGE PROBE: player=" + ::flagspawn._SafeName(player) +
+        " carried=" + ::flagspawn._SafeName(carried) +
+        " carriedPoints=" + points +
+        " radius=" + ::flagspawn.CARRY_DROP_MERGE_RADIUS);
+    local count = 0;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsMergeableDrop(f)) count++;
+    }
+    ::flagspawn.Log("MERGE PROBE: mergeableDrops=" + count);
 };
 
 ::flagspawn._MergeNearbyDroppedFlags <- function() {
@@ -575,6 +647,68 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     local p = null;
     while ((p = Entities.FindByClassname(p, "player")) != null) {
         ::flagspawn._MergeCarriedFlags(p);
+    }
+};
+
+::flagspawn._MergeDropsIntoCarriers <- function() {
+    if (!::flagspawn.ENABLE_CARRY_DROP_MERGE) return;
+
+    local dropped = [];
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsMergeableDrop(f)) dropped.append(f);
+    }
+    if (dropped.len() <= 0) return;
+
+    local merged = {};
+    local p = null;
+    local radius = ::flagspawn.CARRY_DROP_MERGE_RADIUS;
+    while ((p = Entities.FindByClassname(p, "player")) != null) {
+        local carried = ::flagspawn._ResolveCarriedFlag(p);
+        local hasCarried = (carried != null);
+
+        local porg = ::flagspawn._GetEntOrigin(p);
+        if (!porg) continue;
+
+        local total = hasCarried ? ::flagspawn._GetFlagPointsValue(carried) : ::flagspawn._GetPlayerCarriedPoints(p);
+        if (total <= 0) continue;
+        local changed = false;
+
+        for (local i = 0; i < dropped.len(); i++) {
+            local d = dropped[i];
+            if (!d || d == carried) continue;
+            local didx = 0; try { didx = d.entindex(); } catch(e0) { didx = 0; }
+            if (didx in merged) continue;
+
+            local dorg = null;
+            try { dorg = d.GetAbsOrigin(); } catch(e1) { dorg = null; }
+            if (!dorg) continue;
+
+            local dx = porg.x - dorg.x;
+            local dy = porg.y - dorg.y;
+            local dz = porg.z - dorg.z;
+            local dist = sqrt((dx*dx) + (dy*dy) + (dz*dz));
+            if (dist > radius) continue;
+
+            total += ::flagspawn._GetFlagPointsValue(d);
+            ::flagspawn._ForceDroppedState(d);
+            ::flagspawn._MakeFlagNeutral(d);
+            ::flagspawn._HideFlag(d);
+            ::flagspawn._KillWorldtextForFlag(d);
+            merged[didx] <- true;
+            changed = true;
+        }
+
+        if (changed) {
+            if (hasCarried) {
+                ::flagspawn._SetFlagPointsValue(carried, total);
+                ::flagspawn._EnsureFlagVisual(carried);
+            } else {
+                ::flagspawn._SetPlayerCarriedPoints(p, total);
+            }
+            ::flagspawn._ReconcileWorldtexts();
+            if (::flagspawn.DEBUG) ::flagspawn.Log("MERGE DROP->CARRY: player=" + ::flagspawn._SafeName(p) + " total=" + total);
+        }
     }
 };
 
@@ -1161,6 +1295,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._ReconcileWorldtexts();
     ::flagspawn._ReconcileFlagVisuals();
     if (::flagspawn.ENABLE_CARRY_MERGE_RECONCILE) ::flagspawn._MergeCarriedFlagsAll();
+    ::flagspawn._MergeDropsIntoCarriers();
     ::flagspawn._MergeNearbyDroppedFlags();
     ::flagspawn._ReconcileFlagBodygroups();
     return 0.25;
