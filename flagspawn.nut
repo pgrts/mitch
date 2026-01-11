@@ -1,919 +1,734 @@
 // ============================================================
-// flagspawn.nut — Flagspawn (PD-HUD-ready core)
-// - Uses real item_teamflag so dropitem works.
-// - Never returns flags (ReturnTime = -1 + ignores returns).
-// - No VMF marker dependencies: builds its own glow/rock/hint pools.
-// - Spawner props (prop_dynamic) must exist: redflag + bluflag
-// - Triggers should call:
-//    ::flagspawn.OnSpawnerTouch(activator, 2)   // RED spawner trigger
-//    ::flagspawn.OnSpawnerTouch(activator, 3)   // BLU spawner trigger
-//    ::flagspawn.OnCaptureTouch(activator, 2)   // RED bank trigger
-//    ::flagspawn.OnCaptureTouch(activator, 3)   // BLU bank trigger
+// flagspawn_pd_v5.nut
+// ------------------------------------------------------------
+// Pivot: Use Player Destruction (PD) HUD + scoring style, NOT CTF briefcase overlay.
+// Key insight: In PD, item_teamflag supports a PointsValue keyvalue that drives the
+// carried-pickup amount shown on PD HUD. citeturn5search1turn5search18
+//
+// v5 changes vs prior builds:
+// - When dispensing a pooled item_teamflag, we set its PointsValue (class bonus).
+// - We STOP caring about CTF-style large overlay; we only verify pickup via owner
+//   best-effort so "one per life" gates AFTER a successful pickup.
+// - Bank logic is left to your map (func_capturezone + tf_logic_player_destruction).
+//   This script only dispenses pickups + manages drop worldtext + spawner glows.
+// - Dropped integer: point_worldtext (cannot glow through walls; flag already can).
+//   tf_glow works on studiomodels, not point_worldtext. citeturn0search3
+//
+// Requirements in VMF (you mostly already have):
+// - A tf_logic_player_destruction (you have fs_pd_logic).
+// - func_capturezone set up for PD (optional if you do custom banking).
+// - 25 pooled item_teamflag per team named fs_pool_red_01..25 and fs_pool_blu_01..25.
+//
+// Hammer triggers call:
+//   OnSpawnerTouch( !activator, <teamParam> )
+//   where teamParam is the trigger's own team (2 or 3). We SWAP inside:
+//     teamParam 2 -> dispenses BLU pool flag (3)
+//     teamParam 3 -> dispenses RED pool flag (2)
+//
 // ============================================================
+
 
 // ---- ROOT TABLE SETUP (MUST BE FIRST) ----
 local rt = getroottable();
 if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn <- rt["flagspawn"];
 
-printl("[flagspawn] LOADED @ t=" + Time());
-
-// ============================================================
-// CONFIG
-// ============================================================
-::flagspawn.DEBUG <- true;
-
-// teams
+// ------------------------------------------------------------
+// Config
+// ------------------------------------------------------------
 ::flagspawn.TEAM_RED <- 2;
 ::flagspawn.TEAM_BLU <- 3;
 
-// pooling / limits
-::flagspawn.MAX_FLAGS_PER_TEAM <- 25;          // pooled item_teamflag per team
-::flagspawn.MAX_STACK_VALUE <- 10;             // cap for stacking (can overshoot only on class grant if you enable it)
-::flagspawn.ALLOW_OVERSHOOT_FROM_CLASS_GRANT <- true;
+::flagspawn.DEBUG <- true;
 
-// per-life rule
-::flagspawn.ONE_SPAWN_PER_LIFE <- true;
+::flagspawn.POOL_PER_TEAM <- 25;
+::flagspawn.POOL_NAME_RED_PREFIX <- "fs_pool_red_";
+::flagspawn.POOL_NAME_BLU_PREFIX <- "fs_pool_blu_";
+::flagspawn.POOL_HIDE_ORIGIN <- Vector(0, 0, -8000);
 
-// Flag return time: use a huge value so flags effectively never auto-return.
-::flagspawn.RETURN_TIME_SECONDS <- 999999;
+// Never auto-return (best-effort; PD may still despawn drops depending on PD logic)
+::flagspawn.RETURN_TIME_SECONDS <- -1;
 
-// class bonus values (TFClass enum in TF2 is 1..9)
-::flagspawn.CLASS_BONUS <- {
-    // scout=1, sniper=2, soldier=3, demoman=4, medic=5, heavy=6, pyro=7, spy=8, engineer=9
-    [1] = 1,
-    [2] = 3,  // sniper
-    [3] = 2,  // soldier
-    [4] = 1,
-    [5] = 1,
-    [6] = 5,  // heavy
-    [7] = 2,  // pyro
-    [8] = 1,
-    [9] = 1
+// One-per-life gate
+::flagspawn.SPAWNER_TOUCH_COOLDOWN <- 0.35;
+
+// Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
+::flagspawn.PICKUP_RETRY_COUNT <- 12;
+::flagspawn.PICKUP_RETRY_INTERVAL <- 0.10;
+
+// Dropped worldtext above flags
+::flagspawn.ENABLE_DROP_WORLDTEXT <- true;
+::flagspawn.WORLDTEXT_Z <- 44;
+::flagspawn.WORLDTEXT_SCALE <- 7;
+::flagspawn.WORLDTEXT_ORIENTATION <- 1;
+::flagspawn.WORLDTEXT_COLOR <- "255 255 255";
+
+// Spawner glows via tf_glow on props named fs_spawner_*
+::flagspawn.ENABLE_SPAWNER_GLOW <- true;
+::flagspawn.SPAWNER_NAME_PREFIX <- "fs_spawner_";
+
+// ------------------------------------------------------------
+// Logging + helpers
+// ------------------------------------------------------------
+::flagspawn.Log <- function(s) { printl("[flagspawn] " + s); };
+
+::flagspawn._SafeName <- function(ent) {
+    if (!ent) return "null";
+    local nm = "";
+    try { nm = ent.GetName(); } catch(e) { nm = ""; }
+    if (nm == null || nm == "") {
+        try { nm = ent.GetClassname() + "#" + ent.entindex(); } catch(e2) { nm = "ent"; }
+    }
+    return nm;
 };
 
-// visuals
-::flagspawn.ENABLE_GLOW <- true;               // glow_outline_effect pool
-::flagspawn.ENABLE_ROCK_PROP <- true;          // side prop (rock005.mdl)
-::flagspawn.ROCK_MODEL <- "models/props_desert/rock005.mdl";
-::flagspawn.ROCK_SCALE <- 0.5;
-::flagspawn.ROCK_OFFSET <- Vector(18, 0, -8); // relative to flag origin
-::flagspawn.SPAWNER_SHOW_VALUE_ZERO <- true;   // show "0" at spawner rocks
+::flagspawn._GetTeamNum <- function(ent) {
+    if (!ent) return 0;
+    local t = 0;
+    try { t = ent.GetTeam(); return t; } catch(e) {}
+    try { t = NetProps.GetPropInt(ent, "m_iTeamNum"); } catch(e2) { t = 0; }
+    return t;
+};
 
-// value indicators (through walls): env_instructor_hint
-::flagspawn.ENABLE_VALUE_HINTS <- true;
-::flagspawn.HINT_RANGE <- 0;                   // 0 = unlimited
-::flagspawn.HINT_FORCE_CAPTION <- true;        // show even if player has hints off? (best-effort)
-
-// sounds
-::flagspawn.PICKUP_SOUND <- "items/itembk2.wav";
-
-// ============================================================
-// INTERNAL STATE
-// ============================================================
-::flagspawn._inited <- false;
-::flagspawn._registered <- false;
-
-// pools
-::flagspawn._flagPool <- { [2] = [], [3] = [] };      // arrays of item_teamflag
-::flagspawn._flagInUse <- {};                         // entidx -> true
-::flagspawn._flagInfo <- {};                          // entidx -> {team, value, classGrant, rockEnt, hintEnt, glowFlag, glowRock}
-
-// rock + hint pools (per team, same size as flag pool)
-::flagspawn._rockPool <- { [2] = [], [3] = [] };
-::flagspawn._hintPool <- { [2] = [], [3] = [] };
-::flagspawn._glowPool <- { [2] = [], [3] = [] };      // glow_outline_effect entities (generic, retargeted)
-
-// spawner props
-::flagspawn._spawnerProp <- { [2] = null, [3] = null };
-::flagspawn._spawnerRock <- { [2] = null, [3] = null };
-::flagspawn._spawnerHint <- { [2] = null, [3] = null };
-::flagspawn._spawnerGlow <- { [2] = null, [3] = null };
-::flagspawn._spawnerRockGlow <- { [2] = null, [3] = null };
-
-// player state
-::flagspawn._ps <- {}; // userid -> { spawnedThisLife, carryingEntIdx, carryingValue, lastTouchTime }
-
-// ============================================================
-// UTILS (TF2-safe: DO NOT call ent.IsValid())
-// ============================================================
-::flagspawn.Log <- function(msg) { printl("[flagspawn] " + msg); }
-
-::flagspawn.Now <- function() { return Time(); }
-
-::flagspawn.GetUserId <- function(player) {
-    if (!player) return -1;
-    try { return player.GetUserID(); } catch(e) { return -1; }
-}
-
-::flagspawn.PlayerState <- function(player) {
-    local uid = ::flagspawn.GetUserId(player);
-    if (uid < 0) return null;
-    if (!(uid in ::flagspawn._ps)) {
-        ::flagspawn._ps[uid] <- { spawnedThisLife = false, carryingEntIdx = -1, carryingValue = 0, lastTouchTime = 0.0 };
-    }
-    return ::flagspawn._ps[uid];
-}
-
-::flagspawn.SetTargetName <- function(ent, name) {
-    if (!ent) return;
-    try { ent.__KeyValueFromString("targetname", name); } catch(e) {}
-}
-
-::flagspawn.SetParent <- function(child, parent) {
-    if (!child) return;
-    if (!parent) { child.AcceptInput("ClearParent", "", null, null); return; }
-    child.AcceptInput("SetParent", "!activator", parent, parent);
-}
-
-::flagspawn.GetTeamName <- function(t) {
-    return (t == ::flagspawn.TEAM_RED) ? "red" : "blu";
-}
-
-
-::flagspawn._SetupSpawnerStockMarkers <- function() {
-    if (!::flagspawn.ENABLE_SPAWNER_STOCK_MARKERS) return;
-
-    foreach (t in [::flagspawn.TEAM_RED, ::flagspawn.TEAM_BLU]) {
-        ::flagspawn._markerPool[t].clear();
-        local prefix = (t == ::flagspawn.TEAM_RED) ? "fs_marker_red_" : "fs_marker_blu_";
-        for (local i = 1; i <= ::flagspawn.MAX_FLAGS_PER_TEAM; i++) {
-            local nm = prefix + format("%02d", i);
-            local ent = Entities.FindByName(null, nm);
-            if (ent) {
-                // ensure enabled initially; we'll manage visibility in Update
-                ent.AcceptInput("Enable", "", null, null);
-                ::flagspawn._markerPool[t].append(ent);
-            }
-        }
-        if (::flagspawn.DEBUG) ::flagspawn.Log("Stock markers: team=" + ::flagspawn.GetTeamName(t) + " found=" + ::flagspawn._markerPool[t].len());
-    }
-
-    ::flagspawn._UpdateSpawnerStockMarkers(::flagspawn.TEAM_RED);
-    ::flagspawn._UpdateSpawnerStockMarkers(::flagspawn.TEAM_BLU);
-}
-
-::flagspawn._UpdateSpawnerStockMarkers <- function(team) {
-    if (!::flagspawn.ENABLE_SPAWNER_STOCK_MARKERS) return;
-    local arr = ::flagspawn._markerPool[team];
-    if (!arr || arr.len() == 0) return;
-
-    // Show N markers where N is remaining pooled flags for this team.
-    local remaining = ::flagspawn.MAX_FLAGS_PER_TEAM - ::flagspawn._inUseCount[team];
-    if (remaining < 0) remaining = 0;
-    if (remaining > ::flagspawn.MAX_FLAGS_PER_TEAM) remaining = ::flagspawn.MAX_FLAGS_PER_TEAM;
-
-    for (local i = 0; i < arr.len(); i++) {
-        local m = arr[i];
-        if (!m) continue;
-        if (i < remaining) m.AcceptInput("Enable", "", null, null);
-        else m.AcceptInput("Disable", "", null, null);
-    }
-}
-
-::flagspawn.OtherTeam <- function(t) {
-    return (t == ::flagspawn.TEAM_RED) ? ::flagspawn.TEAM_BLU : ::flagspawn.TEAM_RED;
-}
-
-::flagspawn.TeamFromCallerOrInt <- function(teamOrCaller) {
-    // If VMF passes an int, great.
-    if (typeof teamOrCaller == "integer") return teamOrCaller;
-    // If VMF passes caller entity, infer from targetname.
-    if (teamOrCaller) {
-        local nm = "";
-        try { nm = teamOrCaller.GetName(); } catch(e) { nm = ""; }
-        nm = nm.tolower();
-        if (nm.find("blu") != null) return ::flagspawn.TEAM_BLU;
-        if (nm.find("red") != null) return ::flagspawn.TEAM_RED;
-    }
+::flagspawn._OppTeam <- function(team) {
+    if (team == ::flagspawn.TEAM_RED) return ::flagspawn.TEAM_BLU;
+    if (team == ::flagspawn.TEAM_BLU) return ::flagspawn.TEAM_RED;
     return 0;
-}
+};
+
+// ------------------------------------------------------------
+// Class bonus (Heavy=5)
+// ------------------------------------------------------------
+::flagspawn._GetPlayerClassNum <- function(player) {
+    if (!player) return 0;
+    try { local c = player.GetPlayerClass(); if (typeof c == "integer") return c; } catch(e) {}
+    try { return NetProps.GetPropInt(player, "m_PlayerClass.m_iClass"); } catch(e2) {}
+    return 0;
+};
 
 ::flagspawn.GetClassBonus <- function(player) {
-    if (!player) return 1;
-    local c = 1;
-    try { c = player.GetPlayerClass(); } catch(e) { c = 1; }
-    if (c in ::flagspawn.CLASS_BONUS) return ::flagspawn.CLASS_BONUS[c];
-    return 1;
-}
-
-::flagspawn.FindByNameAny <- function(names) {
-    foreach (nm in names) {
-        local e = Entities.FindByName(null, nm);
-        if (e) return e;
+    local cls = ::flagspawn._GetPlayerClassNum(player);
+    switch (cls) {
+        case 6: return 5; // Heavy
+        case 2: return 3; // Sniper
+        case 3: return 2; // Soldier
+        default: return 1; // everyone else
     }
-    return null;
-}
+};
 
-
-::flagspawn._AddTeamScore <- function(team, amount) {
-    if (amount <= 0) return;
-    // PD HUD generally tracks team score; use tf_gamerules inputs.
-    // tf_gamerules supports AddRedTeamScore/AddBlueTeamScore. (FGD)
-    local cmd = (team == ::flagspawn.TEAM_RED) ? "AddRedTeamScore" : "AddBlueTeamScore";
-    EntFire("tf_gamerules", cmd, "" + amount, 0.0, null);
-}
-
-::flagspawn.PlaySoundToAll <- function(sample) {
-    if (!sample || sample.len() == 0) return;
-    local w = Entities.FindByClassname(null, "worldspawn");
-    if (!w) return;
-    w.EmitSound(sample);
-}
-
-// ============================================================
-// ENTITY CREATION HELPERS
-// ============================================================
-::flagspawn._CreateFlag <- function(team, i) {
-    local flag = Entities.CreateByClassname("item_teamflag");
-    if (!flag) return null;
-
-    // Place it far away and disable.
-    flag.SetAbsOrigin(Vector(0,0,-10000));
-
-    // keyvalues
-    flag.__KeyValueFromInt("TeamNum", team);
-    flag.__KeyValueFromInt("ReturnTime", ::flagspawn.RETURN_TIME_SECONDS);
-    // Extra safety: some builds honor the input more reliably than the KV.
-    flag.AcceptInput("SetReturnTime", "" + ::flagspawn.RETURN_TIME_SECONDS, null, null);
-    // NOTE: "flag_model" / "FlagType" etc vary by build; leave default.
-
-    local nm = "fs_flag_" + ::flagspawn.GetTeamName(team) + "_" + format("%02d", i);
-    ::flagspawn.SetTargetName(flag, nm);
-
-    // keep disabled until checked out
-    flag.AcceptInput("Disable", "", null, null);
-    flag.AcceptInput("HideSprite", "", null, null);
-
-    return flag;
-}
-
-::flagspawn._CreateRock <- function(team, i) {
-    local rock = Entities.CreateByClassname("prop_dynamic_override");
-    if (!rock) return null;
-
-    rock.__KeyValueFromString("model", ::flagspawn.ROCK_MODEL);
-    rock.__KeyValueFromInt("solid", 0);
-    rock.SetAbsOrigin(Vector(0,0,-10000));
-    rock.SetAbsAngles(QAngle(0,0,0));
-    ::flagspawn.SetTargetName(rock, "fs_rock_" + ::flagspawn.GetTeamName(team) + "_" + format("%02d", i));
-
-    // scale
-    try { rock.__KeyValueFromFloat("modelscale", ::flagspawn.ROCK_SCALE); } catch(e) {}
-
-    rock.AcceptInput("Disable", "", null, null);
-    rock.AcceptInput("DisableCollision", "", null, null);
-    return rock;
-}
-
-::flagspawn._CreateHint <- function(team, i) {
-    local hint = Entities.CreateByClassname("env_instructor_hint");
-    if (!hint) return null;
-
-    // Basic hint setup. We re-target and update caption on the fly.
-    ::flagspawn.SetTargetName(hint, "fs_hint_" + ::flagspawn.GetTeamName(team) + "_" + format("%02d", i));
-
-    hint.__KeyValueFromInt("hint_timeout", 0); // persistent
-    hint.__KeyValueFromInt("hint_range", ::flagspawn.HINT_RANGE);
-    hint.__KeyValueFromInt("hint_static", 1);
-    hint.__KeyValueFromInt("hint_icon_onscreen", 0);
-    hint.__KeyValueFromInt("hint_icon_offscreen", 0);
-    hint.__KeyValueFromInt("hint_forcecaption", ::flagspawn.HINT_FORCE_CAPTION ? 1 : 0);
-    hint.__KeyValueFromInt("hint_nooffscreen", 0);
-
-    // disable until used
-    hint.AcceptInput("EndHint", "", null, null);
-    return hint;
-}
-
-::flagspawn._CreateGlow <- function(team, i) {
-    local g = Entities.CreateByClassname("glow_outline_effect");
-    if (!g) return null;
-
-    ::flagspawn.SetTargetName(g, "fs_glow_" + ::flagspawn.GetTeamName(team) + "_" + format("%02d", i));
-    // team-based color is controlled by engine / effect; we just enable.
-    g.AcceptInput("Disable", "", null, null);
-    return g;
-}
-
-// Retarget glow to an entity by naming the entity and setting glow's targetname kv.
-::flagspawn._BindGlow <- function(glow, targetEnt) {
-    if (!glow) return;
-    if (!targetEnt) { glow.AcceptInput("Disable", "", null, null); return; }
-
-    // Ensure target has a name.
-    local tn = "";
-    try { tn = targetEnt.GetName(); } catch(e) { tn = ""; }
-    if (!tn || tn.len() == 0) {
-        tn = "fs_dyn_" + targetEnt.entindex();
-        ::flagspawn.SetTargetName(targetEnt, tn);
-    }
-
-    // glow_outline_effect uses "target" keyvalue to point at a named entity.
-    try { glow.__KeyValueFromString("target", tn); } catch(e) {}
-
-    glow.AcceptInput("Enable", "", null, null);
-}
-
-::flagspawn._ShowHint <- function(hint, targetEnt, caption, team) {
-    if (!hint || !targetEnt) return;
-    local tn = "";
-    try { tn = targetEnt.GetName(); } catch(e) { tn = ""; }
-    if (!tn || tn.len() == 0) {
-        tn = "fs_hint_target_" + targetEnt.entindex();
-        ::flagspawn.SetTargetName(targetEnt, tn);
-    }
-
-    try { hint.__KeyValueFromString("hint_target", tn); } catch(e) {}
-    try { hint.__KeyValueFromString("hint_caption", caption.tostring()); } catch(e) {}
-
-    // Show to everyone by default; if you want team-only, we can extend later.
-    hint.AcceptInput("ShowHint", "", null, null);
-}
-
-::flagspawn._HideHint <- function(hint) {
-    if (!hint) return;
-    hint.AcceptInput("EndHint", "", null, null);
-}
-
-// ============================================================
-// POOL SETUP
-// ============================================================
-::flagspawn._BuildPools <- function() {
-    foreach (t in [::flagspawn.TEAM_RED, ::flagspawn.TEAM_BLU]) {
-        ::flagspawn._flagPool[t].clear();
-        ::flagspawn._rockPool[t].clear();
-        ::flagspawn._hintPool[t].clear();
-        ::flagspawn._glowPool[t].clear();
-
-        for (local i = 1; i <= ::flagspawn.MAX_FLAGS_PER_TEAM; i++) {
-            local f = ::flagspawn._CreateFlag(t, i);
-            if (f) ::flagspawn._flagPool[t].append(f);
-
-            if (::flagspawn.ENABLE_ROCK_PROP) {
-                local r = ::flagspawn._CreateRock(t, i);
-                if (r) ::flagspawn._rockPool[t].append(r);
-            }
-
-            if (::flagspawn.ENABLE_VALUE_HINTS) {
-                local h = ::flagspawn._CreateHint(t, i);
-                if (h) ::flagspawn._hintPool[t].append(h);
-            }
-
-            if (::flagspawn.ENABLE_GLOW) {
-                // We use one glow per dropped-flag "bundle" and reuse it for both flag/rock via two glows:
-                // For simplicity: create 2 glows per index (flag + rock).
-                local g1 = ::flagspawn._CreateGlow(t, i*2-1);
-                local g2 = ::flagspawn._CreateGlow(t, i*2);
-                if (g1) ::flagspawn._glowPool[t].append(g1);
-                if (g2) ::flagspawn._glowPool[t].append(g2);
-            }
-        }
-
-        ::flagspawn.Log("Pools ready: team=" + ::flagspawn.GetTeamName(t) +
-            " flags=" + ::flagspawn._flagPool[t].len() +
-            " rocks=" + ::flagspawn._rockPool[t].len() +
-            " hints=" + ::flagspawn._hintPool[t].len() +
-            " glows=" + ::flagspawn._glowPool[t].len());
-    }
-}
-
-// checkout helpers
-::flagspawn._CheckoutFromPool <- function(team) {
-    // find first flag not in use
-    foreach (flag in ::flagspawn._flagPool[team]) {
-        if (!flag) continue;
-        local idx = flag.entindex();
-        if (!(idx in ::flagspawn._flagInUse)) {
-            ::flagspawn._flagInUse[idx] <- true;
-            ::flagspawn._inUseCount[team] = ::flagspawn._inUseCount[team] + 1;
-            ::flagspawn._UpdateSpawnerStockMarkers(team);
-            return flag;
-        }
-    }
-    return null;
-}
-
-::flagspawn._ReturnToPool <- function(flag) {
+// ------------------------------------------------------------
+// PD PointsValue on item_teamflag
+// ------------------------------------------------------------
+::flagspawn._SetFlagPointsValue <- function(flag, v) {
     if (!flag) return;
-    local idx = flag.entindex();
-    local t = 0;
-    if (idx in ::flagspawn._flagInfo) { try { t = ::flagspawn._flagInfo[idx].team; } catch(e) { t = 0; } }
-    if (!t) { try { t = flag.GetTeam(); } catch(e) { t = 0; } }
-    if (idx in ::flagspawn._flagInUse) delete ::flagspawn._flagInUse[idx];
-    if (t == ::flagspawn.TEAM_RED || t == ::flagspawn.TEAM_BLU) {
-        ::flagspawn._inUseCount[t] = ::flagspawn._inUseCount[t] - 1;
-        if (::flagspawn._inUseCount[t] < 0) ::flagspawn._inUseCount[t] = 0;
-        ::flagspawn._UpdateSpawnerStockMarkers(t);
-    }
-    if (idx in ::flagspawn._flagInfo) {
-        // cleanup visuals
-        local info = ::flagspawn._flagInfo[idx];
-        if ("glowFlag" in info && info.glowFlag) ::flagspawn._BindGlow(info.glowFlag, null);
-        if ("glowRock" in info && info.glowRock) ::flagspawn._BindGlow(info.glowRock, null);
-        if ("hintEnt" in info && info.hintEnt) ::flagspawn._HideHint(info.hintEnt);
-        if ("rockEnt" in info && info.rockEnt) {
-            info.rockEnt.AcceptInput("Disable", "", null, null);
-            info.rockEnt.SetAbsOrigin(Vector(0,0,-10000));
-            ::flagspawn.SetParent(info.rockEnt, null);
-        }
-        delete ::flagspawn._flagInfo[idx];
-    }
 
-    // hide flag
-    flag.AcceptInput("Disable", "", null, null);
-    flag.AcceptInput("HideSprite", "", null, null);
-    flag.SetAbsOrigin(Vector(0,0,-10000));
-}
+    // Store for our own worldtext display
+    try { flag.ValidateScriptScope(); flag.GetScriptScope().fs_value <- v; } catch(e) {}
 
-// ============================================================
-// SPAWNER VISUALS (flagspawner value 0)
-// ============================================================
-::flagspawn._SetupSpawnerVisuals <- function() {
-    // Accept common aliases.
-    local red = ::flagspawn.FindByNameAny(["redflag","redcase","fs_spawner_red"]);
-    local blu = ::flagspawn.FindByNameAny(["bluflag","blucase","fs_spawner_blu"]);
+    // PD: try to set the networked point value (what the PD HUD/merge logic usually reads)
+    try { NetProps.SetPropInt(flag, "m_nPointValue", v); } catch(eN) {}
+    try { NetProps.SetPropInt(flag, "m_iPointValue", v); } catch(eN2) {}
 
-    ::flagspawn._spawnerProp[::flagspawn.TEAM_RED] <- red;
-    ::flagspawn._spawnerProp[::flagspawn.TEAM_BLU] <- blu;
+    // Also write common keyvalues (harmless fallback)
+    try { flag.__KeyValueFromInt("PointsValue", v); } catch(e2) {}
+    try { flag.__KeyValueFromInt("pointsvalue", v); } catch(e3) {}
+};
 
-    ::flagspawn.Log("Spawner props: red=" + (red ? "OK" : "missing") + " blu=" + (blu ? "OK" : "missing"));
-
-    if (!::flagspawn.ENABLE_ROCK_PROP) return;
-
-    foreach (t in [::flagspawn.TEAM_RED, ::flagspawn.TEAM_BLU]) {
-        local sp = ::flagspawn._spawnerProp[t];
-        if (!sp) continue;
-
-        // Create a dedicated rock (not from pool) for spawner area.
-        local rock = Entities.CreateByClassname("prop_dynamic_override");
-        if (!rock) continue;
-
-        rock.__KeyValueFromString("model", ::flagspawn.ROCK_MODEL);
-        rock.__KeyValueFromInt("solid", 0);
-        try { rock.__KeyValueFromFloat("modelscale", ::flagspawn.ROCK_SCALE); } catch(e) {}
-        ::flagspawn.SetTargetName(rock, "fs_spawner_rock_" + ::flagspawn.GetTeamName(t));
-        rock.AcceptInput("DisableCollision", "", null, null);
-
-        // position near spawner
-        local org = sp.GetOrigin();
-        rock.SetAbsOrigin(org + ::flagspawn.ROCK_OFFSET);
-        rock.SetAbsAngles(sp.GetAbsAngles());
-        rock.AcceptInput("Enable", "", null, null);
-
-        ::flagspawn._spawnerRock[t] <- rock;
-
-        // Value hint "0"
-        if (::flagspawn.ENABLE_VALUE_HINTS && ::flagspawn.SPAWNER_SHOW_VALUE_ZERO) {
-            local hint = Entities.CreateByClassname("env_instructor_hint");
-            if (hint) {
-                ::flagspawn.SetTargetName(hint, "fs_spawner_hint_" + ::flagspawn.GetTeamName(t));
-                hint.__KeyValueFromInt("hint_timeout", 0);
-                hint.__KeyValueFromInt("hint_range", ::flagspawn.HINT_RANGE);
-                hint.__KeyValueFromInt("hint_static", 1);
-                hint.__KeyValueFromInt("hint_icon_onscreen", 0);
-                hint.__KeyValueFromInt("hint_icon_offscreen", 0);
-                hint.__KeyValueFromInt("hint_forcecaption", ::flagspawn.HINT_FORCE_CAPTION ? 1 : 0);
-                hint.__KeyValueFromInt("hint_nooffscreen", 0);
-
-                ::flagspawn._spawnerHint[t] <- hint;
-                ::flagspawn._ShowHint(hint, rock, "0", t);
-            }
-        }
-
-        // Glows
-        if (::flagspawn.ENABLE_GLOW) {
-            local gFlag = Entities.CreateByClassname("glow_outline_effect");
-            local gRock = Entities.CreateByClassname("glow_outline_effect");
-            if (gFlag) { ::flagspawn.SetTargetName(gFlag, "fs_spawner_glow_flag_" + ::flagspawn.GetTeamName(t)); ::flagspawn._spawnerGlow[t] <- gFlag; }
-            if (gRock) { ::flagspawn.SetTargetName(gRock, "fs_spawner_glow_rock_" + ::flagspawn.GetTeamName(t)); ::flagspawn._spawnerRockGlow[t] <- gRock; }
-            if (gFlag) ::flagspawn._BindGlow(gFlag, sp);
-            if (gRock) ::flagspawn._BindGlow(gRock, rock);
-        }
-    }
-}
-
-// ============================================================
-// FLAG RESOLUTION + VALUE
-// ============================================================
-::flagspawn._ResolveCarriedOrNearbyFlag <- function(player) {
-    if (!player) return null;
-
-    // 1) Prefer a flag we know is owned by this player
-    foreach (idx, info in ::flagspawn._flagInfo) {
-        local f = EntIndexToHScript(idx);
-        if (!f) continue;
-        local owner = null;
-        try { owner = NetProps.GetPropEntity(f, "m_hOwnerEntity"); } catch(e) { owner = null; }
-        if (owner == player) return f;
-    }
-
-    // 2) Search nearby our known flags
-    local p = player.GetOrigin();
-    local best = null;
-    local bestD2 = 99999999.0;
-
-    foreach (idx, info in ::flagspawn._flagInfo) {
-        local f = EntIndexToHScript(idx);
-        if (!f) continue;
-        local o = f.GetOrigin();
-        local d2 = (o - p).LengthSqr();
-        if (d2 < bestD2 && d2 <= (160*160)) { best = f; bestD2 = d2; }
-    }
-    return best;
-}
-
-::flagspawn._GetFlagValue <- function(flag) {
+::flagspawn._GetFlagPointsValue <- function(flag) {
     if (!flag) return 0;
-    local idx = flag.entindex();
-    if (idx in ::flagspawn._flagInfo) return ::flagspawn._flagInfo[idx].value;
-    return 0;
-}
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if ("fs_value" in ss) return ss.fs_value.tointeger();
+    } catch(e) {}
+    // fallback to 1
+    return 1;
+};
 
-::flagspawn._SetFlagValue <- function(flag, v) {
+// ------------------------------------------------------------
+// Flag visual proxy: prop_dynamic (fs_meter) + tf_glow parented to item_teamflag
+// ------------------------------------------------------------
+::flagspawn.FLAG_VISUAL_ENABLED <- true;
+::flagspawn.FLAG_VISUAL_MODEL <- "models/props_custom/fs_meter/fs_meter.mdl";
+::flagspawn.FLAG_VISUAL_LOCAL_OFFSET <- Vector(0,0,0); // tweak if needed
+::flagspawn.FLAG_GLOW_RED <- "255 64 64";
+::flagspawn.FLAG_GLOW_BLU <- "64 128 255";
+::flagspawn.FLAG_GLOW_NEUTRAL <- "255 255 255";
+
+::flagspawn._ClampInt <- function(v, lo, hi) {
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+};
+
+::flagspawn._HideFlagModel <- function(flag) {
     if (!flag) return;
-    local idx = flag.entindex();
-    if (!(idx in ::flagspawn._flagInfo)) return;
-    ::flagspawn._flagInfo[idx].value = v;
-    // update hint if any
-    local info = ::flagspawn._flagInfo[idx];
-    if ("hintEnt" in info && info.hintEnt && "rockEnt" in info && info.rockEnt) {
-        ::flagspawn._ShowHint(info.hintEnt, info.rockEnt, v.tostring(), info.team);
-    }
-}
+    // EF_NODRAW
+    try { flag.AddEffects(32); } catch(e) {}
+    // Extra fallback: renderamt 0
+    try { flag.__KeyValueFromInt("rendermode", 10); } catch(e2) {}
+    try { flag.__KeyValueFromInt("renderamt", 0); } catch(e3) {}
+};
 
-::flagspawn._ApplyDroppedVisuals <- function(flag) {
-    if (!flag) return;
-    local idx = flag.entindex();
-    if (!(idx in ::flagspawn._flagInfo)) return;
+::flagspawn._GlowColorForTeam <- function(t) {
+    if (t == ::flagspawn.TEAM_RED) return ::flagspawn.FLAG_GLOW_RED;
+    if (t == ::flagspawn.TEAM_BLU) return ::flagspawn.FLAG_GLOW_BLU;
+    return ::flagspawn.FLAG_GLOW_NEUTRAL;
+};
 
-    local info = ::flagspawn._flagInfo[idx];
-    local team = info.team;
+::flagspawn._EnsureFlagVisual <- function(flag) {
+    if (!::flagspawn.FLAG_VISUAL_ENABLED || !flag) return;
 
-    // rock
-    if (::flagspawn.ENABLE_ROCK_PROP && ("rockEnt" in info) && info.rockEnt) {
-        local rock = info.rockEnt;
-        // position + parent to flag while dropped
-        rock.SetAbsOrigin(flag.GetOrigin() + ::flagspawn.ROCK_OFFSET);
-        rock.SetAbsAngles(flag.GetAbsAngles());
-        ::flagspawn.SetParent(rock, flag);
-        rock.AcceptInput("Enable", "", null, null);
-    }
+    ::flagspawn._HideFlagModel(flag);
 
-    // hint
-    if (::flagspawn.ENABLE_VALUE_HINTS && ("hintEnt" in info) && info.hintEnt && ("rockEnt" in info) && info.rockEnt) {
-        ::flagspawn._ShowHint(info.hintEnt, info.rockEnt, info.value.tostring(), team);
-    }
+    // stash handles in flag scriptscope
+    try { flag.ValidateScriptScope(); } catch(e0) {}
+    local ss = null;
+    try { ss = flag.GetScriptScope(); } catch(e1) { ss = null; }
+    if (!ss) return;
 
-    // glow bindings
-    if (::flagspawn.ENABLE_GLOW) {
-        if ("glowFlag" in info && info.glowFlag) ::flagspawn._BindGlow(info.glowFlag, flag);
-        if ("glowRock" in info && info.glowRock && ("rockEnt" in info) && info.rockEnt) ::flagspawn._BindGlow(info.glowRock, info.rockEnt);
-    }
-}
-
-::flagspawn._ClearDroppedVisuals <- function(flag) {
-    if (!flag) return;
-    local idx = flag.entindex();
-    if (!(idx in ::flagspawn._flagInfo)) return;
-
-    local info = ::flagspawn._flagInfo[idx];
-
-    if ("rockEnt" in info && info.rockEnt) {
-        ::flagspawn.SetParent(info.rockEnt, null);
-        info.rockEnt.AcceptInput("Disable", "", null, null);
-        info.rockEnt.SetAbsOrigin(Vector(0,0,-10000));
-    }
-
-    if ("hintEnt" in info && info.hintEnt) {
-        ::flagspawn._HideHint(info.hintEnt);
-    }
-
-    if (::flagspawn.ENABLE_GLOW) {
-        if ("glowFlag" in info && info.glowFlag) ::flagspawn._BindGlow(info.glowFlag, null);
-        if ("glowRock" in info && info.glowRock) ::flagspawn._BindGlow(info.glowRock, null);
-    }
-}
-
-// ============================================================
-// GAME LOGIC
-// ============================================================
-::flagspawn.ResetAll <- function() {
-    ::flagspawn.Log("ResetAll: clearing players + returning pooled flags");
-
-    // reset player state
-    foreach (uid, ps in ::flagspawn._ps) {
-        ps.spawnedThisLife = false;
-        ps.carryingEntIdx = -1;
-        ps.carryingValue = 0;
-        ps.lastTouchTime = 0.0;
-    }
-
-    // return all flags
-    foreach (idx, _ in clone ::flagspawn._flagInUse) {
-        local f = EntIndexToHScript(idx);
-        if (f) ::flagspawn._ReturnToPool(f);
-        else delete ::flagspawn._flagInUse[idx];
-    }
-
-    ::flagspawn.Log("ResetAll complete.");
-}
-
-::flagspawn._GrantFlagToPlayer <- function(player, team) {
-    if (!player) return;
-
-    // per-life gate
-    local ps = ::flagspawn.PlayerState(player);
-    if (!ps) return;
-
-    if (::flagspawn.ONE_SPAWN_PER_LIFE && ps.spawnedThisLife) {
-        if (::flagspawn.DEBUG) ::flagspawn.Log("DENY: one spawn per life already used");
-        return;
-    }
-
-    // compute class bonus
-    local val = ::flagspawn.GetClassBonus(player);
-
-    // if already carrying one of our flags, do stacking instead of creating new
-    local carriedFlag = ::flagspawn._ResolveCarriedOrNearbyFlag(player);
-    if (carriedFlag) {
-        // stack onto current carried
-        local cur = ::flagspawn._GetFlagValue(carriedFlag);
-        local allowOvershoot = ::flagspawn.ALLOW_OVERSHOOT_FROM_CLASS_GRANT;
-        local next = cur + val;
-
-        if (!allowOvershoot) next = (next < ::flagspawn.MAX_STACK_VALUE) ? next : ::flagspawn.MAX_STACK_VALUE;
-        else {
-            // overshoot only if we're granting from spawner/class
-            if (cur < ::flagspawn.MAX_STACK_VALUE) {
-                next = (next < ::flagspawn.MAX_STACK_VALUE) ? next : ::flagspawn.MAX_STACK_VALUE;
-                // if val itself is big and pushes over cap, allow it
-                if (cur + val > ::flagspawn.MAX_STACK_VALUE) next = cur + val;
-            }
+    // if existing, update and return
+    if ("fs_vis_eidx" in ss) {
+        local vis = null;
+        try { vis = EntIndexToHScript(ss.fs_vis_eidx); } catch(e2) { vis = null; }
+        if (vis) {
+            ::flagspawn._UpdateFlagVisual(flag, vis);
+            return;
         }
+    }
 
-        ::flagspawn._SetFlagValue(carriedFlag, next);
-        ps.spawnedThisLife = true;
-        ps.carryingEntIdx = carriedFlag.entindex();
-        ps.carryingValue = next;
+    // Create prop_dynamic via SpawnEntityFromTable (avoids ent_create KV parsing issues)
+    local nm = "fs_flagvis_" + flag.entindex();
+    local vis2 = null;
+    try {
+        vis2 = SpawnEntityFromTable("prop_dynamic", {
+            targetname = nm,
+            model = ::flagspawn.FLAG_VISUAL_MODEL,
+            origin = flag.GetAbsOrigin(),
+            angles = flag.GetAbsAngles(),
+            solid = 0,
+            disableshadows = 1
+        });
+    } catch(e3) { vis2 = null; }
 
-        ::flagspawn.PlaySoundToAll(::flagspawn.PICKUP_SOUND);
-        if (::flagspawn.DEBUG) ::flagspawn.Log("STACK: player already had flag, +" + val + " => " + next);
+    if (!vis2) {
+        ::flagspawn.Log("VIS FAIL: could not SpawnEntityFromTable prop_dynamic for " + ::flagspawn._SafeName(flag));
         return;
     }
 
-    // checkout pooled flag for this team
-    local flag = ::flagspawn._CheckoutFromPool(team);
-    if (!flag) {
-        ::flagspawn.Log("DENY: no pooled flags available for team=" + team);
+    try { vis2.SetParent(flag, ""); } catch(e4) {}
+    try { vis2.SetLocalOrigin(::flagspawn.FLAG_VISUAL_LOCAL_OFFSET); } catch(e5) {}
+
+    // Create tf_glow targeting the proxy by name
+    local g = null;
+    try {
+        g = SpawnEntityFromTable("tf_glow", {
+            target = nm,
+            mode = 0,
+            glowcolor = ::flagspawn._GlowColorForTeam(flag.GetTeam())
+        });
+    } catch(e6) { g = null; }
+
+    if (g) {
+        try { g.SetParent(vis2, ""); } catch(e7) {}
+        ss.fs_glow_eidx <- g.entindex();
+    }
+
+    ss.fs_vis_eidx <- vis2.entindex();
+
+    ::flagspawn._UpdateFlagVisual(flag, vis2);
+};
+
+::flagspawn._UpdateFlagVisual <- function(flag, vis) {
+    if (!flag || !vis) return;
+
+    local v = ::flagspawn._GetFlagPointsValue(flag);
+    v = ::flagspawn._ClampInt(v, 0, 100);
+
+    // cache to avoid spamming
+    local ss = null;
+    try { flag.ValidateScriptScope(); ss = flag.GetScriptScope(); } catch(e) { ss = null; }
+    if (ss) {
+        if ("fs_vis_lastv" in ss && ss.fs_vis_lastv == v) return;
+        ss.fs_vis_lastv <- v;
+    }
+
+    // Bodygroup 0 holds 0..100 states in fs_meter.mdl
+    try { EntFireByHandle(vis, "SetBodyGroup", "0 " + v, 0.0, null, null); } catch(e2) {}
+
+    ::flagspawn._HideFlagModel(flag);
+};
+
+::flagspawn._ReconcileFlagVisuals <- function() {
+    if (!::flagspawn.FLAG_VISUAL_ENABLED) return;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        // Don’t render pool-hidden flags
+        if (::flagspawn._IsFlagHiddenInPool(f)) continue;
+        ::flagspawn._EnsureFlagVisual(f);
+    }
+};
+
+
+// ------------------------------------------------------------
+// Carry detection (owner)
+// ------------------------------------------------------------
+::flagspawn._FlagOwner <- function(flag) {
+    if (!flag) return null;
+    local owner = null;
+    try { owner = NetProps.GetPropEntity(flag, "m_hOwnerEntity"); } catch(e) { owner = null; }
+    return owner;
+};
+
+::flagspawn._IsFlagCarriedBy <- function(flag, player) {
+    if (!flag || !player) return false;
+    local owner = ::flagspawn._FlagOwner(flag);
+    if (owner == player) return true;
+    local parent = null;
+    try { parent = flag.GetMoveParent(); } catch(e2) { parent = null; }
+    return parent == player;
+};
+
+::flagspawn._ResolveCarriedFlag <- function(player) {
+    if (!player) return null;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsFlagCarriedBy(f, player)) return f;
+    }
+    return null;
+};
+
+// ------------------------------------------------------------
+// Player state
+// ------------------------------------------------------------
+::flagspawn._ps <- {};
+
+::flagspawn._PS <- function(player) {
+    local k = 0;
+    try { k = player.entindex(); } catch(e) { k = 0; }
+    if (!(k in ::flagspawn._ps)) {
+        ::flagspawn._ps[k] <- {
+            used_this_life = false,
+            last_spawner_touch = -9999.0,
+            pending_flag_eidx = -1
+        };
+    }
+    return ::flagspawn._ps[k];
+};
+
+// ------------------------------------------------------------
+// Pool
+// ------------------------------------------------------------
+::flagspawn._Pool <- { red = [], blu = [], red_i = 0, blu_i = 0 };
+
+::flagspawn._FindByName <- function(name) {
+    local f = null;
+    try { f = Entities.FindByName(null, name); } catch(e) { f = null; }
+    return f;
+};
+
+::flagspawn._TrySetReturnNever <- function(flag) {
+    if (!flag) return;
+    try { flag.__KeyValueFromInt("ReturnTime", ::flagspawn.RETURN_TIME_SECONDS); } catch(e) {}
+    try { flag.__KeyValueFromInt("returntime", ::flagspawn.RETURN_TIME_SECONDS); } catch(e2) {}
+    try { EntFireByHandle(flag, "SetReturnTime", "-1", 0, null, null); } catch(e3) {}
+};
+
+::flagspawn._HideFlag <- function(flag) {
+    if (!flag) return;
+    try { flag.SetAbsOrigin(::flagspawn.POOL_HIDE_ORIGIN); } catch(e) {}
+    try { EntFireByHandle(flag, "ForceReset", "", 0, null, null); } catch(e2) {}
+};
+
+::flagspawn._ForceEnableFlag <- function(flag) {
+    if (!flag) return;
+
+    try { EntFireByHandle(flag, "Enable", "", 0, null, null); } catch(e0) {}
+    try { EntFireByHandle(flag, "TurnOn", "", 0, null, null); } catch(e00) {}
+
+    // Clear common "disabled" flags
+    local props_bool = ["m_bDisabled", "m_bStartDisabled", "m_bDisabledBecauseNoPlayers"];
+    foreach (p in props_bool) {
+        try { NetProps.SetPropBool(flag, p, false); } catch(e1) {}
+        try { NetProps.SetPropInt(flag, p, 0); } catch(e2) {}
+    }
+
+    // NOTE: we intentionally do NOT clear NODRAW here; our visuals use a separate proxy model.
+};
+
+
+// ------------------------------------------------------------
+// Script scheduling (RunScriptCode must be fired on logic_script, not players)
+// ------------------------------------------------------------
+::flagspawn.SCRIPTER_NAME <- "scripter";
+
+::flagspawn._GetScripter <- function() {
+    local s = null;
+    try { s = Entities.FindByName(null, ::flagspawn.SCRIPTER_NAME); } catch(e) { s = null; }
+    return s;
+};
+
+::flagspawn._FireScriptCode <- function(delay, code) {
+    local s = ::flagspawn._GetScripter();
+    if (!s) {
+        if (::flagspawn.DEBUG) ::flagspawn.Log("WARN: no logic_script named '" + ::flagspawn.SCRIPTER_NAME + "' to RunScriptCode");
+        return;
+    }
+    try { EntFireByHandle(s, "RunScriptCode", code, delay, null, null); } catch(e) {}
+};
+
+// ------------------------------------------------------------
+// Pool detach (fixes flags snapping back to pool storage coords)
+// ------------------------------------------------------------
+::flagspawn._DetachFromPool <- function(flag) {
+    if (!flag) return;
+
+    // Break parent hierarchy link
+    try { flag.SetParent(null, ""); } catch(e0) {}
+    try { EntFireByHandle(flag, "ClearParent", "", 0.0, null, null); } catch(e1) {}
+
+    // Clear keyvalue too (prevents re-parent on think)
+    try { flag.__KeyValueFromString("parentname", ""); } catch(e2) {}
+
+    // Kill inherited motion
+    try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e3) {}
+};
+
+
+::flagspawn._InitPool <- function() {
+    ::flagspawn._Pool.red.clear();
+    ::flagspawn._Pool.blu.clear();
+    ::flagspawn._Pool.red_i = 0;
+    ::flagspawn._Pool.blu_i = 0;
+
+    for (local i = 1; i <= ::flagspawn.POOL_PER_TEAM; i++) {
+        local idx = (i < 10) ? ("0" + i) : ("" + i);
+        local rn = ::flagspawn.POOL_NAME_RED_PREFIX + idx;
+        local bn = ::flagspawn.POOL_NAME_BLU_PREFIX + idx;
+
+        local rf = ::flagspawn._FindByName(rn);
+        local bf = ::flagspawn._FindByName(bn);
+
+        if (rf) { ::flagspawn._TrySetReturnNever(rf); ::flagspawn._HideFlag(rf); ::flagspawn._Pool.red.append(rf); }
+        else if (::flagspawn.DEBUG) ::flagspawn.Log("POOL WARN: missing " + rn);
+
+        if (bf) { ::flagspawn._TrySetReturnNever(bf); ::flagspawn._HideFlag(bf); ::flagspawn._Pool.blu.append(bf); }
+        else if (::flagspawn.DEBUG) ::flagspawn.Log("POOL WARN: missing " + bn);
+    }
+
+    ::flagspawn.Log("Pool init: red=" + ::flagspawn._Pool.red.len() + " blu=" + ::flagspawn._Pool.blu.len());
+};
+
+::flagspawn._TakeNextFromPool <- function(team) {
+    if (team == ::flagspawn.TEAM_RED) {
+        if (::flagspawn._Pool.red.len() <= 0) return null;
+        local f = ::flagspawn._Pool.red[::flagspawn._Pool.red_i % ::flagspawn._Pool.red.len()];
+        ::flagspawn._Pool.red_i++;
+        return f;
+    }
+    if (team == ::flagspawn.TEAM_BLU) {
+        if (::flagspawn._Pool.blu.len() <= 0) return null;
+        local f2 = ::flagspawn._Pool.blu[::flagspawn._Pool.blu_i % ::flagspawn._Pool.blu.len()];
+        ::flagspawn._Pool.blu_i++;
+        return f2;
+    }
+    return null;
+};
+
+// ------------------------------------------------------------
+// Dropped worldtext (value) -- does NOT glow through walls; flag glow is separate. citeturn0search3
+// ------------------------------------------------------------
+::flagspawn._wt_by_flag <- {};
+
+::flagspawn._KillWorldtextForFlag <- function(flag) {
+    if (!flag) return;
+    local fe = -1;
+    try { fe = flag.entindex(); } catch(e) { return; }
+    if (!(fe in ::flagspawn._wt_by_flag)) return;
+
+    local wt = null;
+    try { wt = EntIndexToHScript(::flagspawn._wt_by_flag[fe]); } catch(e2) { wt = null; }
+    if (wt) { try { EntFireByHandle(wt, "Kill", "", 0, null, null); } catch(e3) {} }
+    delete ::flagspawn._wt_by_flag[fe];
+};
+
+::flagspawn._IsFlagHiddenInPool <- function(flag) {
+    if (!flag) return true;
+    local org = null;
+    try { org = flag.GetAbsOrigin(); } catch(e) { org = null; }
+    if (!org) return true;
+    return org.z < -7000;
+};
+
+::flagspawn._IsFlagDropped <- function(flag) {
+    if (!flag) return false;
+    if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
+    if (::flagspawn._FlagOwner(flag) != null) return false;
+    return true;
+};
+
+::flagspawn._EnsureWorldtextForFlag <- function(flag) {
+    if (!::flagspawn.ENABLE_DROP_WORLDTEXT) return;
+    if (!flag) return;
+
+    if (!::flagspawn._IsFlagDropped(flag)) { ::flagspawn._KillWorldtextForFlag(flag); return; }
+
+    local fe = flag.entindex();
+    local wt = null;
+
+    if (fe in ::flagspawn._wt_by_flag) {
+        try { wt = EntIndexToHScript(::flagspawn._wt_by_flag[fe]); } catch(e2) { wt = null; }
+    }
+
+    if (!wt) {
+        wt = Entities.CreateByClassname("point_worldtext");
+        if (!wt) { ::flagspawn.Log("WARN: could not create point_worldtext"); return; }
+
+        try { wt.__KeyValueFromInt("orientation", ::flagspawn.WORLDTEXT_ORIENTATION); } catch(e3) {}
+        try { wt.__KeyValueFromInt("textsize", ::flagspawn.WORLDTEXT_SCALE); } catch(e4) {}
+        try { wt.__KeyValueFromString("color", ::flagspawn.WORLDTEXT_COLOR); } catch(e5) {}
+        try { wt.__KeyValueFromString("message", ""); } catch(e6) {}
+
+        try { wt.SetParent(flag, ""); } catch(e8) {}
+        try { wt.SetLocalOrigin(Vector(0,0,::flagspawn.WORLDTEXT_Z)); } catch(e9) {}
+
+        ::flagspawn._wt_by_flag[fe] <- wt.entindex();
+        if (::flagspawn.DEBUG) ::flagspawn.Log("WORLDTEXT CREATE for " + ::flagspawn._SafeName(flag));
+    }
+
+    local msg = "" + ::flagspawn._GetFlagPointsValue(flag);
+    try { wt.__KeyValueFromString("message", msg); } catch(e10) {}
+};
+
+::flagspawn._ReconcileWorldtexts <- function() {
+    if (!::flagspawn.ENABLE_DROP_WORLDTEXT) return;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        ::flagspawn._EnsureWorldtextForFlag(f);
+    }
+};
+
+// ------------------------------------------------------------
+// Spawner glows via tf_glow (only for studiomodel props) citeturn0search3
+// ------------------------------------------------------------
+::flagspawn._glow_by_prop <- {};
+
+::flagspawn._CreateGlowForProp <- function(prop) {
+    if (!::flagspawn.ENABLE_SPAWNER_GLOW || !prop) return;
+    local pe = prop.entindex();
+    if (pe in ::flagspawn._glow_by_prop) return;
+
+    local pname = "";
+    try { pname = prop.GetName(); } catch(e) { pname = ""; }
+    if (pname == null || pname == "") return;
+
+    local g = Entities.CreateByClassname("tf_glow");
+    if (!g) return;
+
+    try { g.__KeyValueFromString("target", pname); } catch(e2) {}
+    try { g.__KeyValueFromInt("mode", 0); } catch(e3) {}
+    try { g.__KeyValueFromString("glowcolor", "255 255 255"); } catch(e4) {}
+
+    ::flagspawn._glow_by_prop[pe] <- g.entindex();
+};
+
+::flagspawn._InitSpawnerGlows <- function() {
+    if (!::flagspawn.ENABLE_SPAWNER_GLOW) return;
+
+    local p = null;
+    while ((p = Entities.FindByClassname(p, "prop_dynamic")) != null) {
+        local nm = ""; try { nm = p.GetName(); } catch(e) { nm = ""; }
+        if (nm && nm.len() > 0 && nm.tolower().find(::flagspawn.SPAWNER_NAME_PREFIX) == 0) ::flagspawn._CreateGlowForProp(p);
+    }
+
+    p = null;
+    while ((p = Entities.FindByClassname(p, "prop_dynamic_override")) != null) {
+        local nm2 = ""; try { nm2 = p.GetName(); } catch(e2) { nm2 = ""; }
+        if (nm2 && nm2.len() > 0 && nm2.tolower().find(::flagspawn.SPAWNER_NAME_PREFIX) == 0) ::flagspawn._CreateGlowForProp(p);
+    }
+};
+
+// ------------------------------------------------------------
+// Dispense + pickup verify
+// ------------------------------------------------------------
+::flagspawn._NudgeForPickup <- function(flag, player) {
+    if (!flag || !player) return;
+
+    ::flagspawn._ForceEnableFlag(flag);
+    ::flagspawn._DetachFromPool(flag);
+
+    local pos = Vector(0,0,0);
+    local fwd = Vector(1,0,0);
+    try { pos = player.GetAbsOrigin(); } catch(e) {}
+    try { local ang = player.EyeAngles(); fwd = ang.Forward(); } catch(e2) {}
+
+    // Put it near the player (touch pickup)
+    local spawnPos = pos + (fwd * 24) + Vector(0,0,24);
+    try { flag.SetAbsOrigin(spawnPos); } catch(e3) {}
+
+    try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e4) {}
+};
+
+::flagspawn._StartVerifyPickup <- function(player, flag, attempt) {
+    if (!player || !flag) return;
+
+    if (::flagspawn._IsFlagCarriedBy(flag, player)) {
+        local ps = ::flagspawn._PS(player);
+        ps.used_this_life = true;
+        ps.pending_flag_eidx = -1;
+        ::flagspawn._KillWorldtextForFlag(flag);
+        if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
         return;
     }
 
-    // attach metadata
-    local idx = flag.entindex();
-    local info = { team = team, value = val, classGrant = true, rockEnt = null, hintEnt = null, glowFlag = null, glowRock = null };
-    ::flagspawn._flagInfo[idx] <- info;
-
-    // checkout rock/hint/glows by index position (best-effort)
-    if (::flagspawn.ENABLE_ROCK_PROP && ::flagspawn._rockPool[team].len() > 0) {
-        // pick first disabled rock not in use by searching for one that's not parented and at z=-10000
-        foreach (r in ::flagspawn._rockPool[team]) { if (r) { info.rockEnt = r; break; } }
-    }
-    if (::flagspawn.ENABLE_VALUE_HINTS && ::flagspawn._hintPool[team].len() > 0) {
-        foreach (h in ::flagspawn._hintPool[team]) { if (h) { info.hintEnt = h; break; } }
-    }
-    if (::flagspawn.ENABLE_GLOW && ::flagspawn._glowPool[team].len() >= 2) {
-        // pick two glows; no perfect tracking, but good enough for singleplayer testing
-        info.glowFlag = ::flagspawn._glowPool[team][0];
-        info.glowRock = ::flagspawn._glowPool[team][1];
-    }
-
-    // spawn at player's feet and force pickup behavior by teleporting close then enabling
-    local org = player.GetOrigin();
-    flag.SetAbsOrigin(org + Vector(0,0,16));
-    flag.__KeyValueFromInt("ReturnTime", ::flagspawn.RETURN_TIME_SECONDS);
-    flag.AcceptInput("SetReturnTime", "" + ::flagspawn.RETURN_TIME_SECONDS, null, null);
-
-    flag.AcceptInput("Enable", "", null, null);
-    flag.AcceptInput("ShowSprite", "", null, null);
-
-    // Force the engine to treat it like a real enemy intel if needed:
-    // TeamNum already set; pickup overlay is still shown.
-
-    ps.spawnedThisLife = true;
-    ps.carryingEntIdx = idx;
-    ps.carryingValue = val;
-
-    ::flagspawn.PlaySoundToAll(::flagspawn.PICKUP_SOUND);
-    if (::flagspawn.DEBUG) ::flagspawn.Log("SUCCESS: granted pooled flag ent#" + idx + " team=" + team + " value=" + val);
-}
-
-// Called by triggers
-::flagspawn.OnSpawnerTouch <- function(activator, teamOrCaller, caller=null, value=null) {
-    local player = activator;
-    if (!player) return;
-
-    local t = ::flagspawn.TeamFromCallerOrInt(teamOrCaller);
-    if (t != ::flagspawn.TEAM_RED && t != ::flagspawn.TEAM_BLU) {
-        if (::flagspawn.DEBUG) ::flagspawn.Log("OnSpawnerTouch DENY: could not resolve team");
+    if (attempt >= ::flagspawn.PICKUP_RETRY_COUNT) {
+        local ps2 = ::flagspawn._PS(player);
+        ps2.pending_flag_eidx = -1; // allow retry
+        if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FAILED: owner still null after retries; pending cleared; flag left dropped.");
+        ::flagspawn._ReconcileWorldtexts();
         return;
     }
 
-    // ENEMY-SPAWNER rule:
-    // - Touching your OWN team's spawner should do nothing.
-    // - Touching the ENEMY team's spawner grants you a flag.
-    local pteam = 0;
-    try { pteam = player.GetTeam(); } catch(e) { pteam = 0; }
-    if (pteam == t) {
-        if (::flagspawn.DEBUG) ::flagspawn.Log("OnSpawnerTouch DENY: same team");
-        return;
-    }
+    ::flagspawn._NudgeForPickup(flag, player);
 
-    // touch cooldown (prevents multiple fires per tick)
-    local ps = ::flagspawn.PlayerState(player);
-    if (ps) {
-        local now = ::flagspawn.Now();
-        if (now - ps.lastTouchTime < 0.25) return;
-        ps.lastTouchTime = now;
-    }
+    local code = "if (::flagspawn != null) ::flagspawn._VerifyPickup(" + player.entindex() + "," + flag.entindex() + "," + (attempt+1) + ");";
+    ::flagspawn._FireScriptCode(::flagspawn.PICKUP_RETRY_INTERVAL, code);
+};
 
-    ::flagspawn._GrantFlagToPlayer(player, t);
-}
-
-// Capture/bank trigger. For now: consuming carried value into scoreboard is stubbed.
-::flagspawn.OnCaptureTouch <- function(activator, teamOrCaller, caller=null, value=null) {
-    local player = activator;
-    if (!player) return;
-
-    local capTeam = ::flagspawn.TeamFromCallerOrInt(teamOrCaller);
-    if (capTeam != ::flagspawn.TEAM_RED && capTeam != ::flagspawn.TEAM_BLU) return;
-
-    local pteam = 0;
-    try { pteam = player.GetTeam(); } catch(e) { pteam = 0; }
-    if (pteam != capTeam) {
-        if (::flagspawn.DEBUG) ::flagspawn.Log("OnCaptureTouch DENY: wrong team");
-        return;
-    }
-
-    // find carried flag
-    local flag = ::flagspawn._ResolveCarriedOrNearbyFlag(player);
-    if (!flag) {
-        if (::flagspawn.DEBUG) ::flagspawn.Log("OnCaptureTouch: no flag found for player");
-        return;
-    }
-
-    local val = ::flagspawn._GetFlagValue(flag);
-    if (val <= 0) return;
-
-    // consume / return to pool (no return behavior)
-    ::flagspawn._ClearDroppedVisuals(flag);
-    ::flagspawn._ReturnToPool(flag);
-
-    ::flagspawn._AddTeamScore(capTeam, val);
-
-    // reset per-life gate (your rule: reset on capturing any amount)
-    local ps = ::flagspawn.PlayerState(player);
-    if (ps) { ps.spawnedThisLife = false; ps.carryingEntIdx = -1; ps.carryingValue = 0; }
-
-    ::flagspawn.Log("CAPTURE: team=" + capTeam + " player=" + ::flagspawn.GetUserId(player) + " turned in value=" + val + " (PD scoring hookup next)");
-}
-
-// ============================================================
-// EVENT HOOKS
-// ============================================================
-::flagspawn._OnFlagEvent <- function(ev) {
-    // teamplay_flag_event keys: player, team, eventtype, priority, home
-    // eventtype: 1=pickup, 2=capture, 3=defend?, 4=drop, 5=return (varies)
-    local et = ("eventtype" in ev) ? ev.eventtype.tointeger() : -1;
-    local uid = ("player" in ev) ? ev.player.tointeger() : 0;
-    local ply = (uid > 0) ? GetPlayerFromUserID(uid) : null;
+::flagspawn._VerifyPickup <- function(playerEidx, flagEidx, attempt) {
+    local player = null;
+    local flag = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    try { flag = EntIndexToHScript(flagEidx); } catch(e2) { flag = null; }
+    if (!player || !flag) return;
 
     if (::flagspawn.DEBUG) {
-        ::flagspawn.Log("[flag_event] uid=" + uid + " et=" + et + " team=" + (("team" in ev) ? ev.team : "?"));
+        local owner = ::flagspawn._FlagOwner(flag);
+        ::flagspawn.Log("PICKUP RETRY " + attempt + ": owner=" + ::flagspawn._SafeName(owner) + " flag=" + ::flagspawn._SafeName(flag));
+    }
+    ::flagspawn._StartVerifyPickup(player, flag, attempt);
+};
+
+// ------------------------------------------------------------
+// Hammer entrypoint: spawner touch
+// ------------------------------------------------------------
+::flagspawn.OnSpawnerTouch <- function(activator, teamParam) {
+    local player = activator;
+    if (!player) return;
+
+    local ps = ::flagspawn._PS(player);
+
+    local now = Time();
+    if (now - ps.last_spawner_touch < ::flagspawn.SPAWNER_TOUCH_COOLDOWN) return;
+    ps.last_spawner_touch = now;
+
+    local requested = 0;
+    if (typeof teamParam == "integer") requested = teamParam;
+    if (requested != ::flagspawn.TEAM_RED && requested != ::flagspawn.TEAM_BLU) { ::flagspawn.Log("OnSpawnerTouch DENY: bad teamParam"); return; }
+
+    local spawnTeam = ::flagspawn._OppTeam(requested);
+
+    if (::flagspawn.DEBUG) {
+        local c = null; try { c = caller; } catch(e) { c = null; }
+        ::flagspawn.Log("OnSpawnerTouch activator=" + ::flagspawn._SafeName(player) +
+            "(team=" + ::flagspawn._GetTeamNum(player) + ") teamParam=" + requested +
+            " -> spawnTeam=" + spawnTeam + " caller=" + ::flagspawn._SafeName(c));
     }
 
-    // resolve flag from player proximity/ownership
-    local flag = ::flagspawn._ResolveCarriedOrNearbyFlag(ply);
-
-    if (et == 4) { // drop
-        if (flag) {
-            // ensure metadata exists even if engine created the flag (rare)
-            local idx = flag.entindex();
-            if (!(idx in ::flagspawn._flagInfo)) {
-                ::flagspawn._flagInfo[idx] <- { team = (("team" in ev) ? ev.team.tointeger() : 0), value = 1, classGrant = false, rockEnt = null, hintEnt = null, glowFlag = null, glowRock = null };
-            }
-            // apply dropped visuals
-            ::flagspawn._ApplyDroppedVisuals(flag);
-        }
+    // If you are already carrying a PD flag, STACK its PointsValue instead of spawning new (merge).
+    local carried = ::flagspawn._ResolveCarriedFlag(player);
+    if (carried) {
+        local add = ::flagspawn.GetClassBonus(player);
+        local cur = ::flagspawn._GetFlagPointsValue(carried);
+        local nxt = cur + add;
+        ::flagspawn._SetFlagPointsValue(carried, nxt);
+        ::flagspawn._EnsureFlagVisual(carried);
+        ::flagspawn.Log("STACK: carried=" + ::flagspawn._SafeName(carried) + " PointsValue " + cur + " -> " + nxt);
         return;
     }
 
-    if (et == 1) { // pickup
-        if (flag) {
-            // hide dropped visuals when picked up
-            ::flagspawn._ClearDroppedVisuals(flag);
+    // One-per-life (after a successful pickup)
+    if (ps.used_this_life) { ::flagspawn.Log("OnSpawnerTouch DENY: used_this_life=true (no new flag until next spawn)"); return; }
+    if (ps.pending_flag_eidx != -1) { ::flagspawn.Log("OnSpawnerTouch DENY: pending flag already dispensed (try picking it up first)"); return; }
 
-            // update player state
-            if (ply) {
-                local ps = ::flagspawn.PlayerState(ply);
-                if (ps) { ps.carryingEntIdx = flag.entindex(); ps.carryingValue = ::flagspawn._GetFlagValue(flag); }
-            }
-        }
-        return;
-    }
+    local flag = ::flagspawn._TakeNextFromPool(spawnTeam);
+    if (!flag) { ::flagspawn.Log("OnSpawnerTouch DENY: pool empty for spawnTeam=" + spawnTeam); return; }
 
-    if (et == 2) { // capture (engine capture event; we also have our trigger capture)
-        // we ignore engine capture; our trigger handles scoring
-        return;
-    }
+    ::flagspawn._DetachFromPool(flag);
 
-    if (et == 5) { // return
-        // never return: ignore, and re-apply ReturnTime
-        if (flag) {
-            try { flag.__KeyValueFromInt("ReturnTime", ::flagspawn.RETURN_TIME_SECONDS); } catch(e) {}
-            try { flag.AcceptInput("SetReturnTime", "" + ::flagspawn.RETURN_TIME_SECONDS, null, null); } catch(e) {}
-        }
-        return;
-    }
-}
+    local val = ::flagspawn.GetClassBonus(player);
+    ::flagspawn._SetFlagPointsValue(flag, val);
+    ::flagspawn._TrySetReturnNever(flag);
+    ::flagspawn._EnsureFlagVisual(flag);
 
-::flagspawn._OnPlayerDeath <- function(ev) {
-    local uid = ("userid" in ev) ? ev.userid.tointeger() : 0;
-    local ply = (uid > 0) ? GetPlayerFromUserID(uid) : null;
-    if (!ply) return;
+    ps.pending_flag_eidx = flag.entindex();
 
-    // reset per-life gate on death
-    local ps = ::flagspawn.PlayerState(ply);
-    if (ps) { ps.spawnedThisLife = false; ps.carryingEntIdx = -1; ps.carryingValue = 0; }
-}
+    ::flagspawn._NudgeForPickup(flag, player);
 
-::flagspawn._OnRoundStart <- function(ev) {
-    ::flagspawn.Log("teamplay_round_start");
-    ::flagspawn.ResetAll();
-}
+    ::flagspawn.Log("DISPENSE: team=" + spawnTeam + " flag=" + ::flagspawn._SafeName(flag) + " PointsValue=" + val);
 
-::flagspawn._OnRestart <- function(ev) {
-    ::flagspawn.Log("teamplay_restart_round");
-    ::flagspawn.ResetAll();
-}
+    ps.used_this_life = true;
+    ps.pending_flag_eidx = -1;
+    ::flagspawn._ReconcileWorldtexts();
+};
 
+// ------------------------------------------------------------
+// Events: reset used_this_life on spawn
+// ------------------------------------------------------------
+::flagspawn.OnGameEvent_player_spawn <- function(params) {
+    local player = null;
+    if ("userid" in params) { try { player = GetPlayerFromUserID(params.userid); } catch(e) { player = null; } }
+    if (!player) return;
+
+    local ps = ::flagspawn._PS(player);
+    ps.used_this_life = false;
+    ps.pending_flag_eidx = -1;
+    ps.last_spawner_touch = -9999.0;
+
+    if (::flagspawn.DEBUG) ::flagspawn.Log("player_spawn: reset used_this_life for " + ::flagspawn._SafeName(player));
+};
+
+::flagspawn.OnGameEvent_teamplay_flag_event <- function(params) {
+    // Any flag event -> update worldtexts
+    ::flagspawn._ReconcileWorldtexts();
+};
+
+// ------------------------------------------------------------
+// Think loop
+// ------------------------------------------------------------
+::flagspawn._Think <- function() {
+    ::flagspawn._ReconcileWorldtexts();
+    ::flagspawn._ReconcileFlagVisuals();
+    return 0.25;
+};
+
+// ------------------------------------------------------------
+// Init
+// ------------------------------------------------------------
 ::flagspawn.RegisterEvents <- function() {
-    if (::flagspawn._registered) return;
-    ::flagspawn._registered = true;
+    try { __CollectGameEventCallbacks(::flagspawn); ::flagspawn.Log("Registered game event callbacks."); }
+    catch(e) { ::flagspawn.Log("WARN: Could not register game event callbacks (" + e + ")."); }
+};
 
-    // TF2 VScript does NOT always expose ListenToGameEvent().
-    // Prefer it when present; otherwise fall back to TF2's __CollectGameEventCallbacks().
-    local rt = getroottable();
-
-    if ("ListenToGameEvent" in rt) {
-        ListenToGameEvent("teamplay_round_start",   ::flagspawn._OnRoundStart,  null);
-        ListenToGameEvent("teamplay_restart_round", ::flagspawn._OnRestart,    null);
-        ListenToGameEvent("player_death",           ::flagspawn._OnPlayerDeath,null);
-        ListenToGameEvent("teamplay_flag_event",    ::flagspawn._OnFlagEvent,  null);
-
-        ::flagspawn.Log("RegisterEvents (ListenToGameEvent)");
-        return;
-    }
-
-    if ("__CollectGameEventCallbacks" in rt) {
-        // Build a dedicated callback table and collect once.
-        if (!("_ge" in ::flagspawn)) ::flagspawn._ge <- {};
-        local ge = ::flagspawn._ge;
-
-        // Wrap to preserve your existing handlers.
-        ge["OnGameEvent_teamplay_round_start"]   <- function(params) { ::flagspawn._OnRoundStart(params); };
-        ge["OnGameEvent_teamplay_restart_round"] <- function(params) { ::flagspawn._OnRestart(params); };
-        ge["OnGameEvent_player_death"]           <- function(params) { ::flagspawn._OnPlayerDeath(params); };
-        ge["OnGameEvent_teamplay_flag_event"]    <- function(params) { ::flagspawn._OnFlagEvent(params); };
-
-        __CollectGameEventCallbacks(ge);
-
-        ::flagspawn.Log("RegisterEvents (__CollectGameEventCallbacks)");
-        return;
-    }
-
-    ::flagspawn.Log("ERROR: No game-event registration API available (ListenToGameEvent / __CollectGameEventCallbacks missing).");
-}
-
-
-// ============================================================
-// INIT
-// ============================================================
 ::flagspawn.Init <- function() {
-    if (::flagspawn._inited) return;
-    ::flagspawn._inited = true;
-
-    ::flagspawn.Log("Init");
-
+    ::flagspawn.Log("LOADED PD v5 @ t=" + Time());
+    ::flagspawn._InitPool();
     ::flagspawn.RegisterEvents();
-    ::flagspawn._BuildPools();
-    ::flagspawn._SetupSpawnerVisuals();
-    ::flagspawn._SetupSpawnerStockMarkers();
+    if (::flagspawn.ENABLE_SPAWNER_GLOW) ::flagspawn._InitSpawnerGlows();
+    try { AddThinkToEnt(::flagspawn, "_Think"); } catch(e2) { ::flagspawn.Log("WARN: AddThinkToEnt failed (" + e2 + ")"); }
 
-    // Friendly reminder for glow
-    if (::flagspawn.ENABLE_GLOW) {
-        ::flagspawn.Log("NOTE: players must have glow_outline_effect_enable 1 to see glows.");
-    }
-}
-
+    ::flagspawn.Log("READY. PointsValue is written to dispensed item_teamflag for PD HUD. Heavy=5, Sniper=3, Soldier=2, others=1.");
+    ::flagspawn.Log("Note: point_worldtext itself cannot be tf_glow'd; only studiomodel props can. Flag glow is separate. citeturn0search3");
+};
 ::flagspawn.Init();
+
+// ------------------------------------------------------------
+// Hammer entrypoint: capture touch (stub)
+// ------------------------------------------------------------
+::flagspawn.OnCaptureTouch <- function(activator, teamParam) {
+    // TODO: wire into your bank/capture logic.
+    ::flagspawn._ReconcileWorldtexts();
+};
+
+// Hammer may call plain Init() in script scope
+Init <- function() { ::flagspawn.Init(); };
