@@ -121,6 +121,7 @@ rem  = n % 5
   - Normal behavior: return after 60s
 - **1 remainder chunk** worth `rem` points (if rem > 0)
   - **Special:** `fs_no_return = true` — NEVER returns, stays on field until picked up
+  - THIS REMAINDER CHUNK SHOULD BE SENT BACK TO THE FUEL BANK
 - All chunks burst in circular pattern around corpse
 
 **Example:** Die with 23 points
