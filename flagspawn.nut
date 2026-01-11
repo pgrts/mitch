@@ -583,6 +583,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn._NudgeForPickup <- function(flag, player) {
     if (!flag || !player) return;
 
+    if (::flagspawn.DEBUG) {
+        ::flagspawn.Log("NUDGE CALL: flag=" + ::flagspawn._SafeName(flag) + " player=" + ::flagspawn._SafeName(player));
+    }
+
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
     ::flagspawn._ForceDroppedState(flag);
@@ -591,6 +595,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     local fwd = Vector(1,0,0);
     try { pos = player.GetAbsOrigin(); } catch(e) {}
     try { local ang = player.EyeAngles(); fwd = ang.Forward(); } catch(e2) {}
+
+    if (::flagspawn.DEBUG) {
+        ::flagspawn.Log("NUDGE BASE: pos=" + ::flagspawn._VecStr(pos) + " fwd=" + ::flagspawn._VecStr(fwd));
+    }
 
     // Put it near the player (touch pickup)
     local spawnPos = pos + (fwd * 24) + Vector(0,0,24);
@@ -634,6 +642,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FAILED: owner still null after retries; pending cleared; flag left dropped.");
         ::flagspawn._ReconcileWorldtexts();
         return;
+    }
+
+    if (::flagspawn.DEBUG) {
+        ::flagspawn.Log("NUDGE RETRY " + attempt + ": flag=" + ::flagspawn._SafeName(flag) + " player=" + ::flagspawn._SafeName(player));
     }
 
     ::flagspawn._NudgeForPickup(flag, player);
