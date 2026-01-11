@@ -1,0 +1,1047 @@
+tf2maps pd creator thread
+
+PD - Player Destruction Map Guide
+
+
+zwcQWf1.jpg
+
+
+What is Player Destruction?
+
+Player Destruction is a spin on the Robot Destruction entities which focuses on bringing team objectives to a deathmatch foundation. In this gamemode players will drop flags if they were killed or ‘finished off’ by another player. The objective is to bring these flags to the capturezone to score. Whoever has the most amount of flags on each team is given a dispenser, an outline, and a number above their heads indicating the number of flags they are carrying. The captuezone can be toggled on and off, and in Watergate it scrolls across the map shown on a timer on the HUD.
+
+Entities needed to set up the gamemode:
+
+tf_logic_player_destruction
+Name: pd_logic
+
+logic_auto
+OnMultiNewRound - pd_logic - EnableMaxScoreUpdating
+OnMultiNewRound - pd_logic - DisableMaxScoreUpdating - After 30 seconds
+
+func_capturezone
+Team: Red
+OnCapTeam1_PD - pd_logic - ScoreRedPoints
+
+func_capturezone
+Team: Blue
+OnCapTeam2_PD - pd_logic - ScoreBluePoints
+
+Other things you can do with Player Destruction:
+
+tf_logic_player_destruction:
+Inputs:
+SetCountdownTimer <integer> Set the countdown time and start the timer.
+SetCountdownImage <string> Set the countdown image.
+SetFlagResetDelay <integer> Set the length of time (in seconds) before a dropped flag resets.
+SetPointsOnPlayerDeath <integer> Set number of points per flag dropped upon player death.
+Outputs:
+OnRedScoreChanged <float> Send when score changes, and is a value representing total progress from [0..1].
+OnBlueScoreChanged <float> Send when score changes, and is a value representing total progress from [0..1].
+OnCountdownTimerExpired Sent when the countdown timer expires.
+
+Download the prefab:
+http://tf2maps.net/resources/pd-prefab.858/
+
+Editing the HUD:
+
+The tf_logic_player_destruction entity includes the keyvalue ‘res_file’ which allows you to set the map up with an edited version of the existing PD HUD.
+
+ByovlJB.jpg
+
+You can find the existing PD HUD in the tf/tf2_misc_dir.vpk file at:
+resource/UI/HudObjectivePlayerDestruction.res
+
+To make your own version of this you will first need to make a copy of it and rename it for your map (“ExampleHUD.res”). Then inside add a few lines at the start and type:
+
+Code:
+#base "HudObjectivePlayerDestruction.res"
+
+Inside of your map you can put the name of your custom .res file in the logic entity as so:
+resource/UI/ExampleHUD.res
+
+In your ExampleHUD.res file you can edit anything at all and it will show up in your map. You can change all the icons with custom packaged icons, you can disable any element, you can change the background color of any element, etc.
+
+Here is the .res file Watergate uses for example:
+
+Spoiler
+
+Design Stuff:
+
+Player Destruction is a mode that opens the door to more dynamic gameplay. It allows you to ‘turn off’ the capturezone and let the potential points build up in the map, before turning back on the capturezone to frantically spit points onto the HUD. It seems to necessitate places around the capturezone for teams to push and pull out of, rather than always fighting for the capturezone itself. Chasing after the team leaders (who have the most amount of points) when the capturezone was closed resulted in some of the most fun moments.
+
+Watergate is a map with a layout like Hightower - a wider map that lets combat manifest at more places to give the map a more hectic pace, however this means that there is less teamplay because players can be farther apart from each other. In this sense it may be worth looking into a less wide layout like Viaduct that has teammates closer more often (teamplay in Watergate was a bit of an issue unless it came from some other source - like a veteran on the microphone).
+
+In previous versions of Watergate I had a control point at the top of the tower that spawned extra pickups to the team that controlled it. This was really good for leading the players who weren’t good at deathmatch somewhere to feel like they could help their team, however it became the best option for all players including the team leaders which nullified the importance of holding any other section of the map - hence its removal. The focus on a dynamic objective means that holding points can manifest anywhere making combat feel fresh often.
+
+
+Spoiler: pd_cuisine Notes
+
+
+FAQ:
+
+Can I add new elements to the HUD?
+While I haven’t tested yet, I’d suspect no because these things are implemented by the game code - you can hide them, move them around, or modify them some other way, but you can’t create new elements.
+
+What do I use to edit the HUD .res file?
+You can use Notepad++ or anything similar ( https://notepad-plus-plus.org/ ).
+
+Where do the paths “../hud/ammo” go to?
+Those go to /tf/materials/HUD
+
+Why is my custom HUD invisible?
+If you are using a custom .res file for the HUD in your PD map and have already packed it into the map then it might appear invisible for you - in which case you would have to rename the .res file in your ui folder with an underscore at the end just to not interfere with the game stuff.
+
+If you haven’t packed it into the map then you may want to make sure the filenames are set up correctly in the PD entity and in the header of the .res file itself. Beyond this, you may find what ends up working is to pack the .res file into the level, for some reason that ends up working sometimes.
+
+--
+
+Post any questions below and I can add them to the FAQ.
+Last edited: Mar 22, 2020
+
+Egan Map Thoughts - Youtube Playlist
+Bluesky , Website
+Like
+24
+Agree
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Vel0city
+Vel0city
+func_fish
+aa
+72hr Jam Medal
+Dec 6, 2014
+1,947
+1,589
+Oct 7, 2015
+Add bookmark
+#2
+Who did the voice acting on the map? Because that could be better. Like, a LOT better.
+
+THEE EN-AH-MEE IZ IN THUH BEEM!
+
+Also, being in the beam is sort of a death sentence. You can't do anything while moving up and you're just target practice for everybody else.
+He died as he lived.
+
+Incomprehensible.
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+SC PL
+SC PL
+local shitposter
+aa
+72hr Jam Medal
+Jun 25, 2015
+378
+407
+Oct 7, 2015
+Add bookmark
+#3
+Sounds awesome I mean nice guide man!
+Last edited: Aug 11, 2016
+http://www.visitormap.org/
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+tyler
+tyler
+aa
+Ex Staff Medal Mapper's Medallion Recipient
+Sep 11, 2013
+5,100
+4,622
+Oct 7, 2015
+Add bookmark
+#4
+captain soupcan said:
+Who did the voice acting on the map? Because that could be better. Like, a LOT better.
+
+THEE EN-AH-MEE IZ IN THUH BEEM!
+
+Also, being in the beam is sort of a death sentence. You can't do anything while moving up and you're just target practice for everybody else.
+It's voice to text, and if you dislike the beam, make a better implementation! You can now, without plugins!
+Like
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Tuaam
+Tuaam
+L6: Sharp Member
+72hr Jam Medal
+Jun 26, 2015
+376
+248
+Oct 7, 2015
+Add bookmark
+#5
+Nice.
+Working on a CS Degree
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Pocket
+Pocket
+Half a Lambert is better than one.
+aa
+Mapper's Medallion Recipient
+Nov 14, 2009
+4,718
+2,588
+Oct 8, 2015
+Add bookmark
+#6
+Yeah I really wish Valve had at least taken the time to get new Administrator lines for that. They're the ones who replaced the piles of money with beer bottles, right? And possibly added the mechanic where you deliver them to the UFO by standing in the beam? I think I missed the last couple releases of Watergate.
+Warning: this post contains language.
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Bakscratch
+Bakscratch
+Finisher of Maps
+aa
+Self Made 72hr Jam Medal Mapper's Medallion Recipient
+Oct 29, 2010
+720
+1,499
+Oct 8, 2015
+Add bookmark
+#7
+stevethepocket said:
+Yeah I really wish Valve had at least taken the time to get new Administrator lines for that. They're the ones who replaced the piles of money with beer bottles, right? And possibly added the mechanic where you deliver them to the UFO by standing in the beam? I think I missed the last couple releases of Watergate.
+
+Nope, The cash hasn't been in it for a while. Valve only only came in like a week before the update (date that it originally was) to work on the game mode. All they did was turn the source mod into the game code.
+Portfolio: http://bakscratch.weebly.com/
+edsig.png
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+saph
+Nov 22, 2015
+Add bookmark
+#8
+Is it possible to trigger a logic_relay with an output of Score[Red/Blue]Points <IntValue> to add points to the corresponding team's score?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+killohurtz
+killohurtz
+Distinction in Applied Carving
+aa
+Ex Staff Medal Mapper's Medallion Recipient 72hr Jam Medal Contest Judge
+Feb 22, 2014
+1,016
+1,278
+Nov 22, 2015
+Add bookmark
+#9
+Dasnvi said:
+Is it possible to trigger a logic_relay with an output of Score[Red/Blue]Points <IntValue> to add points to the corresponding team's score?
+
+Technically, yes, it should be possible. But let me take this opportunity to share a bit of info that might apply to anyone who's altering the gamemode:
+
+No matter what you're doing with the ents, in order to use ScoreRedPoints and ScoreBluPoints, you must send EnableMaxScoreUpdating and DisableMaxScoreUpdating to the tf_logic_player_destruction entity first. If you don't intend to use the score updating functionality, just set Points Per Player to 0 and enable/disable score updating over a second or something.
+
+QqGm2dk.png
+
+Thanks @Egan for helping me figure this out, I probably should have posted about it sooner. Maybe it could go in the FAQ?
+
+Edit: I misread your original question; yes, you should be able to send the input from any entity you like, but it does not take a parameter for multiple points, so you'll have to send the input multiple times instead.
+Last edited: Nov 22, 2015
+Like
+1
+Agree
+1
+Useful
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Simulacron
+Simulacron
+L-3: Simulated Member
+aa
+72hr Jam Medal
+Feb 17, 2016
+313
+326
+Apr 18, 2016
+Add bookmark
+#10
+Is the "OnCapTeam1_PD" right? Mine is red like a wrong Connection and I have only the Option "OnCapTeam1".
+My 72h summer jam project: Cliffharbor
+HighAndLow2018 Entry: highandlow2018
+Map I'm currently working on: Logvalley
+Other Maps: Traincrashingintocp
+Changed Username from Shanghai_Minion to Simulacron
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+nickybakes
+nickybakes
+COME ON TEX, GET UP
+aa
+Self Made 72hr Jam Medal
+Jul 28, 2015
+919
+1,749
+Apr 18, 2016
+Add bookmark
+#11
+Shanghai_Minion said:
+Is the "OnCapTeam1_PD" right? Mine is red like a wrong Connection and I have only the Option "OnCapTeam1".
+Yes it is correct
+________________​
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Simulacron
+Simulacron
+L-3: Simulated Member
+aa
+72hr Jam Medal
+Feb 17, 2016
+313
+326
+Apr 18, 2016
+Add bookmark
+#12
+ok, thanks
+My 72h summer jam project: Cliffharbor
+HighAndLow2018 Entry: highandlow2018
+Map I'm currently working on: Logvalley
+Other Maps: Traincrashingintocp
+Changed Username from Shanghai_Minion to Simulacron
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Simulacron
+Simulacron
+L-3: Simulated Member
+aa
+72hr Jam Medal
+Feb 17, 2016
+313
+326
+Apr 18, 2016
+Add bookmark
+#13
+I have another question, how can you "kill" the pickups that are droped by the Players? I want to make a deathpit and don't want to have all pickups in it.
+My 72h summer jam project: Cliffharbor
+HighAndLow2018 Entry: highandlow2018
+Map I'm currently working on: Logvalley
+Other Maps: Traincrashingintocp
+Changed Username from Shanghai_Minion to Simulacron
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+nickybakes
+nickybakes
+COME ON TEX, GET UP
+aa
+Self Made 72hr Jam Medal
+Jul 28, 2015
+919
+1,749
+Apr 18, 2016
+Add bookmark
+#14
+Shanghai_Minion said:
+I have another question, how can you "kill" the pickups that are droped by the Players? I want to make a deathpit and don't want to have all pickups in it.
+Don't worry too much about stuff like that. I had some death pits in pd_meme_machine and when people fell in, some of the pickups were stuck in it, they despawn after a little bit.
+________________​
+Like
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Simulacron
+Simulacron
+L-3: Simulated Member
+aa
+72hr Jam Medal
+Feb 17, 2016
+313
+326
+Apr 18, 2016
+Add bookmark
+#15
+Thanks again
+My 72h summer jam project: Cliffharbor
+HighAndLow2018 Entry: highandlow2018
+Map I'm currently working on: Logvalley
+Other Maps: Traincrashingintocp
+Changed Username from Shanghai_Minion to Simulacron
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Egan
+Egan
+aa
+Ex Staff Medal Contest Judge 72hr Jam Medal Mapper's Medallion Recipient
+Feb 14, 2010
+1,378
+1,729
+Jun 7, 2016
+Add bookmark
+#16
+I've added some notes from pd_cuisine into the Design Stuff section. If anyone else who has made a PD map wants to make some design notes like that I can then quote the post and add it to that section. @Yrr @Crash @NickTF
+
+Egan Map Thoughts - Youtube Playlist
+Bluesky , Website
+Like
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Beef Bucket
+Beef Bucket
+aa
+72hr Jam Medal
+Aug 30, 2015
+359
+451
+Aug 11, 2016
+Add bookmark
+#17
+[Shameless Bump] Would it be possible to make flags manifest themselves within player inventories without having to be picked up? I envisioned a trigger brush that adds flags to whoever is standing inside it over time.
+Beef Bucket's Big Spud Burrito​
+For each burrito you will need: one (1) large tortilla, two (2) eggs, ~1/3 potato, dash of cheese, cooking oil. Dice potato(es) finely and place in hot pot or frying pan. Pour oil into pan until bottom is covered in a thin layer. Heat until crispy (~20 minutes, depending on fineness.) Scramble eggs. Carefully remove potatoes and place them where the excess oil can drain. You can save oil for reuse, if you wish. Fill tortilla with eggs, potatoes, cheese. Place tortilla in a hot pan until crispy and cheese is melted. Dress with choice of salsa, hot sauce, or condiments (I prefer Cholula and ketchup.) Fold tortilla. Enjoy!​
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Yrr
+Yrr
+An Actual Deer
+aa
+Self Made Contest Judge 72hr Jam Medal Mapper's Medallion Recipient
+Sep 20, 2015
+1,329
+2,797
+Aug 11, 2016
+Add bookmark
+#18
+2 month late response to egan's post
+i'll probably have more to say about the differences in the "collection" pd variant rapture uses after we finish and try the new mid out, which was not in dev back when you made that post
+Maps: Outflow | Bagel (Old) | Alloy | Rapture | Cauldron | Departure | Hades | Crasher
+Joke Maps: Exsmol | Kobe | Joeylands | Chandlands | Big Boys
+Prefabs: BO3/BO5 | Steelpit | Alternative Pickups | Arena CTF | Jump Pad Prefabs
+Particles: Modular Weather Particles
+Textures: Hud Icons | Locked Doors | "Extol" Spytech Textures | CP Hologram Strip
+
+
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Mikroscopic
+Mikroscopic
+aa
+72hr Jam Medal
+Jul 26, 2015
+698
+824
+Jul 26, 2017
+Add bookmark
+#19
+Is it possible to make it so pickups function like normal flags, in that they show on player's backs, and you can only hold one of them at a time?
+April Fools: Rock Paper Glitter (2017) - Skirmish (2018) - Midway (2019) - 21Gorge (2020) - Resupply (2021) - John Gutter (2024)
+Music: ELECTRO SOUNDS - Heavy Karaoke - Funk Fortress - Get Fighting! - Mmmphing the Bassline
+Assets: Pizza Bag Intel - Office Assets - Mid-Century Furniture
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+VMan_2002
+L1: Registered
+Dec 5, 2017
+2
+2
+Dec 9, 2017
+Add bookmark
+#20
+How do I make players score points faster while in the capture zone instead of 1 per second?
+
+
+
+Apr 13, 2019
+Add bookmark
+#21
+I'm trying to make a trigger to where when you walk through it it gives one team extra points, but the outputs won't let me specify how much extra points to give. Is there a way to do this?
+I have a hammer, but does anyone have a nail that I could borrow?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+r0nii
+r0nii
+Banned
+Mar 16, 2019
+178
+32
+May 25, 2019
+Add bookmark
+#22
+Question i teleported bread.
+
+ok sorry that was a joke. my real question is how to pack it? I will try to make Hud but i don't know how to make it work on my map.
+
+my cousin made one for me and he said to put it into custom folder but is bit broken and the hud work anywhere on ctf modes. He isnt very good at it and doesnt have so much interests in my map. and also im not sure if the hud work different if is in custom file.
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+r0nii
+r0nii
+Banned
+Mar 16, 2019
+178
+32
+Sep 16, 2019
+Add bookmark
+#23
+question. i tried to add the hud with setcountdownimage & setcountdowntimer in logic_relay to tf_logic_player_destruction but when i started the map and when i triggered the logic_relay then the hud wasn't working. someone know why?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+TylowStar
+TylowStar
+L2: Junior Member
+Oct 18, 2018
+63
+13
+Oct 6, 2019
+Add bookmark
+#24
+Inputs:
+SetCountdownTimer <integer> Set the countdown time and start the timer.
+SetCountdownImage <string> Set the countdown image.
+SetFlagResetDelay <integer> Set the length of time (in seconds) before a dropped flag resets.
+SetPointsOnPlayerDeath <integer> Set number of points per flag dropped upon player death.
+​
+This is probably really obvious but how do I set an input onto an entity? I know that by setting an output from another entity targetting the entity in question, it will recieve an input, but how do I set an output onto that entity specifically as it says in the guide?
+I mean, who doesn't have 999+ unreleased map prototypes languishing in their /mapsrc?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+r0nii
+r0nii
+Banned
+Mar 16, 2019
+178
+32
+Oct 7, 2019
+Add bookmark
+#25
+TylowStar said:
+Inputs:
+SetCountdownTimer <integer> Set the countdown time and start the timer.
+SetCountdownImage <string> Set the countdown image.
+SetFlagResetDelay <integer> Set the length of time (in seconds) before a dropped flag resets.
+SetPointsOnPlayerDeath <integer> Set number of points per flag dropped upon player death.
+​
+This is probably really obvious but how do I set an input onto an entity? I know that by setting an output from another entity targetting the entity in question, it will recieve an input, but how do I set an output onto that entity specifically as it says in the guide?
+
+you can give the Entity tf_logic_player_destruction an input SetCountdownImage/Timer.
+example in button
+OnPress
+the_Name
+SetCountdownImage
+MaterialLocationName
+delay 5
+
+tip: its not possible to add SetCountdownTimer/Image and OnCountdownTimerExpires when you haven't placed the tf_logic_player_destruction entity
+
+edit: im sorry if you didnt mean this. i hope this should solve your problems.
+Like
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+TylowStar
+TylowStar
+L2: Junior Member
+Oct 18, 2018
+63
+13
+Oct 11, 2019
+Add bookmark
+#26
+r0nii#BringBackNISLT said:
+you can give the Entity tf_logic_player_destruction an input SetCountdownImage/Timer.
+example in button
+OnPress
+the_Name
+SetCountdownImage
+MaterialLocationName
+delay 5
+
+tip: its not possible to add SetCountdownTimer/Image and OnCountdownTimerExpires when you haven't placed the tf_logic_player_destruction entity
+
+edit: im sorry if you didnt mean this. i hope this should solve your problems.
+Thank you! Now I instead have another problem lol.
+To put it simply, the map doesn't start when the map starts. I have a logic_timer that is supposed to cause a countdown to diplay and the point to close at the start of the map, all before turning on later. And it definetly does that, but the logic_timer for some reason won't even fire until waaaaaay later. As in, the countdown showing up, the point closing, this doesn't happen until well into the round.
+I mean, who doesn't have 999+ unreleased map prototypes languishing in their /mapsrc?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+r0nii
+r0nii
+Banned
+Mar 16, 2019
+178
+32
+Oct 11, 2019
+Add bookmark
+#27
+TylowStar said:
+Thank you! Now I instead have another problem lol.
+To put it simply, the map doesn't start when the map starts. I have a logic_timer that is supposed to cause a countdown to diplay and the point to close at the start of the map, all before turning on later. And it definetly does that, but the logic_timer for some reason won't even fire until waaaaaay later. As in, the countdown showing up, the point closing, this doesn't happen until well into the round.
+you mean the display doesnt show when map start or what? you can simply activate something by adding output "onmapspawn" in logic_auto.
+and also when timer doesnt work then make sure you have correct selected. don't forget .res at the end or its won't work.
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+r0nii
+r0nii
+Banned
+Mar 16, 2019
+178
+32
+Oct 14, 2019
+Add bookmark
+#28
+i have a question. its there another way to load .res file with coulddownimage/time without player destruction entity?
+or its possible to disable flag droping from player?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Quote QuoteReport
+Egan
+Egan
+aa
+Ex Staff Medal Contest Judge 72hr Jam Medal Mapper's Medallion Recipient
+Feb 14, 2010
+1,378
+1,729
+Oct 15, 2019
+Add bookmark
+#29
+r0nii#BringBackNISLT said:
+i have a question. its there another way to load .res file with coulddownimage/time without player destruction entity?
+or its possible to disable flag droping from player?
+
+You can disable the flag drops from players by hitting the tf_logic_player_destruction with this input of 0:
+SetPointsOnPlayerDeath <integer> Set number of points per flag dropped upon player death.
+Set by a logic_auto OnMapSpawn.
+
+
+On the countdownimage/time, I'd wager a guess the pd logic entity is the only thing that initializes those hud elements showing up on the hud.
+
+Egan Map Thoughts - Youtube Playlist
+Bluesky , Website
+Like
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Spanospy
+Spanospy
+L1: Registered
+Oct 20, 2019
+4
+4
+Dec 24, 2019
+Add bookmark
+#30
+VMan_2002 said:
+How do I make players score points faster while in the capture zone instead of 1 per second?
+
+You can add KeyValue capture_delay to the capturezone, and set it to how many seconds you want.
+
+Dunno why that's missing from the FGD..
+Agree
+1
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Startacker!
+Startacker!
+WANT ME TO BE REAL? MAKE ME.
+aa
+Mapper's Medallion Recipient Ex Staff Medal Contest Judge 72hr Jam Medal
+Jun 15, 2013
+684
+1,230
+Dec 24, 2019
+Add bookmark
+#31
+Spanospy said:
+You can add KeyValue capture_delay to the capturezone, and set it to how many seconds you want.
+
+Dunno why that's missing from the FGD..
+chrome_MPVPK64utn.png
+chrome_t8swdJbDNo.png
+
+bad news
+Mco3jDf.png
+Brugge - Boogge - Akure - Autumnull - NULL - Trust - Crown - Bloodlust
+Rustbelt - The Angelic Choir of Dying, Screaming Robots - Operation Deforestation - Staring At The Stars With The Sound Of Carrier Tanks Revving In The Distance
+Payload Split - MvM Prefab - Engiebot Prefab - HDR Prefab
+Website - Bluesky- Tumblr - Youtube - Twitch​
+Funny
+3
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+TylowStar
+TylowStar
+L2: Junior Member
+Oct 18, 2018
+63
+13
+May 20, 2020
+Add bookmark
+#32
+Egan said:
+In your ExampleHUD.res file you can edit anything at all and it will show up in your map. You can change all the icons with custom packaged icons, you can disable any element, you can change the background color of any element, etc.
+Where do I put these custom files so that they'll be seen and read?
+I mean, who doesn't have 999+ unreleased map prototypes languishing in their /mapsrc?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Egan
+Egan
+aa
+Ex Staff Medal Contest Judge 72hr Jam Medal Mapper's Medallion Recipient
+Feb 14, 2010
+1,378
+1,729
+May 20, 2020
+Add bookmark
+#33
+TylowStar said:
+Where do I put these custom files so that they'll be seen and read?
+
+If you mean the .res file:
+C:\Program Files (x86)\Steam\steamapps\common\Team Fortress 2\tf\resource\ui\
+
+Egan Map Thoughts - Youtube Playlist
+Bluesky , Website
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Da Spud Lord
+Da Spud Lord
+Occasionally I make maps
+aa
+Mar 23, 2017
+1,338
+996
+May 20, 2020
+Add bookmark
+#34
+TylowStar said:
+Where do I put these custom files so that they'll be seen and read?
+You also need to pack the HUD file into the map for it to appear in-game, simply having it in your game assets will not work.
+Stuff I'm Proud Of:
+DuskTillDawn Entry [Screenshots] [Soundscapes] | Cathedral (CP)
+An FGD Fit for a LORD | Water Texture Library
+--------------------------------------------------​
+If a trigger_hurt is used to kill players, then could it be called... a brush with death? Eh?
+I have no friends, please check me out on Twitter: The God of Potatoes (@DaSpudLord)
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+TylowStar
+TylowStar
+L2: Junior Member
+Oct 18, 2018
+63
+13
+May 22, 2020
+Add bookmark
+#35
+Da Spud Lord said:
+You also need to pack the HUD file into the map for it to appear in-game, simply having it in your game assets will not work.
+How do I go about this?
+I mean, who doesn't have 999+ unreleased map prototypes languishing in their /mapsrc?
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+Da Spud Lord
+Da Spud Lord
+Occasionally I make maps
+aa
+Mar 23, 2017
+1,338
+996
+May 22, 2020
+Add bookmark
+#36
+The process is pretty similar to packing any other type of custom asset, just download packing software and use that on your map. Although most packing software has features to automatically detect assets that need packing, not all of them support packing PD HUDs automatically. CompilePal will automatically detect the RES file and pack it (if specified correctly in your PD logic), while other software such as VIDE will require you to manually add the RES file to pack.
+Stuff I'm Proud Of:
+DuskTillDawn Entry [Screenshots] [Soundscapes] | Cathedral (CP)
+An FGD Fit for a LORD | Water Texture Library
+--------------------------------------------------​
+If a trigger_hurt is used to kill players, then could it be called... a brush with death? Eh?
+I have no friends, please check me out on Twitter: The God of Potatoes (@DaSpudLord)
+Like
+ 
+Thanks
+ 
+Agree
+ 
+Funny
+ 
+Respectfully Disagree
+ Gift Quote QuoteReport
+TylowStar
+TylowStar
+L2: Junior Member
+Oct 18, 2018
+63
+13
+May 23, 2020
+Add bookmark
+#37
+Da Spud Lord said:
+The process is pretty similar to packing any other type of custom asset, just download packing software and use that on your map. Although most packing software has features to automatically detect assets that need packing, not all of them support packing PD HUDs automatically. CompilePal will automatically detect the RES file and pack it (if specified correctly in your PD logic), while other software such as VIDE will require you to manually add the RES file to pack.
+Thanks! I use CompilePal so that's a relief.
