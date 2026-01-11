@@ -696,6 +696,50 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 };
 
 // ------------------------------------------------------------
+// Manual drop helper (PD disables dropitem; use this instead)
+// ------------------------------------------------------------
+::flagspawn.DropCarriedFlag <- function(player) {
+    if (!player) return;
+    local flag = ::flagspawn._ResolveCarriedFlag(player);
+    if (!flag) {
+        if (::flagspawn.DEBUG) ::flagspawn.Log("DROP: no carried flag for " + ::flagspawn._SafeName(player));
+        return;
+    }
+
+    ::flagspawn._ForceEnableFlag(flag);
+    ::flagspawn._DetachFromPool(flag);
+    ::flagspawn._ForceDroppedState(flag);
+    ::flagspawn._MakeFlagPickupable(flag, player);
+    ::flagspawn._HideFlagModel(flag);
+
+    local pos = ::flagspawn._GetEntOrigin(player);
+    if (!pos) pos = Vector(0,0,0);
+    local fwd = Vector(1,0,0);
+    try { local ang = player.EyeAngles(); fwd = ang.Forward(); } catch(e) {}
+    local dropPos = pos + (fwd * 24) + Vector(0,0,24);
+
+    try { flag.SetAbsOrigin(dropPos); } catch(e2) {}
+    try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(dropPos), 0.0, null, null); } catch(e3) {}
+    try { flag.SetAbsVelocity(Vector(fwd.x * 150, fwd.y * 150, 50)); } catch(e4) {}
+
+    ::flagspawn._EnsureFlagVisual(flag);
+    ::flagspawn._ReconcileWorldtexts();
+
+    if (::flagspawn.DEBUG) ::flagspawn.Log("DROP: player=" + ::flagspawn._SafeName(player) + " flag=" + ::flagspawn._SafeName(flag));
+};
+
+::flagspawn.OnDropTouch <- function(activator) {
+    ::flagspawn.DropCarriedFlag(activator);
+};
+
+::flagspawn.DebugDropByEidx <- function(playerEidx) {
+    local player = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    if (!player) return;
+    ::flagspawn.DropCarriedFlag(player);
+};
+
+// ------------------------------------------------------------
 // Hammer entrypoint: spawner touch
 // ------------------------------------------------------------
 ::flagspawn.OnSpawnerTouch <- function(activator, teamParam) {
