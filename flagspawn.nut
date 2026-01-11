@@ -580,11 +580,20 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         " carriedPoints=" + points +
         " radius=" + ::flagspawn.CARRY_DROP_MERGE_RADIUS);
     local count = 0;
-    local f = null;
-    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
-        if (::flagspawn._IsMergeableDrop(f)) count++;
+    local porg = ::flagspawn._GetEntOrigin(player);
+    if (porg) {
+        local f = null;
+        while ((f = Entities.FindByClassnameWithin(f, "item_teamflag", porg, ::flagspawn.CARRY_DROP_MERGE_RADIUS)) != null) {
+            if (f == carried) continue;
+            if (::flagspawn._IsFlagHiddenInPool(f)) continue;
+            local owner = ::flagspawn._FlagOwner(f);
+            if (owner && owner != player) continue;
+            local parent = null; try { parent = f.GetMoveParent(); } catch(e0) { parent = null; }
+            if (parent && parent != player) continue;
+            count++;
+        }
     }
-    ::flagspawn.Log("MERGE PROBE: mergeableDrops=" + count);
+    ::flagspawn.Log("MERGE PROBE: nearbyMergeCandidates=" + count);
 };
 
 ::flagspawn._MergeNearbyDroppedFlags <- function() {
@@ -653,61 +662,43 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._MergeDropsIntoCarriers <- function() {
     if (!::flagspawn.ENABLE_CARRY_DROP_MERGE) return;
 
-    local dropped = [];
-    local f = null;
-    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
-        if (::flagspawn._IsMergeableDrop(f)) dropped.append(f);
-    }
-    if (dropped.len() <= 0) return;
-
-    local merged = {};
     local p = null;
     local radius = ::flagspawn.CARRY_DROP_MERGE_RADIUS;
     while ((p = Entities.FindByClassname(p, "player")) != null) {
         local carried = ::flagspawn._ResolveCarriedFlag(p);
-        local hasCarried = (carried != null);
+        if (!carried) continue;
 
         local porg = ::flagspawn._GetEntOrigin(p);
         if (!porg) continue;
 
-        local total = hasCarried ? ::flagspawn._GetFlagPointsValue(carried) : ::flagspawn._GetPlayerCarriedPoints(p);
+        local total = ::flagspawn._GetFlagPointsValue(carried);
         if (total <= 0) continue;
         local changed = false;
+        local mergedCount = 0;
 
-        for (local i = 0; i < dropped.len(); i++) {
-            local d = dropped[i];
-            if (!d || d == carried) continue;
-            local didx = 0; try { didx = d.entindex(); } catch(e0) { didx = 0; }
-            if (didx in merged) continue;
-
-            local dorg = null;
-            try { dorg = d.GetAbsOrigin(); } catch(e1) { dorg = null; }
-            if (!dorg) continue;
-
-            local dx = porg.x - dorg.x;
-            local dy = porg.y - dorg.y;
-            local dz = porg.z - dorg.z;
-            local dist = sqrt((dx*dx) + (dy*dy) + (dz*dz));
-            if (dist > radius) continue;
+        local d = null;
+        while ((d = Entities.FindByClassnameWithin(d, "item_teamflag", porg, radius)) != null) {
+            if (d == carried) continue;
+            if (::flagspawn._IsFlagHiddenInPool(d)) continue;
+            local owner = ::flagspawn._FlagOwner(d);
+            if (owner && owner != p) continue;
+            local parent = null; try { parent = d.GetMoveParent(); } catch(e0) { parent = null; }
+            if (parent && parent != p) continue;
 
             total += ::flagspawn._GetFlagPointsValue(d);
             ::flagspawn._ForceDroppedState(d);
             ::flagspawn._MakeFlagNeutral(d);
             ::flagspawn._HideFlag(d);
             ::flagspawn._KillWorldtextForFlag(d);
-            merged[didx] <- true;
             changed = true;
+            mergedCount++;
         }
 
         if (changed) {
-            if (hasCarried) {
-                ::flagspawn._SetFlagPointsValue(carried, total);
-                ::flagspawn._EnsureFlagVisual(carried);
-            } else {
-                ::flagspawn._SetPlayerCarriedPoints(p, total);
-            }
+            ::flagspawn._SetFlagPointsValue(carried, total);
+            ::flagspawn._EnsureFlagVisual(carried);
             ::flagspawn._ReconcileWorldtexts();
-            if (::flagspawn.DEBUG) ::flagspawn.Log("MERGE DROP->CARRY: player=" + ::flagspawn._SafeName(p) + " total=" + total);
+            if (::flagspawn.DEBUG) ::flagspawn.Log("MERGE DROP->CARRY: player=" + ::flagspawn._SafeName(p) + " merged=" + mergedCount + " total=" + total);
         }
     }
 };
