@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "8869"
-	"mapversion" "40"
+	"mapversion" "47"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -89,7 +89,7 @@ bgimages_plus
 world
 {
 	"id" "1"
-	"mapversion" "40"
+	"mapversion" "47"
 	"classname" "worldspawn"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
@@ -569,10 +569,10 @@ world
 	}
 	solid
 	{
-		"id" "3810"
+		"id" "4396"
 		side
 		{
-			"id" "2160"
+			"id" "2736"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -590,7 +590,7 @@ world
 		}
 		side
 		{
-			"id" "2159"
+			"id" "2735"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -608,7 +608,7 @@ world
 		}
 		side
 		{
-			"id" "2158"
+			"id" "2734"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -626,7 +626,7 @@ world
 		}
 		side
 		{
-			"id" "2157"
+			"id" "2733"
 			"plane" "(-3072 3072 1024) (-3072 -800 1024) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -644,7 +644,7 @@ world
 		}
 		side
 		{
-			"id" "2156"
+			"id" "2732"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (896 -800 1024)"
 			vertices_plus
 			{
@@ -662,7 +662,7 @@ world
 		}
 		side
 		{
-			"id" "2155"
+			"id" "2731"
 			"plane" "(-3072 -800 1024) (-3072 -800 -8704) (896 -800 -8704)"
 			vertices_plus
 			{
@@ -680,7 +680,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -688,10 +688,10 @@ world
 	}
 	solid
 	{
-		"id" "3808"
+		"id" "4394"
 		side
 		{
-			"id" "2166"
+			"id" "2742"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -709,7 +709,7 @@ world
 		}
 		side
 		{
-			"id" "2165"
+			"id" "2741"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -727,7 +727,7 @@ world
 		}
 		side
 		{
-			"id" "2164"
+			"id" "2740"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -745,7 +745,7 @@ world
 		}
 		side
 		{
-			"id" "2163"
+			"id" "2739"
 			"plane" "(-3072 3072 1024) (-3072 -800 1024) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -763,7 +763,7 @@ world
 		}
 		side
 		{
-			"id" "2162"
+			"id" "2738"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (896 -800 1024)"
 			vertices_plus
 			{
@@ -781,7 +781,7 @@ world
 		}
 		side
 		{
-			"id" "2161"
+			"id" "2737"
 			"plane" "(-3072 3072 -8704) (-3072 3072 1024) (896 3072 1024)"
 			vertices_plus
 			{
@@ -799,7 +799,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -807,10 +807,10 @@ world
 	}
 	solid
 	{
-		"id" "3806"
+		"id" "4392"
 		side
 		{
-			"id" "2172"
+			"id" "2748"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -828,7 +828,7 @@ world
 		}
 		side
 		{
-			"id" "2171"
+			"id" "2747"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -846,7 +846,7 @@ world
 		}
 		side
 		{
-			"id" "2170"
+			"id" "2746"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -864,7 +864,7 @@ world
 		}
 		side
 		{
-			"id" "2169"
+			"id" "2745"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -882,7 +882,7 @@ world
 		}
 		side
 		{
-			"id" "2168"
+			"id" "2744"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -900,7 +900,7 @@ world
 		}
 		side
 		{
-			"id" "2167"
+			"id" "2743"
 			"plane" "(896 -800 1024) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -918,7 +918,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -926,10 +926,10 @@ world
 	}
 	solid
 	{
-		"id" "3804"
+		"id" "4390"
 		side
 		{
-			"id" "2178"
+			"id" "2754"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -947,7 +947,7 @@ world
 		}
 		side
 		{
-			"id" "2177"
+			"id" "2753"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -965,7 +965,7 @@ world
 		}
 		side
 		{
-			"id" "2176"
+			"id" "2752"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -983,7 +983,7 @@ world
 		}
 		side
 		{
-			"id" "2175"
+			"id" "2751"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -1001,7 +1001,7 @@ world
 		}
 		side
 		{
-			"id" "2174"
+			"id" "2750"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -1019,7 +1019,7 @@ world
 		}
 		side
 		{
-			"id" "2173"
+			"id" "2749"
 			"plane" "(-3072 -800 -8704) (-3072 -800 1024) (-3072 3072 1024)"
 			vertices_plus
 			{
@@ -1037,7 +1037,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1045,10 +1045,10 @@ world
 	}
 	solid
 	{
-		"id" "3802"
+		"id" "4388"
 		side
 		{
-			"id" "2184"
+			"id" "2760"
 			"plane" "(-16376 -16376 -16376) (16376 -16376 -16376) (16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1066,7 +1066,7 @@ world
 		}
 		side
 		{
-			"id" "2183"
+			"id" "2759"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1084,7 +1084,7 @@ world
 		}
 		side
 		{
-			"id" "2182"
+			"id" "2758"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1102,7 +1102,7 @@ world
 		}
 		side
 		{
-			"id" "2181"
+			"id" "2757"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1120,7 +1120,7 @@ world
 		}
 		side
 		{
-			"id" "2180"
+			"id" "2756"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1138,7 +1138,7 @@ world
 		}
 		side
 		{
-			"id" "2179"
+			"id" "2755"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -1156,7 +1156,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1164,10 +1164,10 @@ world
 	}
 	solid
 	{
-		"id" "3800"
+		"id" "4386"
 		side
 		{
-			"id" "2190"
+			"id" "2766"
 			"plane" "(-16376 16376 16376) (16376 16376 16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1185,7 +1185,7 @@ world
 		}
 		side
 		{
-			"id" "2189"
+			"id" "2765"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1203,7 +1203,7 @@ world
 		}
 		side
 		{
-			"id" "2188"
+			"id" "2764"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1221,7 +1221,7 @@ world
 		}
 		side
 		{
-			"id" "2187"
+			"id" "2763"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1239,7 +1239,7 @@ world
 		}
 		side
 		{
-			"id" "2186"
+			"id" "2762"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1257,7 +1257,7 @@ world
 		}
 		side
 		{
-			"id" "2185"
+			"id" "2761"
 			"plane" "(896 -800 1024) (896 3072 1024) (-3072 3072 1024)"
 			vertices_plus
 			{
@@ -1275,7 +1275,7 @@ world
 		}
 		editor
 		{
-			"color" "0 142 199"
+			"color" "0 142 131"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1440,6 +1440,8 @@ entity
 	{
 		"OnMapSpawn" "scripterRunScriptCodeflagspawn.Init()0-1"
 		"OnMapSpawn" "round_timerSetMaxTime3000-1"
+		"OnMapSpawn" "fs_pd_logicEnableMaxScoreUpdating0-1"
+		"OnMapSpawn" "fs_pd_logicDisableMaxScoreUpdating10-1"
 	}
 	"origin" "-928 520 88"
 	editor
@@ -2095,10 +2097,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_01"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2121,10 +2123,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_02"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2147,10 +2149,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_03"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2173,10 +2175,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_04"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2199,10 +2201,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_05"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2225,10 +2227,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_06"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2251,10 +2253,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_07"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2277,10 +2279,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_08"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2303,10 +2305,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_09"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2329,10 +2331,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_10"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2355,10 +2357,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_11"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2381,10 +2383,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_12"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2407,10 +2409,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_13"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2433,10 +2435,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_14"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2459,10 +2461,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_15"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2485,10 +2487,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_16"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2511,10 +2513,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_17"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2537,10 +2539,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_18"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2563,10 +2565,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_19"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2589,10 +2591,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_20"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2615,10 +2617,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_21"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2641,10 +2643,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_22"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2667,10 +2669,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_23"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2693,10 +2695,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_24"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2719,10 +2721,10 @@ entity
 	"GameType" "4"
 	"NeutralType" "1"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_red_25"
-	"TeamNum" "2"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-864 480 -8000"
 	editor
@@ -2746,10 +2748,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_01"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2773,10 +2775,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_02"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2800,10 +2802,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_03"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2827,10 +2829,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_04"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2854,10 +2856,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_05"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2881,10 +2883,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_07"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2908,10 +2910,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_08"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2935,10 +2937,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_09"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2962,10 +2964,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_10"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -2989,10 +2991,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_12"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3016,10 +3018,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_13"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3043,10 +3045,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_15"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3070,10 +3072,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_16"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3097,10 +3099,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_17"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3124,10 +3126,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_18"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3151,10 +3153,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_19"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3178,10 +3180,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_20"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3205,10 +3207,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_21"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3232,10 +3234,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_22"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3259,10 +3261,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_23"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3286,10 +3288,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_24"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3313,10 +3315,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_25"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3429,10 +3431,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_14"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3456,10 +3458,10 @@ entity
 	"NeutralType" "1"
 	"PointValue" "0"
 	"ReturnBetweenWaves" "1"
-	"ReturnTime" "999999"
+	"ReturnTime" "60"
 	"StartDisabled" "1"
 	"targetname" "fs_pool_blu_11"
-	"TeamNum" "3"
+	"TeamNum" "0"
 	"trail_effect" "1"
 	"origin" "-992 352 -8000"
 	editor
@@ -3608,6 +3610,33 @@ entity
 		"visgroupshown" "1"
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 4000]"
+	}
+}
+entity
+{
+	"id" "4378"
+	"classname" "item_teamflag"
+	"angles" "0 0 0"
+	"flag_icon" "../hud/objectives_flagpanel_carried"
+	"flag_model" "models/flag/briefcase.mdl"
+	"flag_paper" "player_intel_papertrail"
+	"flag_trail" "flagtrail"
+	"GameType" "4"
+	"NeutralType" "1"
+	"PointValue" "0"
+	"ReturnBetweenWaves" "1"
+	"ReturnTime" "60"
+	"StartDisabled" "1"
+	"targetname" "fs_pool_blu_06"
+	"TeamNum" "0"
+	"trail_effect" "1"
+	"origin" "-992 352 -8000"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 0]"
 	}
 }
 cameras
