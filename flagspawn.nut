@@ -46,14 +46,14 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.POOL_NAME_BLU_PREFIX <- "fs_pool_blu_";
 ::flagspawn.POOL_HIDE_ORIGIN <- Vector(0, 0, -8000);
 
-// Never auto-return (best-effort; PD may still despawn drops depending on PD logic)
-::flagspawn.RETURN_TIME_SECONDS <- -1;
+// Return delay for dropped flags (seconds)
+::flagspawn.RETURN_TIME_SECONDS <- 60.0;
 
 // One-per-life gate
 ::flagspawn.SPAWNER_TOUCH_COOLDOWN <- 0.35;
 ::flagspawn.ENABLE_ONE_PER_LIFE <- false; // disable for merge testing
 ::flagspawn.ENABLE_PENDING_GUARD <- false;
-::flagspawn.ENABLE_DROPITEM_HOOK <- false; // leave native dropitem alone; in PD, dropitem can delete flags
+::flagspawn.ENABLE_DROPITEM_HOOK <- true; // hook dropitem to enforce a real PD drop when needed
 ::flagspawn.ENABLE_FORCE_DROPPED_STATE <- false; // debug only (can break "real PD" behavior)
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- false; // debug only (can break "real PD" behavior)
 
@@ -224,11 +224,12 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     return f;
 };
 
-::flagspawn._TrySetReturnNever <- function(flag) {
+::flagspawn._ApplyReturnTime <- function(flag) {
     if (!flag) return;
-    try { flag.__KeyValueFromInt("ReturnTime", ::flagspawn.RETURN_TIME_SECONDS); } catch(e) {}
-    try { flag.__KeyValueFromInt("returntime", ::flagspawn.RETURN_TIME_SECONDS); } catch(e2) {}
-    try { EntFireByHandle(flag, "SetReturnTime", "-1", 0, null, null); } catch(e3) {}
+    local rt = ::flagspawn.RETURN_TIME_SECONDS;
+    try { flag.__KeyValueFromInt("ReturnTime", rt); } catch(e) {}
+    try { flag.__KeyValueFromInt("returntime", rt); } catch(e2) {}
+    try { EntFireByHandle(flag, "SetReturnTime", "" + rt, 0, null, null); } catch(e3) {}
 };
 
 ::flagspawn._HideFlag <- function(flag) {
@@ -326,10 +327,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         local rf = ::flagspawn._FindByName(rn);
         local bf = ::flagspawn._FindByName(bn);
 
-        if (rf) { ::flagspawn._TrySetReturnNever(rf); ::flagspawn._HideFlag(rf); ::flagspawn._Pool.red.append(rf); }
+        if (rf) { ::flagspawn._ApplyReturnTime(rf); ::flagspawn._HideFlag(rf); ::flagspawn._Pool.red.append(rf); }
         else if (::flagspawn.DEBUG) ::flagspawn.Log("POOL WARN: missing " + rn);
 
-        if (bf) { ::flagspawn._TrySetReturnNever(bf); ::flagspawn._HideFlag(bf); ::flagspawn._Pool.blu.append(bf); }
+        if (bf) { ::flagspawn._ApplyReturnTime(bf); ::flagspawn._HideFlag(bf); ::flagspawn._Pool.blu.append(bf); }
         else if (::flagspawn.DEBUG) ::flagspawn.Log("POOL WARN: missing " + bn);
     }
 
@@ -490,8 +491,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         ::flagspawn.Log("NUDGE BASE: pos=" + ::flagspawn._VecStr(pos) + " fwd=" + ::flagspawn._VecStr(fwd));
     }
 
-    // Put it near the player (touch pickup)
-    local spawnPos = pos + (fwd * 24) + Vector(0,0,24);
+    // Put it at the player's feet to force a real touch pickup
+    local spawnPos = pos + Vector(0,0,2);
     try { flag.SetAbsOrigin(spawnPos); } catch(e3) {}
     try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(spawnPos), 0.0, null, null); } catch(e4) {}
     try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e5) {}
@@ -569,20 +570,22 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         return;
     }
 
+    local v = ::flagspawn._GetFlagPointsValue(flag);
+
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
-    if (::flagspawn.ENABLE_FORCE_DROPPED_STATE) ::flagspawn._ForceDroppedState(flag);
-    if (::flagspawn.ENABLE_FORCE_PICKUPABLE) ::flagspawn._MakeFlagPickupable(flag, player);
+    ::flagspawn._ForceDroppedState(flag);
+    ::flagspawn._MakeFlagPickupable(flag, player);
 
     local pos = ::flagspawn._GetEntOrigin(player);
     if (!pos) pos = Vector(0,0,0);
-    local fwd = Vector(1,0,0);
-    try { local ang = player.EyeAngles(); fwd = ang.Forward(); } catch(e) {}
-    local dropPos = pos + (fwd * 24) + Vector(0,0,24);
+    local dropPos = pos + Vector(0,0,2);
 
     try { flag.SetAbsOrigin(dropPos); } catch(e2) {}
     try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(dropPos), 0.0, null, null); } catch(e3) {}
-    try { flag.SetAbsVelocity(Vector(fwd.x * 150, fwd.y * 150, 50)); } catch(e4) {}
+    try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e4) {}
+
+    ::flagspawn._SetFlagPointsValue(flag, v);
 
     ::flagspawn._ReconcileWorldtexts();
 
@@ -648,7 +651,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     local val = ::flagspawn.GetClassBonus(player);
     ::flagspawn._SetFlagPointsValue(flag, val);
-    ::flagspawn._TrySetReturnNever(flag);
+    ::flagspawn._ApplyReturnTime(flag);
 
     ps.pending_flag_eidx = flag.entindex();
 
@@ -683,11 +686,28 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 ::flagspawn.OnGameEvent_player_dropitem <- function(params) {
     if (!::flagspawn.ENABLE_DROPITEM_HOOK) return;
-    // If dropitem fires, try to force-drop our carried flag too (note: dropitem can delete PD flags).
     local player = null;
     if ("userid" in params) { try { player = GetPlayerFromUserID(params.userid); } catch(e) { player = null; } }
     if (!player) return;
-    ::flagspawn.DropCarriedFlag(player);
+    local code = "if (::flagspawn != null) ::flagspawn._AfterDropItem(" + player.entindex() + ");";
+    ::flagspawn._FireScriptCode(0.05, code);
+};
+
+::flagspawn._AfterDropItem <- function(playerEidx) {
+    local player = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    if (!player) return;
+
+    // If the engine didn't drop it, force a real PD drop at the player's feet.
+    local carried = ::flagspawn._ResolveCarriedFlag(player);
+    if (carried) {
+        ::flagspawn.DropCarriedFlag(player);
+        return;
+    }
+
+    // Engine drop succeeded; just refresh visuals/text.
+    ::flagspawn._ReconcileWorldtexts();
+    ::flagspawn._ReconcileFlagVisuals();
 };
 
 // ------------------------------------------------------------
@@ -695,6 +715,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 // ------------------------------------------------------------
 ::flagspawn._Think <- function() {
     ::flagspawn._ReconcileWorldtexts();
+    ::flagspawn._ReconcileFlagVisuals();
     return 0.25;
 };
 
