@@ -211,6 +211,22 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         });
     } catch(e3) { vis2 = null; }
 
+    // Fallback if SpawnEntityFromTable fails
+    if (!vis2) {
+        try {
+            vis2 = Entities.CreateByClassname("prop_dynamic");
+            if (vis2) {
+                try { vis2.__KeyValueFromString("targetname", nm); } catch(e) {}
+                try { vis2.__KeyValueFromString("model", ::flagspawn.FLAG_VISUAL_MODEL); } catch(e2) {}
+                try { vis2.__KeyValueFromInt("solid", 0); } catch(e3) {}
+                try { vis2.__KeyValueFromInt("disableshadows", 1); } catch(e4) {}
+                try { vis2.SetAbsOrigin(flag.GetAbsOrigin()); } catch(e5) {}
+                try { vis2.SetAbsAngles(flag.GetAbsAngles()); } catch(e6) {}
+                try { DispatchSpawn(vis2); } catch(e7) {}
+            }
+        } catch(e8) { vis2 = null; }
+    }
+
     if (!vis2) {
         ::flagspawn.Log("VIS FAIL: could not SpawnEntityFromTable prop_dynamic for " + ::flagspawn._SafeName(flag));
         return;
@@ -664,11 +680,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     ps.pending_flag_eidx = flag.entindex();
 
     ::flagspawn._NudgeForPickup(flag, player);
+    ::flagspawn._StartVerifyPickup(player, flag, 0);
 
     ::flagspawn.Log("DISPENSE: team=" + spawnTeam + " flag=" + ::flagspawn._SafeName(flag) + " PointsValue=" + val);
 
-    ps.used_this_life = true;
-    ps.pending_flag_eidx = -1;
     ::flagspawn._ReconcileWorldtexts();
 };
 
@@ -712,6 +727,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 ::flagspawn.Init <- function() {
     ::flagspawn.Log("LOADED PD v5 @ t=" + Time());
+    try { PrecacheModel(::flagspawn.FLAG_VISUAL_MODEL); } catch(e) {}
     ::flagspawn._InitPool();
     ::flagspawn.RegisterEvents();
     if (::flagspawn.ENABLE_SPAWNER_GLOW) ::flagspawn._InitSpawnerGlows();
