@@ -126,7 +126,17 @@ $contents "solid"
 // Force a valid bounding box just in case (optional, but good safety)
 $bbox -16 -16 -16 16 16 16
 
+$collisionmodel "smd/collision_box.smd"
+{
+    $mass 10
+    $inertia 1
+    $damping 0
+    $rotdamping 0
+    $rootbone "root"
+}
+
+
 $sequence "idle" {
-"smd/fs_meter_bounds.smd" // Use bounds as ref for idle
+"out_slab/fs_meter_bounds.smd" // Use bounds as ref for idle
 fps 30
 }
