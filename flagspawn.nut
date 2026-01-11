@@ -72,6 +72,11 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 // ------------------------------------------------------------
 ::flagspawn.Log <- function(s) { printl("[flagspawn] " + s); };
 
+::flagspawn._VecStr <- function(v) {
+    if (!v) return "0 0 0";
+    return "" + v.x + " " + v.y + " " + v.z;
+};
+
 ::flagspawn._SafeName <- function(ent) {
     if (!ent) return "null";
     local nm = "";
@@ -581,8 +586,24 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     // Put it near the player (touch pickup)
     local spawnPos = pos + (fwd * 24) + Vector(0,0,24);
     try { flag.SetAbsOrigin(spawnPos); } catch(e3) {}
+    try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(spawnPos), 0.0, null, null); } catch(e4) {}
+    try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e5) {}
 
-    try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e4) {}
+    if (::flagspawn.DEBUG) {
+        local fp = null;
+        try { fp = flag.GetAbsOrigin(); } catch(e6) { fp = null; }
+        local pp = null;
+        try { pp = player.GetAbsOrigin(); } catch(e7) { pp = null; }
+        if (fp && pp) {
+            local dx = fp.x - pp.x;
+            local dy = fp.y - pp.y;
+            local dz = fp.z - pp.z;
+            local dist = sqrt((dx*dx) + (dy*dy) + (dz*dz));
+            ::flagspawn.Log("NUDGE: flag@" + ::flagspawn._VecStr(fp) + " player@" + ::flagspawn._VecStr(pp) + " dist=" + dist);
+        }
+    }
+
+    try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e8) {}
 };
 
 ::flagspawn._StartVerifyPickup <- function(player, flag, attempt) {
