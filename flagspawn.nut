@@ -56,15 +56,25 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_DROPITEM_HOOK <- true; // hook dropitem to enforce a real PD drop when needed
 ::flagspawn.ENABLE_FORCE_DROPPED_STATE <- true; // ensure dispensed flags are in dropped PD state
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
-::flagspawn.ENABLE_MANUAL_STACK <- true; // stack PointsValue when touching spawner while carrying
-::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- false; // avoid spawning extra neutral pickups while carrying
+::flagspawn.ENABLE_MANUAL_STACK <- false; // stack PointsValue when touching spawner while carrying
+::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- true; // spawn extra neutral pickups while carrying
 ::flagspawn.ENABLE_CARRY_MERGE_RECONCILE <- true; // merge if multiple carried flags are attached
 ::flagspawn.ENABLE_DROPPED_MERGE <- true; // merge dropped flags when overlapping
 ::flagspawn.DROPPED_MERGE_RADIUS <- 28.0; // units; tune to your slab size
 ::flagspawn.ENABLE_CARRY_DROP_MERGE <- true; // merge dropped flags into carried on proximity
 ::flagspawn.CARRY_DROP_MERGE_RADIUS <- 36.0; // units; tune for pickup feel
+::flagspawn.ENABLE_FORCE_ATTACH_ON_PICKUP_FAIL <- true; // fallback if TouchTest fails
 ::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
 ::flagspawn.CARRY_POINTS_PROP_NAME <- "m_nNumCarriedPoints"; // override if needed for your TF2 build
+
+::flagspawn.THINK_INTERVAL <- 0.25;
+::flagspawn.RECONCILE_INTERVAL <- 0.50;
+::flagspawn.MERGE_SCAN_INTERVAL <- 0.35;
+
+if (!("_think_added" in ::flagspawn)) ::flagspawn._think_added <- false;
+if (!("_events_registered" in ::flagspawn)) ::flagspawn._events_registered <- false;
+if (!("_next_reconcile" in ::flagspawn)) ::flagspawn._next_reconcile <- 0.0;
+if (!("_next_merge_scan" in ::flagspawn)) ::flagspawn._next_merge_scan <- 0.0;
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -85,6 +95,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.FLAG_GLOW_RED <- "255 64 64";
 ::flagspawn.FLAG_GLOW_BLU <- "64 128 255";
 ::flagspawn.FLAG_GLOW_NEUTRAL <- "255 255 255";
+::flagspawn.ENABLE_FLAG_GLOW <- true;
+::flagspawn.FLAG_GLOW_MODE <- 0;
 
 // Flag model bodygroup display (use item_teamflag model directly)
 ::flagspawn.USE_FLAG_MODEL_BODYGROUP <- true;
@@ -258,11 +270,46 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if (!flag) return null;
     local owner = null;
     try { owner = NetProps.GetPropEntity(flag, "m_hOwnerEntity"); } catch(e) { owner = null; }
+    if (owner) return owner;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if ("fs_owner_eidx" in ss) {
+            local eidx = ss.fs_owner_eidx;
+            if (typeof eidx == "integer" && eidx > 0) {
+                owner = EntIndexToHScript(eidx);
+            }
+        }
+    } catch(e2) { owner = null; }
     return owner;
+};
+
+::flagspawn._SetFlagScriptOwner <- function(flag, player) {
+    if (!flag) return;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        ss.fs_owner_eidx <- (player ? player.entindex() : -1);
+    } catch(e) {}
+    ::flagspawn._UnmarkDroppedFlag(flag);
+};
+
+::flagspawn._ClearFlagScriptOwner <- function(flag) {
+    if (!flag) return;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        ss.fs_owner_eidx <- -1;
+    } catch(e) {}
 };
 
 ::flagspawn._IsFlagCarriedBy <- function(flag, player) {
     if (!flag || !player) return false;
+    if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
+    try {
+        local eidx = flag.entindex();
+        if (eidx in ::flagspawn._dropped_flags) return false;
+    } catch(e0) {}
     local owner = ::flagspawn._FlagOwner(flag);
     if (owner == player) return true;
     local parent = null;
@@ -272,6 +319,13 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._ResolveCarriedFlag <- function(player) {
     if (!player) return null;
+    local ps = ::flagspawn._PS(player);
+    if ("carried_flag_eidx" in ps && ps.carried_flag_eidx > 0) {
+        local f = null;
+        try { f = EntIndexToHScript(ps.carried_flag_eidx); } catch(e0) { f = null; }
+        if (f && f.IsValid() && ::flagspawn._IsFlagCarriedBy(f, player)) return f;
+        ps.carried_flag_eidx = -1;
+    }
     local f = null;
     while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
         if (::flagspawn._IsFlagCarriedBy(f, player)) return f;
@@ -293,7 +347,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
             last_spawner_touch = -9999.0,
             pending_flag_eidx = -1,
             pending_carry = -1,
-            has_carry = false
+            has_carry = false,
+            carried_flag_eidx = -1
         };
     }
     return ::flagspawn._ps[k];
@@ -320,6 +375,9 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._HideFlag <- function(flag) {
     if (!flag) return;
+    ::flagspawn._ClearFlagScriptOwner(flag);
+    ::flagspawn._UnmarkDroppedFlag(flag);
+    ::flagspawn._KillFlagGlow(flag);
     try { flag.SetAbsOrigin(::flagspawn.POOL_HIDE_ORIGIN); } catch(e) {}
     try { EntFireByHandle(flag, "ForceReset", "", 0, null, null); } catch(e2) {}
 };
@@ -381,6 +439,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._ForceDroppedState <- function(flag) {
     if (!flag) return;
+    ::flagspawn._ClearFlagScriptOwner(flag);
     try { NetProps.SetPropEntity(flag, "m_hOwnerEntity", null); } catch(e0) {}
     try { NetProps.SetPropEntity(flag, "m_hPrevOwner", null); } catch(e1) {}
     try { NetProps.SetPropInt(flag, "m_nFlagStatus", 2); } catch(e2) {} // 2 = dropped (best effort)
@@ -400,6 +459,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._MakeFlagNeutral <- function(flag) {
     if (!flag) return;
+    ::flagspawn._ClearFlagScriptOwner(flag);
     try { flag.SetTeam(0); } catch(e0) {}
     try { NetProps.SetPropInt(flag, "m_iTeamNum", 0); } catch(e1) {}
     try { NetProps.SetPropInt(flag, "m_iOriginalTeamNum", 0); } catch(e2) {}
@@ -685,20 +745,17 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
             local parent = null; try { parent = d.GetMoveParent(); } catch(e0) { parent = null; }
             if (parent && parent != p) continue;
 
-            total += ::flagspawn._GetFlagPointsValue(d);
-            ::flagspawn._ForceDroppedState(d);
-            ::flagspawn._MakeFlagNeutral(d);
-            ::flagspawn._HideFlag(d);
-            ::flagspawn._KillWorldtextForFlag(d);
-            changed = true;
-            mergedCount++;
+            if (::flagspawn._MergeDropIntoCarrier(p, carried, d)) {
+                changed = true;
+                mergedCount++;
+            }
         }
 
         if (changed) {
-            ::flagspawn._SetFlagPointsValue(carried, total);
-            ::flagspawn._EnsureFlagVisual(carried);
-            ::flagspawn._ReconcileWorldtexts();
-            if (::flagspawn.DEBUG) ::flagspawn.Log("MERGE DROP->CARRY: player=" + ::flagspawn._SafeName(p) + " merged=" + mergedCount + " total=" + total);
+            if (::flagspawn.DEBUG) {
+                local totalNow = ::flagspawn._GetFlagPointsValue(carried);
+                ::flagspawn.Log("MERGE DROP->CARRY: player=" + ::flagspawn._SafeName(p) + " merged=" + mergedCount + " total=" + totalNow);
+            }
         }
     }
 };
@@ -758,6 +815,21 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 // Dropped worldtext (value) -- does NOT glow through walls; flag glow is separate. citeturn0search3
 // ------------------------------------------------------------
 ::flagspawn._wt_by_flag <- {};
+::flagspawn._dropped_flags <- {};
+
+::flagspawn._MarkDroppedFlag <- function(flag) {
+    if (!flag) return;
+    local eidx = -1;
+    try { eidx = flag.entindex(); } catch(e) { eidx = -1; }
+    if (eidx > 0) ::flagspawn._dropped_flags[eidx] <- true;
+};
+
+::flagspawn._UnmarkDroppedFlag <- function(flag) {
+    if (!flag) return;
+    local eidx = -1;
+    try { eidx = flag.entindex(); } catch(e) { eidx = -1; }
+    if (eidx > 0 && eidx in ::flagspawn._dropped_flags) delete ::flagspawn._dropped_flags[eidx];
+};
 
 ::flagspawn._KillWorldtextForFlag <- function(flag) {
     if (!flag) return;
@@ -773,6 +845,11 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._IsFlagHiddenInPool <- function(flag) {
     if (!flag) return true;
+    // Carried/parented flags should never be treated as pool-hidden.
+    if (::flagspawn._FlagOwner(flag) != null) return false;
+    local parent = null;
+    try { parent = flag.GetMoveParent(); } catch(e0) { parent = null; }
+    if (parent != null) return false;
     local org = null;
     try { org = flag.GetAbsOrigin(); } catch(e) { org = null; }
     if (!org) return true;
@@ -935,12 +1012,135 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
 };
 
+::flagspawn._KillFlagGlow <- function(flag) {
+    if (!flag) return;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if ("fs_glow_flag_eidx" in ss && ss.fs_glow_flag_eidx > 0) {
+            local g = null;
+            try { g = EntIndexToHScript(ss.fs_glow_flag_eidx); } catch(e2) { g = null; }
+            if (g) { try { EntFireByHandle(g, "Kill", "", 0, null, null); } catch(e3) {} }
+            ss.fs_glow_flag_eidx <- -1;
+        }
+    } catch(e) {}
+};
+
+::flagspawn._EnsureFlagGlow <- function(flag) {
+    if (!::flagspawn.ENABLE_FLAG_GLOW || !flag) return;
+    if (::flagspawn._IsFlagHiddenInPool(flag)) { ::flagspawn._KillFlagGlow(flag); return; }
+
+    local nm = "";
+    try { nm = flag.GetName(); } catch(e0) { nm = ""; }
+    if (!nm || nm.len() == 0) {
+        nm = "fs_flag_" + flag.entindex();
+        try { flag.__KeyValueFromString("targetname", nm); } catch(e1) {}
+    }
+
+    local color = ::flagspawn._GlowColorForFlag(flag);
+
+    try { flag.ValidateScriptScope(); } catch(e2) {}
+    local ss = null;
+    try { ss = flag.GetScriptScope(); } catch(e3) { ss = null; }
+    if (!ss) return;
+
+    if ("fs_glow_flag_eidx" in ss && ss.fs_glow_flag_eidx > 0) {
+        local g2 = null;
+        try { g2 = EntIndexToHScript(ss.fs_glow_flag_eidx); } catch(e4) { g2 = null; }
+        if (g2) {
+            if (!("fs_glow_flag_color" in ss) || ss.fs_glow_flag_color != color) {
+                try { g2.__KeyValueFromString("glowcolor", color); } catch(e5) {}
+                ss.fs_glow_flag_color <- color;
+            }
+            return;
+        }
+    }
+
+    local g = Entities.CreateByClassname("tf_glow");
+    if (!g) return;
+
+    try { g.__KeyValueFromString("target", nm); } catch(e6) {}
+    try { g.__KeyValueFromInt("mode", ::flagspawn.FLAG_GLOW_MODE); } catch(e7) {}
+    try { g.__KeyValueFromString("glowcolor", color); } catch(e8) {}
+    try { DispatchSpawn(g); } catch(e9) {}
+
+    ss.fs_glow_flag_eidx <- g.entindex();
+    ss.fs_glow_flag_color <- color;
+};
+
+::flagspawn._MergeDropIntoCarrier <- function(player, carried, dropped) {
+    if (!carried || !dropped) return false;
+    local add = ::flagspawn._GetFlagPointsValue(dropped);
+    if (add <= 0) add = 1;
+    local total = ::flagspawn._GetFlagPointsValue(carried) + add;
+
+    ::flagspawn._ForceDroppedState(dropped);
+    ::flagspawn._MakeFlagNeutral(dropped);
+    ::flagspawn._HideFlag(dropped);
+    ::flagspawn._KillWorldtextForFlag(dropped);
+
+    ::flagspawn._SetFlagPointsValue(carried, total);
+    ::flagspawn._EnsureFlagVisual(carried);
+    ::flagspawn._EnsureFlagGlow(carried);
+    ::flagspawn._ReconcileWorldtexts();
+
+    if (::flagspawn.DEBUG && player) {
+        ::flagspawn.Log("MERGE: player=" + ::flagspawn._SafeName(player) +
+            " add=" + add + " total=" + total + " carried=" + ::flagspawn._SafeName(carried));
+    }
+    return true;
+};
+
+::flagspawn._ForceAttachToPlayer <- function(flag, player) {
+    if (!flag || !player) return false;
+
+    ::flagspawn._DetachFromPool(flag);
+    ::flagspawn._ForceEnableFlag(flag);
+    ::flagspawn._UnmarkDroppedFlag(flag);
+
+    local pos = ::flagspawn._GetEntOrigin(player);
+    if (!pos) pos = Vector(0,0,0);
+    local attachPos = pos + Vector(0,0,2);
+    try { flag.SetAbsOrigin(attachPos); } catch(eP0) {}
+    try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(attachPos), 0.0, null, null); } catch(eP1) {}
+    try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(eP2) {}
+    try { NetProps.SetPropVector(flag, "m_vecResetPos", attachPos); } catch(eP3) {}
+
+    try { NetProps.SetPropEntity(flag, "m_hOwnerEntity", player); } catch(e0) {}
+    try { NetProps.SetPropEntity(flag, "m_hPrevOwner", player); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_nFlagStatus", 1); } catch(e2) {} // carried/stolen
+    try { flag.SetParent(player, ""); } catch(e3) {}
+
+    ::flagspawn._SetFlagScriptOwner(flag, player);
+
+    local ps = ::flagspawn._PS(player);
+    ps.has_carry = true;
+    ps.carried_flag_eidx = flag.entindex();
+    ps.pending_flag_eidx = -1;
+    ps.pending_carry = -1;
+
+    ::flagspawn._KillWorldtextForFlag(flag);
+    ::flagspawn._EnsureFlagGlow(flag);
+    ::flagspawn._UpdateFlagBodygroup(flag, ::flagspawn._GetFlagPointsValue(flag));
+
+    if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FORCED: player=" + ::flagspawn._SafeName(player) + " flag=" + ::flagspawn._SafeName(flag));
+    return true;
+};
+
 ::flagspawn._ReconcileFlagVisuals <- function() {
     if (!::flagspawn.FLAG_VISUAL_ENABLED) return;
     local f = null;
     while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
         if (::flagspawn._IsFlagHiddenInPool(f)) continue;
         ::flagspawn._EnsureFlagVisual(f);
+    }
+};
+
+::flagspawn._ReconcileFlagGlows <- function() {
+    if (!::flagspawn.ENABLE_FLAG_GLOW) return;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        ::flagspawn._EnsureFlagGlow(f);
     }
 };
 
@@ -1055,6 +1255,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         if (::flagspawn.ENABLE_PENDING_GUARD) ps.pending_flag_eidx = -1;
         ps.pending_carry = -1;
         ps.has_carry = true;
+        ps.carried_flag_eidx = flag.entindex();
+        ::flagspawn._SetFlagScriptOwner(flag, player);
         ::flagspawn._KillWorldtextForFlag(flag);
         ::flagspawn._MergeCarriedFlags(player);
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
@@ -1069,6 +1271,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
             if (::flagspawn.ENABLE_PENDING_GUARD) ps_check.pending_flag_eidx = -1;
             local prevCarry = ps_check.pending_carry;
             ps_check.pending_carry = -1;
+            ps_check.has_carry = true;
+            ps_check.carried_flag_eidx = -1;
             ::flagspawn._KillWorldtextForFlag(flag);
             ::flagspawn._HideFlag(flag);
             ::flagspawn._ReconcileWorldtexts();
@@ -1078,6 +1282,9 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
 
     if (attempt >= ::flagspawn.PICKUP_RETRY_COUNT) {
+        if (::flagspawn.ENABLE_FORCE_ATTACH_ON_PICKUP_FAIL) {
+            if (::flagspawn._ForceAttachToPlayer(flag, player)) return;
+        }
         local ps2 = ::flagspawn._PS(player);
         if (::flagspawn.ENABLE_PENDING_GUARD) ps2.pending_flag_eidx = -1; // allow retry
         ps2.pending_carry = -1;
@@ -1122,6 +1329,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
 
     ::flagspawn._PS(player).has_carry = false;
+    ::flagspawn._PS(player).carried_flag_eidx = -1;
     local v = ::flagspawn._GetFlagPointsValue(flag);
 
     ::flagspawn._ForceEnableFlag(flag);
@@ -1138,6 +1346,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e4) {}
 
     ::flagspawn._SetFlagPointsValue(flag, v);
+    ::flagspawn._MarkDroppedFlag(flag);
 
     ::flagspawn._ReconcileWorldtexts();
 
@@ -1199,6 +1408,12 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         local add2 = ::flagspawn.GetClassBonus(player);
         local fresh = ::flagspawn._SpawnFreshPickupAtPlayer(player, add2);
         ::flagspawn.Log("FRESH PICKUP: val=" + add2 + " ent=" + ::flagspawn._SafeName(fresh));
+        local carried2 = ::flagspawn._ResolveCarriedFlag(player);
+        if (carried2 && fresh) {
+            ::flagspawn._MergeDropIntoCarrier(player, carried2, fresh);
+        } else if (::flagspawn.DEBUG) {
+            ::flagspawn.Log("FRESH PICKUP WARN: carried=" + ::flagspawn._SafeName(carried2) + " fresh=" + ::flagspawn._SafeName(fresh));
+        }
         ps.pending_flag_eidx = -1;
         ps.pending_carry = -1;
         return;
@@ -1283,13 +1498,24 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 // Think loop
 // ------------------------------------------------------------
 ::flagspawn._Think <- function() {
-    ::flagspawn._ReconcileWorldtexts();
-    ::flagspawn._ReconcileFlagVisuals();
-    if (::flagspawn.ENABLE_CARRY_MERGE_RECONCILE) ::flagspawn._MergeCarriedFlagsAll();
-    ::flagspawn._MergeDropsIntoCarriers();
-    ::flagspawn._MergeNearbyDroppedFlags();
-    ::flagspawn._ReconcileFlagBodygroups();
-    return 0.25;
+    local now = Time();
+
+    if (now >= ::flagspawn._next_reconcile) {
+        ::flagspawn._ReconcileWorldtexts();
+        ::flagspawn._ReconcileFlagVisuals();
+        ::flagspawn._ReconcileFlagGlows();
+        ::flagspawn._ReconcileFlagBodygroups();
+        ::flagspawn._next_reconcile = now + ::flagspawn.RECONCILE_INTERVAL;
+    }
+
+    if (now >= ::flagspawn._next_merge_scan) {
+        if (::flagspawn.ENABLE_CARRY_MERGE_RECONCILE) ::flagspawn._MergeCarriedFlagsAll();
+        ::flagspawn._MergeDropsIntoCarriers();
+        ::flagspawn._MergeNearbyDroppedFlags();
+        ::flagspawn._next_merge_scan = now + ::flagspawn.MERGE_SCAN_INTERVAL;
+    }
+
+    return ::flagspawn.THINK_INTERVAL;
 };
 
 // ------------------------------------------------------------
@@ -1309,12 +1535,27 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         try { PrecacheModel(::flagspawn.FLAG_VISUAL_MODEL); } catch(e1) {}
     }
     ::flagspawn._InitPool();
-    ::flagspawn.RegisterEvents();
+    if (!::flagspawn._events_registered) {
+        ::flagspawn.RegisterEvents();
+        ::flagspawn._events_registered = true;
+    }
     if (::flagspawn.ENABLE_SPAWNER_GLOW) ::flagspawn._InitSpawnerGlows();
-    try { AddThinkToEnt(::flagspawn, "_Think"); } catch(e2) { ::flagspawn.Log("WARN: AddThinkToEnt failed (" + e2 + ")"); }
+    if (!::flagspawn._think_added) {
+        local s = ::flagspawn._GetScripter();
+        if (s) {
+            try { AddThinkToEnt(s, "FlagspawnThink"); ::flagspawn._think_added = true; }
+            catch(e2) { ::flagspawn.Log("WARN: AddThinkToEnt failed (" + e2 + ")"); }
+        } else if (::flagspawn.DEBUG) {
+            ::flagspawn.Log("WARN: no logic_script named '" + ::flagspawn.SCRIPTER_NAME + "' to AddThinkToEnt");
+        }
+    }
 
     ::flagspawn.Log("READY. PointsValue is written to dispensed item_teamflag for PD HUD. Heavy=5, Sniper=3, Soldier=2, others=1.");
     ::flagspawn.Log("Note: point_worldtext itself cannot be tf_glow'd; only studiomodel props can. Flag glow is separate. citeturn0search3");
+};
+FlagspawnThink <- function() {
+    if (!("flagspawn" in getroottable())) return 0.25;
+    return ::flagspawn._Think();
 };
 ::flagspawn.Init();
 
@@ -1323,7 +1564,11 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 // ------------------------------------------------------------
 ::flagspawn.OnCaptureTouch <- function(activator, teamParam) {
     // TODO: wire into your bank/capture logic.
-    if (activator) ::flagspawn._PS(activator).has_carry = false;
+    if (activator) {
+        local ps = ::flagspawn._PS(activator);
+        ps.has_carry = false;
+        ps.carried_flag_eidx = -1;
+    }
     ::flagspawn._ReconcileWorldtexts();
 };
 
