@@ -54,8 +54,10 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_ONE_PER_LIFE <- false; // disable for merge testing
 ::flagspawn.ENABLE_PENDING_GUARD <- false;
 ::flagspawn.ENABLE_DROPITEM_HOOK <- true; // hook dropitem to enforce a real PD drop when needed
-::flagspawn.ENABLE_FORCE_DROPPED_STATE <- false; // debug only (can break "real PD" behavior)
-::flagspawn.ENABLE_FORCE_PICKUPABLE <- false; // debug only (can break "real PD" behavior)
+::flagspawn.ENABLE_FORCE_DROPPED_STATE <- true; // ensure dispensed flags are in dropped PD state
+::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
+::flagspawn.ENABLE_MANUAL_STACK <- false; // prefer engine PD merge when false
+::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- true; // spawn fresh PD pickup when already carrying
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -67,6 +69,15 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.WORLDTEXT_SCALE <- 7;
 ::flagspawn.WORLDTEXT_ORIENTATION <- 1;
 ::flagspawn.WORLDTEXT_COLOR <- "255 255 255";
+
+// Flag visual stand-in (parented prop_dynamic + tf_glow)
+::flagspawn.FLAG_VISUAL_ENABLED <- true;
+::flagspawn.FLAG_VISUAL_MODEL <- "models/props_rocks/rock005.mdl";
+::flagspawn.FLAG_VISUAL_SCALE <- 0.1;
+::flagspawn.FLAG_VISUAL_LOCAL_OFFSET <- Vector(0,0,0);
+::flagspawn.FLAG_GLOW_RED <- "255 64 64";
+::flagspawn.FLAG_GLOW_BLU <- "64 128 255";
+::flagspawn.FLAG_GLOW_NEUTRAL <- "255 255 255";
 
 // Spawner glows via tf_glow on props named fs_spawner_*
 ::flagspawn.ENABLE_SPAWNER_GLOW <- true;
@@ -117,6 +128,14 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     return 0;
 };
 
+::flagspawn._HideFlagModel <- function(flag) {
+    if (!flag) return;
+    // EF_NODRAW
+    try { flag.AddEffects(32); } catch(e) {}
+    try { flag.__KeyValueFromInt("rendermode", 10); } catch(e2) {}
+    try { flag.__KeyValueFromInt("renderamt", 0); } catch(e3) {}
+};
+
 // ------------------------------------------------------------
 // Class bonus (Heavy=5)
 // ------------------------------------------------------------
@@ -157,11 +176,24 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 ::flagspawn._GetFlagPointsValue <- function(flag) {
     if (!flag) return 0;
+    local vNet = null;
+    try { vNet = NetProps.GetPropInt(flag, "m_nPointValue"); } catch(e0) { vNet = null; }
+    if (vNet == null) {
+        try { vNet = NetProps.GetPropInt(flag, "m_iPointValue"); } catch(e1) { vNet = null; }
+    }
+    if (vNet != null) {
+        try {
+            flag.ValidateScriptScope();
+            local ssn = flag.GetScriptScope();
+            ssn.fs_value <- vNet;
+        } catch(e2) {}
+        return vNet;
+    }
     try {
         flag.ValidateScriptScope();
         local ss = flag.GetScriptScope();
         if ("fs_value" in ss) return ss.fs_value.tointeger();
-    } catch(e) {}
+    } catch(e3) {}
     // fallback to 1
     return 1;
 };
@@ -312,6 +344,74 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { EntFireByHandle(flag, "ForceDrop", "", 0.0, player, player); } catch(e5) {}
 };
 
+::flagspawn._MakeFlagNeutral <- function(flag) {
+    if (!flag) return;
+    try { flag.SetTeam(0); } catch(e0) {}
+    try { NetProps.SetPropInt(flag, "m_iTeamNum", 0); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_iOriginalTeamNum", 0); } catch(e2) {}
+    try { flag.__KeyValueFromInt("TeamNum", 0); } catch(e3) {}
+    try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
+};
+
+::flagspawn._SpawnFreshPickupAtPlayer <- function(player, value) {
+    if (!player) return null;
+    local pos = ::flagspawn._GetEntOrigin(player);
+    if (!pos) pos = Vector(0,0,0);
+    local spawnPos = pos + Vector(0,0,2);
+
+    local f = null;
+    try {
+        f = SpawnEntityFromTable("item_teamflag", {
+            TeamNum = 0,
+            GameType = 4,
+            NeutralType = 1,
+            ReturnBetweenWaves = 1,
+            ReturnTime = ::flagspawn.RETURN_TIME_SECONDS,
+            origin = spawnPos
+        });
+    } catch(e0) { f = null; }
+
+    if (!f) return null;
+
+    ::flagspawn._SetFlagPointsValue(f, value);
+    ::flagspawn._ForceDroppedState(f);
+    ::flagspawn._MakeFlagNeutral(f);
+    ::flagspawn._EnsureFlagVisual(f);
+    ::flagspawn._ReconcileWorldtexts();
+    return f;
+};
+
+::flagspawn._CollectCarriedFlags <- function(player) {
+    local out = [];
+    if (!player) return out;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsFlagCarriedBy(f, player)) out.append(f);
+    }
+    return out;
+};
+
+::flagspawn._MergeCarriedFlags <- function(player) {
+    local flags = ::flagspawn._CollectCarriedFlags(player);
+    if (flags.len() <= 1) return;
+
+    local primary = flags[0];
+    local total = 0;
+    foreach (f in flags) total += ::flagspawn._GetFlagPointsValue(f);
+
+    for (local i = 1; i < flags.len(); i++) {
+        local f2 = flags[i];
+        ::flagspawn._ForceDroppedState(f2);
+        ::flagspawn._MakeFlagNeutral(f2);
+        ::flagspawn._HideFlag(f2);
+        ::flagspawn._KillWorldtextForFlag(f2);
+    }
+
+    ::flagspawn._SetFlagPointsValue(primary, total);
+    ::flagspawn._EnsureFlagVisual(primary);
+    ::flagspawn._ReconcileWorldtexts();
+};
+
 
 ::flagspawn._InitPool <- function() {
     ::flagspawn._Pool.red.clear();
@@ -427,6 +527,123 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 };
 
 // ------------------------------------------------------------
+// Flag visual stand-in (prop_dynamic + tf_glow)
+// ------------------------------------------------------------
+::flagspawn._GlowColorForTeam <- function(t) {
+    if (t == ::flagspawn.TEAM_RED) return ::flagspawn.FLAG_GLOW_RED;
+    if (t == ::flagspawn.TEAM_BLU) return ::flagspawn.FLAG_GLOW_BLU;
+    return ::flagspawn.FLAG_GLOW_NEUTRAL;
+};
+
+::flagspawn._GlowColorForFlag <- function(flag) {
+    if (!flag) return ::flagspawn.FLAG_GLOW_NEUTRAL;
+    local owner = ::flagspawn._FlagOwner(flag);
+    local t = owner ? ::flagspawn._GetTeamNum(owner) : ::flagspawn._GetTeamNum(flag);
+    return ::flagspawn._GlowColorForTeam(t);
+};
+
+::flagspawn._EnsureFlagVisual <- function(flag) {
+    if (!::flagspawn.FLAG_VISUAL_ENABLED || !flag) return;
+
+    ::flagspawn._HideFlagModel(flag);
+
+    try { flag.ValidateScriptScope(); } catch(e0) {}
+    local ss = null;
+    try { ss = flag.GetScriptScope(); } catch(e1) { ss = null; }
+    if (!ss) return;
+
+    if ("fs_vis_eidx" in ss) {
+        local vis = null;
+        try { vis = EntIndexToHScript(ss.fs_vis_eidx); } catch(e2) { vis = null; }
+        if (vis) {
+            ::flagspawn._UpdateFlagVisual(flag, vis);
+            return;
+        }
+    }
+
+    local nm = "fs_flagvis_" + flag.entindex();
+    local vis2 = null;
+    try {
+        vis2 = SpawnEntityFromTable("prop_dynamic", {
+            targetname = nm,
+            model = ::flagspawn.FLAG_VISUAL_MODEL,
+            modelscale = ::flagspawn.FLAG_VISUAL_SCALE,
+            origin = flag.GetAbsOrigin(),
+            angles = flag.GetAbsAngles(),
+            solid = 0,
+            disableshadows = 1
+        });
+    } catch(e3) { vis2 = null; }
+
+    if (!vis2) {
+        try {
+            vis2 = Entities.CreateByClassname("prop_dynamic");
+            if (vis2) {
+                try { vis2.__KeyValueFromString("targetname", nm); } catch(e) {}
+                try { vis2.__KeyValueFromString("model", ::flagspawn.FLAG_VISUAL_MODEL); } catch(e2) {}
+                try { vis2.__KeyValueFromFloat("modelscale", ::flagspawn.FLAG_VISUAL_SCALE); } catch(e2b) {}
+                try { vis2.__KeyValueFromInt("solid", 0); } catch(e3) {}
+                try { vis2.__KeyValueFromInt("disableshadows", 1); } catch(e4) {}
+                try { vis2.SetAbsOrigin(flag.GetAbsOrigin()); } catch(e5) {}
+                try { vis2.SetAbsAngles(flag.GetAbsAngles()); } catch(e6) {}
+                try { DispatchSpawn(vis2); } catch(e7) {}
+            }
+        } catch(e8) { vis2 = null; }
+    }
+
+    if (!vis2) return;
+
+    try { vis2.SetParent(flag, ""); } catch(e4) {}
+    try { vis2.SetLocalOrigin(::flagspawn.FLAG_VISUAL_LOCAL_OFFSET); } catch(e5) {}
+
+    local g = null;
+    try {
+        g = Entities.CreateByClassname("tf_glow");
+        if (g) {
+            try { g.__KeyValueFromString("target", nm); } catch(e6a) {}
+            try { g.__KeyValueFromInt("mode", 0); } catch(e6b) {}
+            try { g.__KeyValueFromString("glowcolor", ::flagspawn._GlowColorForFlag(flag)); } catch(e6c) {}
+            try { DispatchSpawn(g); } catch(e6d) {}
+        }
+    } catch(e6) { g = null; }
+
+    if (g) {
+        try { g.SetParent(vis2, ""); } catch(e7) {}
+        ss.fs_glow_eidx <- g.entindex();
+    }
+
+    ss.fs_vis_eidx <- vis2.entindex();
+
+    ::flagspawn._UpdateFlagVisual(flag, vis2);
+};
+
+::flagspawn._UpdateFlagVisual <- function(flag, vis) {
+    if (!flag || !vis) return;
+
+    ::flagspawn._HideFlagModel(flag);
+
+    local ss = null;
+    try { flag.ValidateScriptScope(); ss = flag.GetScriptScope(); } catch(e) { ss = null; }
+    if (ss && ("fs_glow_eidx" in ss)) {
+        local g2 = null;
+        try { g2 = EntIndexToHScript(ss.fs_glow_eidx); } catch(e2) { g2 = null; }
+        if (g2) {
+            local c = ::flagspawn._GlowColorForFlag(flag);
+            try { g2.__KeyValueFromString("glowcolor", c); } catch(e3) {}
+        }
+    }
+};
+
+::flagspawn._ReconcileFlagVisuals <- function() {
+    if (!::flagspawn.FLAG_VISUAL_ENABLED) return;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsFlagHiddenInPool(f)) continue;
+        ::flagspawn._EnsureFlagVisual(f);
+    }
+};
+
+// ------------------------------------------------------------
 // Spawner glows via tf_glow (only for studiomodel props) citeturn0search3
 // ------------------------------------------------------------
 ::flagspawn._glow_by_prop <- {};
@@ -479,7 +696,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
     if (::flagspawn.ENABLE_FORCE_DROPPED_STATE) ::flagspawn._ForceDroppedState(flag);
-    if (::flagspawn.ENABLE_FORCE_PICKUPABLE) ::flagspawn._MakeFlagPickupable(flag, player);
+    if (::flagspawn.ENABLE_FORCE_PICKUPABLE) ::flagspawn._MakeFlagNeutral(flag);
 
     local pos = Vector(0,0,0);
     local fwd = Vector(1,0,0);
@@ -512,7 +729,11 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         }
     }
 
-    try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e8) {}
+    // If already carrying, let physics touch drive merge instead of forcing TouchTest.
+    local carrying = ::flagspawn._ResolveCarriedFlag(player);
+    if (!carrying || carrying == flag) {
+        try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e8) {}
+    }
 };
 
 ::flagspawn._StartVerifyPickup <- function(player, flag, attempt) {
@@ -523,6 +744,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         if (::flagspawn.ENABLE_ONE_PER_LIFE) ps.used_this_life = true;
         if (::flagspawn.ENABLE_PENDING_GUARD) ps.pending_flag_eidx = -1;
         ::flagspawn._KillWorldtextForFlag(flag);
+        ::flagspawn._MergeCarriedFlags(player);
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
         return;
     }
@@ -629,14 +851,20 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
             " -> spawnTeam=" + spawnTeam + " caller=" + ::flagspawn._SafeName(c));
     }
 
-    // If you are already carrying a PD flag, STACK its PointsValue instead of spawning new (merge).
+    // If you are already carrying a PD flag, optionally stack manually or spawn a fresh pickup.
     local carried = ::flagspawn._ResolveCarriedFlag(player);
-    if (carried) {
+    if (carried && ::flagspawn.ENABLE_MANUAL_STACK) {
         local add = ::flagspawn.GetClassBonus(player);
         local cur = ::flagspawn._GetFlagPointsValue(carried);
         local nxt = cur + add;
         ::flagspawn._SetFlagPointsValue(carried, nxt);
         ::flagspawn.Log("STACK: carried=" + ::flagspawn._SafeName(carried) + " PointsValue " + cur + " -> " + nxt);
+        return;
+    }
+    if (carried && ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY) {
+        local add2 = ::flagspawn.GetClassBonus(player);
+        local fresh = ::flagspawn._SpawnFreshPickupAtPlayer(player, add2);
+        ::flagspawn.Log("FRESH PICKUP: val=" + add2 + " ent=" + ::flagspawn._SafeName(fresh));
         return;
     }
 
