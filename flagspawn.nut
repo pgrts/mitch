@@ -80,6 +80,16 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.FLAG_GLOW_BLU <- "64 128 255";
 ::flagspawn.FLAG_GLOW_NEUTRAL <- "255 255 255";
 
+// Flag model bodygroup display (use item_teamflag model directly)
+::flagspawn.USE_FLAG_MODEL_BODYGROUP <- true;
+::flagspawn.FLAG_MODEL <- "models/props_custom/fs_meter/fs_meter_slab_grid.mdl";
+::flagspawn.FLAG_BODYGROUP_INDEX <- 0;
+::flagspawn.FLAG_BODYGROUP_MAX <- 100;
+
+if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
+    ::flagspawn.FLAG_VISUAL_ENABLED <- false;
+}
+
 // Spawner glows via tf_glow on props named fs_spawner_*
 ::flagspawn.ENABLE_SPAWNER_GLOW <- true;
 ::flagspawn.SPAWNER_NAME_PREFIX <- "fs_spawner_";
@@ -131,6 +141,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 ::flagspawn._HideFlagModel <- function(flag) {
     if (!flag) return;
+    if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) return;
     // EF_NODRAW
     try { flag.AddEffects(32); } catch(e) {}
     try { flag.__KeyValueFromInt("rendermode", 10); } catch(e2) {}
@@ -173,6 +184,28 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     // Also write common keyvalues (harmless fallback)
     try { flag.__KeyValueFromInt("PointsValue", v); } catch(e2) {}
     try { flag.__KeyValueFromInt("pointsvalue", v); } catch(e3) {}
+
+    ::flagspawn._UpdateFlagBodygroup(flag, v);
+};
+
+::flagspawn._UpdateFlagBodygroup <- function(flag, value) {
+    if (!::flagspawn.USE_FLAG_MODEL_BODYGROUP || !flag) return;
+    local v = value;
+    if (v == null) v = ::flagspawn._GetFlagPointsValue(flag);
+    try { v = v.tointeger(); } catch(e) {}
+    if (v < 0) v = 0;
+    if (v > ::flagspawn.FLAG_BODYGROUP_MAX) v = ::flagspawn.FLAG_BODYGROUP_MAX;
+
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if ("fs_bodygroup" in ss && ss.fs_bodygroup == v) return;
+        ss.fs_bodygroup <- v;
+    } catch(e2) {}
+
+    local param = "" + ::flagspawn.FLAG_BODYGROUP_INDEX + " " + v;
+    try { EntFireByHandle(flag, "SetBodyGroup", param, 0.0, null, null); } catch(e3) {}
+    try { EntFireByHandle(flag, "SetBodygroup", param, 0.0, null, null); } catch(e4) {}
 };
 
 ::flagspawn._GetFlagPointsValue <- function(flag) {
@@ -401,14 +434,18 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     local f = null;
     try {
-        f = SpawnEntityFromTable("item_teamflag", {
+        local spawnTable = {
             TeamNum = 0,
             GameType = 4,
             NeutralType = 1,
             ReturnBetweenWaves = 1,
             ReturnTime = ::flagspawn.RETURN_TIME_SECONDS,
             origin = spawnPos
-        });
+        };
+        if (::flagspawn.USE_FLAG_MODEL_BODYGROUP && ::flagspawn.FLAG_MODEL && ::flagspawn.FLAG_MODEL.len() > 0) {
+            spawnTable.model <- ::flagspawn.FLAG_MODEL;
+        }
+        f = SpawnEntityFromTable("item_teamflag", spawnTable);
     } catch(e0) { f = null; }
 
     if (!f) return null;
@@ -680,6 +717,15 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
         if (::flagspawn._IsFlagHiddenInPool(f)) continue;
         ::flagspawn._EnsureFlagVisual(f);
+    }
+};
+
+::flagspawn._ReconcileFlagBodygroups <- function() {
+    if (!::flagspawn.USE_FLAG_MODEL_BODYGROUP) return;
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsFlagHiddenInPool(f)) continue;
+        ::flagspawn._UpdateFlagBodygroup(f, ::flagspawn._GetFlagPointsValue(f));
     }
 };
 
@@ -1014,6 +1060,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn._Think <- function() {
     ::flagspawn._ReconcileWorldtexts();
     ::flagspawn._ReconcileFlagVisuals();
+    ::flagspawn._ReconcileFlagBodygroups();
     return 0.25;
 };
 
