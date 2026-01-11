@@ -18,7 +18,7 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 
 | Term | Definition |
 |------|------------|
-| **Fuel** | Team-owned resource (0–999) displayed at spawner locations |
+| **Fuel** | Team-owned resource (0–99) displayed at spawner locations |
 | **Spawner** | Enemy base trigger zone — touching it dispenses a PD pickup |
 | **Beneficiary Team** | The team that "owns" a pickup's value (gains Fuel when it returns) |
 | **Pool Team** | The flag entity's original team assignment (determines which pool it came from) |
@@ -199,7 +199,7 @@ Each carried/dropped pickup shows its value with a meter proxy instead of digits
 ### State Table
 ```squirrel
 ::flagspawn.State <- {
-    Fuel = { [2] = 0, [3] = 0 },          // Team fuel (0-999)
+    Fuel = { [2] = 0, [3] = 0 },          // Team fuel (0-99)
     Score = { [2] = 0, [3] = 0 },         // Captured points (win at 100)
     Pool = { [2] = [], [3] = [] },        // Available flag entities
     Spawner = { [2] = null, [3] = null }, // Parent props (optional)
@@ -323,7 +323,7 @@ Set `CFG.DEBUG = true` to enable console output:
 | Parameter | Value | Description |
 |-----------|-------|-------------|
 | Win Score | 100 | Points to win round |
-| Fuel Cap | 999 | Per-team maximum |
+| Fuel Cap | 99 | Per-team maximum |
 | Carry Cap | 99 | Auto-overflow to Fuel |
 | Return Delay | 60s | Normal pickups |
 | Piñata Threshold | 15 dmg | Per spill trigger |
