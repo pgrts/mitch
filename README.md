@@ -56,7 +56,7 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 - **fs_pd_logic** — tf_logic_player_destruction entity
 
 #### Custom Model
-- **models/props_custom/fs_meter/fs_meter.mdl** - meter model with bodygroup 0 values 0-100
+- **models/props_custom/fs_meter/fs_meter_slab_grid.mdl** - meter model with bodygroup 0 values 0-100
 
 ---
 
@@ -164,7 +164,7 @@ rem  = n % 5
 
 Each carried/dropped pickup shows its value with a meter proxy instead of digits:
 - The `item_teamflag` briefcase is hidden (NODRAW/transparent).
-- A `prop_dynamic` using `models/props_custom/fs_meter/fs_meter.mdl` is parented to the flag center.
+- A `prop_dynamic` using `models/props_custom/fs_meter/fs_meter_slab_grid.mdl` is parented to the flag center.
 - Bodygroup 0 represents 0-100 points and is updated on dispense/merge.
 - A `tf_glow` targets the proxy with team-colored glow (red/blue/neutral).
 - The meter model uses block segments (no digits) for clean outlines.
@@ -188,7 +188,7 @@ Each carried/dropped pickup shows its value with a meter proxy instead of digits
     CARRY_MAX    = 99,           // Max carried value
     HURT_CHUNK_DAMAGE = 15.0,    // Damage threshold for piñata
     HURT_MIN_INTERVAL = 0.20,    // Anti-spam gate
-    METER_MODEL  = "models/props_custom/fs_meter/fs_meter.mdl",
+    METER_MODEL  = "models/props_custom/fs_meter/fs_meter_slab_grid.mdl",
     METER_LOCAL_OFFSET = Vector(0, 0, 0),
     DISPENSE_COOLDOWN = 0.35,
     POOL_STASH_ORIGIN = Vector(0, 0, -8000),
