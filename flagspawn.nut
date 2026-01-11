@@ -59,7 +59,6 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_MANUAL_STACK <- false; // prefer engine PD merge when false
 ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- true; // spawn fresh PD pickup when already carrying
 ::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
-::flagspawn.PD_GAMETYPE <- 6; // PD gametype for item_teamflag (override if needed)
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -357,14 +356,6 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
 };
 
-::flagspawn._ForcePDMode <- function(flag) {
-    if (!flag) return;
-    local gt = ::flagspawn.PD_GAMETYPE;
-    try { flag.__KeyValueFromInt("GameType", gt); } catch(e0) {}
-    try { flag.__KeyValueFromInt("gametype", gt); } catch(e1) {}
-    try { NetProps.SetPropInt(flag, "m_nGameType", gt); } catch(e2) {}
-};
-
 ::flagspawn._GetPlayerCarryCount <- function(player) {
     if (!player) return -1;
     try {
@@ -412,7 +403,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try {
         f = SpawnEntityFromTable("item_teamflag", {
             TeamNum = 0,
-            GameType = ::flagspawn.PD_GAMETYPE,
+            GameType = 4,
             NeutralType = 1,
             ReturnBetweenWaves = 1,
             ReturnTime = ::flagspawn.RETURN_TIME_SECONDS,
@@ -423,9 +414,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     if (!f) return null;
 
     ::flagspawn._SetFlagPointsValue(f, value);
-    ::flagspawn._ForcePDMode(f);
     ::flagspawn._ForceDroppedState(f);
-    ::flagspawn._MakeFlagPickupable(f, player);
+    ::flagspawn._MakeFlagNeutral(f);
     ::flagspawn._EnsureFlagVisual(f);
     ::flagspawn._ReconcileWorldtexts();
     return f;
@@ -745,7 +735,6 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
-    ::flagspawn._ForcePDMode(flag);
     if (::flagspawn.ENABLE_FORCE_DROPPED_STATE) ::flagspawn._ForceDroppedState(flag);
     if (::flagspawn.ENABLE_FORCE_PICKUPABLE) ::flagspawn._MakeFlagNeutral(flag);
 
