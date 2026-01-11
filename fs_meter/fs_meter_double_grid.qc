@@ -1,0 +1,132 @@
+$modelname "props_custom/fs_meter/fs_meter_double_grid.mdl"
+
+// VMTs live here:
+$cdmaterials "models/props_custom/fs_meter/"
+
+// ------------------------------------------------------------
+// 1) ALWAYS-ON BOUNDS HELPER
+// ------------------------------------------------------------
+$body "bounds" "smd/fs_meter_bounds.smd"
+
+// ------------------------------------------------------------
+// 2) FILL BODYGROUP (0–100)
+// ------------------------------------------------------------
+$bodygroup "fill"
+{
+    studio "out_double/grid_000_double.smd"
+    studio "out_double/grid_001_double.smd"
+    studio "out_double/grid_002_double.smd"
+    studio "out_double/grid_003_double.smd"
+    studio "out_double/grid_004_double.smd"
+    studio "out_double/grid_005_double.smd"
+    studio "out_double/grid_006_double.smd"
+    studio "out_double/grid_007_double.smd"
+    studio "out_double/grid_008_double.smd"
+    studio "out_double/grid_009_double.smd"
+    studio "out_double/grid_010_double.smd"
+    studio "out_double/grid_011_double.smd"
+    studio "out_double/grid_012_double.smd"
+    studio "out_double/grid_013_double.smd"
+    studio "out_double/grid_014_double.smd"
+    studio "out_double/grid_015_double.smd"
+    studio "out_double/grid_016_double.smd"
+    studio "out_double/grid_017_double.smd"
+    studio "out_double/grid_018_double.smd"
+    studio "out_double/grid_019_double.smd"
+    studio "out_double/grid_020_double.smd"
+    studio "out_double/grid_021_double.smd"
+    studio "out_double/grid_022_double.smd"
+    studio "out_double/grid_023_double.smd"
+    studio "out_double/grid_024_double.smd"
+    studio "out_double/grid_025_double.smd"
+    studio "out_double/grid_026_double.smd"
+    studio "out_double/grid_027_double.smd"
+    studio "out_double/grid_028_double.smd"
+    studio "out_double/grid_029_double.smd"
+    studio "out_double/grid_030_double.smd"
+    studio "out_double/grid_031_double.smd"
+    studio "out_double/grid_032_double.smd"
+    studio "out_double/grid_033_double.smd"
+    studio "out_double/grid_034_double.smd"
+    studio "out_double/grid_035_double.smd"
+    studio "out_double/grid_036_double.smd"
+    studio "out_double/grid_037_double.smd"
+    studio "out_double/grid_038_double.smd"
+    studio "out_double/grid_039_double.smd"
+    studio "out_double/grid_040_double.smd"
+    studio "out_double/grid_041_double.smd"
+    studio "out_double/grid_042_double.smd"
+    studio "out_double/grid_043_double.smd"
+    studio "out_double/grid_044_double.smd"
+    studio "out_double/grid_045_double.smd"
+    studio "out_double/grid_046_double.smd"
+    studio "out_double/grid_047_double.smd"
+    studio "out_double/grid_048_double.smd"
+    studio "out_double/grid_049_double.smd"
+    studio "out_double/grid_050_double.smd"
+    studio "out_double/grid_051_double.smd"
+    studio "out_double/grid_052_double.smd"
+    studio "out_double/grid_053_double.smd"
+    studio "out_double/grid_054_double.smd"
+    studio "out_double/grid_055_double.smd"
+    studio "out_double/grid_056_double.smd"
+    studio "out_double/grid_057_double.smd"
+    studio "out_double/grid_058_double.smd"
+    studio "out_double/grid_059_double.smd"
+    studio "out_double/grid_060_double.smd"
+    studio "out_double/grid_061_double.smd"
+    studio "out_double/grid_062_double.smd"
+    studio "out_double/grid_063_double.smd"
+    studio "out_double/grid_064_double.smd"
+    studio "out_double/grid_065_double.smd"
+    studio "out_double/grid_066_double.smd"
+    studio "out_double/grid_067_double.smd"
+    studio "out_double/grid_068_double.smd"
+    studio "out_double/grid_069_double.smd"
+    studio "out_double/grid_070_double.smd"
+    studio "out_double/grid_071_double.smd"
+    studio "out_double/grid_072_double.smd"
+    studio "out_double/grid_073_double.smd"
+    studio "out_double/grid_074_double.smd"
+    studio "out_double/grid_075_double.smd"
+    studio "out_double/grid_076_double.smd"
+    studio "out_double/grid_077_double.smd"
+    studio "out_double/grid_078_double.smd"
+    studio "out_double/grid_079_double.smd"
+    studio "out_double/grid_080_double.smd"
+    studio "out_double/grid_081_double.smd"
+    studio "out_double/grid_082_double.smd"
+    studio "out_double/grid_083_double.smd"
+    studio "out_double/grid_084_double.smd"
+    studio "out_double/grid_085_double.smd"
+    studio "out_double/grid_086_double.smd"
+    studio "out_double/grid_087_double.smd"
+    studio "out_double/grid_088_double.smd"
+    studio "out_double/grid_089_double.smd"
+    studio "out_double/grid_090_double.smd"
+    studio "out_double/grid_091_double.smd"
+    studio "out_double/grid_092_double.smd"
+    studio "out_double/grid_093_double.smd"
+    studio "out_double/grid_094_double.smd"
+    studio "out_double/grid_095_double.smd"
+    studio "out_double/grid_096_double.smd"
+    studio "out_double/grid_097_double.smd"
+    studio "out_double/grid_098_double.smd"
+    studio "out_double/grid_099_double.smd"
+    studio "out_double/grid_100_double.smd"
+}
+
+// ------------------------------------------------------------
+// 3) PROPERTIES
+// ------------------------------------------------------------
+$staticprop
+$surfaceprop "metal"
+$contents "solid"
+
+// Force a valid bounding box just in case (optional, but good safety)
+$bbox -16 -16 -16 16 16 16
+
+$sequence "idle" {
+"smd/fs_meter_bounds.smd" // Use bounds as ref for idle
+fps 30
+}
