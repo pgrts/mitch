@@ -7,8 +7,8 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 ## Core Mechanics Overview
 
 - **Base System:** Player Destruction (carrying, merging, scoring via PD logic)
-- **Win Condition:** First team to capture **100 points** wins the round
-- **Fuel System:** Team-owned resource (0–999) that increases when points are captured or returned
+- **Win Condition:** First team to capture **100 points** wins the round OR 5:00 timer hits 0 and whichever team has more wins (tiebreak: TBD) <- whichever comes first
+- **Fuel System:** Team-owned resource (0–99) that increases when players touch flagspawner + flag is returned or captured
 - **Spawner Dispensing:** Touch enemy base trigger to spawn a PD pickup (item_teamflag) with class-based value
 - **Return Timer:** Dropped pickups return after **60 seconds**, depositing value into beneficiary team's Fuel
 
@@ -91,7 +91,7 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 
 ### 3. Piñata on Damage
 
-**Trigger:** Every **15 damage** taken while carrying points
+**Trigger:** Every **25 damage** taken while carrying points
 
 **Spill Calculation:**
 ```
