@@ -415,6 +415,14 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e3) {}
 };
 
+::flagspawn._ForceDroppedState <- function(flag) {
+    if (!flag) return;
+    try { NetProps.SetPropEntity(flag, "m_hOwnerEntity", null); } catch(e0) {}
+    try { NetProps.SetPropEntity(flag, "m_hPrevOwner", null); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_nFlagStatus", 2); } catch(e2) {} // 2 = dropped (best effort)
+    try { NetProps.SetPropFloat(flag, "m_flResetTime", 0.0); } catch(e3) {}
+};
+
 
 ::flagspawn._InitPool <- function() {
     ::flagspawn._Pool.red.clear();
@@ -577,6 +585,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
+    ::flagspawn._ForceDroppedState(flag);
 
     local pos = Vector(0,0,0);
     local fwd = Vector(1,0,0);
@@ -588,6 +597,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { flag.SetAbsOrigin(spawnPos); } catch(e3) {}
     try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(spawnPos), 0.0, null, null); } catch(e4) {}
     try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e5) {}
+    try { NetProps.SetPropVector(flag, "m_vecResetPos", spawnPos); } catch(e6) {}
 
     if (::flagspawn.DEBUG) {
         local fp = null;
