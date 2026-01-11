@@ -51,6 +51,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 // One-per-life gate
 ::flagspawn.SPAWNER_TOUCH_COOLDOWN <- 0.35;
+::flagspawn.ENABLE_ONE_PER_LIFE <- false; // disable for merge testing
+::flagspawn.ENABLE_PENDING_GUARD <- false;
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -85,6 +87,17 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         try { nm = ent.GetClassname() + "#" + ent.entindex(); } catch(e2) { nm = "ent"; }
     }
     return nm;
+};
+
+::flagspawn._GetEntOrigin <- function(ent) {
+    if (!ent) return null;
+    local org = null;
+    try { org = ent.GetAbsOrigin(); } catch(e) { org = null; }
+    if (org) return org;
+    try { org = NetProps.GetPropVector(ent, "m_vecOrigin"); } catch(e2) { org = null; }
+    if (org) return org;
+    try { org = NetProps.GetPropVector(ent, "m_vecAbsOrigin"); } catch(e3) { org = null; }
+    return org;
 };
 
 ::flagspawn._GetTeamNum <- function(ent) {
@@ -423,6 +436,17 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { NetProps.SetPropFloat(flag, "m_flResetTime", 0.0); } catch(e3) {}
 };
 
+::flagspawn._MakeFlagPickupable <- function(flag, player) {
+    if (!flag) return;
+    // PD pickups are neutral; force team 0 so any player can collect.
+    try { flag.SetTeam(0); } catch(e0) {}
+    try { NetProps.SetPropInt(flag, "m_iTeamNum", 0); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_iOriginalTeamNum", 0); } catch(e2) {}
+    try { flag.__KeyValueFromInt("TeamNum", 0); } catch(e3) {}
+    try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
+    try { EntFireByHandle(flag, "ForceDrop", "", 0.0, player, player); } catch(e5) {}
+};
+
 
 ::flagspawn._InitPool <- function() {
     ::flagspawn._Pool.red.clear();
@@ -588,12 +612,15 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     }
 
     ::flagspawn._ForceEnableFlag(flag);
+    ::flagspawn._HideFlagModel(flag);
     ::flagspawn._DetachFromPool(flag);
     ::flagspawn._ForceDroppedState(flag);
+    ::flagspawn._MakeFlagPickupable(flag, player);
 
     local pos = Vector(0,0,0);
     local fwd = Vector(1,0,0);
-    try { pos = player.GetAbsOrigin(); } catch(e) {}
+    local porg = ::flagspawn._GetEntOrigin(player);
+    if (porg) pos = porg;
     try { local ang = player.EyeAngles(); fwd = ang.Forward(); } catch(e2) {}
 
     if (::flagspawn.DEBUG) {
@@ -608,16 +635,16 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { NetProps.SetPropVector(flag, "m_vecResetPos", spawnPos); } catch(e6) {}
 
     if (::flagspawn.DEBUG) {
-        local fp = null;
-        try { fp = flag.GetAbsOrigin(); } catch(e6) { fp = null; }
-        local pp = null;
-        try { pp = player.GetAbsOrigin(); } catch(e7) { pp = null; }
+        local fp = ::flagspawn._GetEntOrigin(flag);
+        local pp = ::flagspawn._GetEntOrigin(player);
         if (fp && pp) {
             local dx = fp.x - pp.x;
             local dy = fp.y - pp.y;
             local dz = fp.z - pp.z;
             local dist = sqrt((dx*dx) + (dy*dy) + (dz*dz));
             ::flagspawn.Log("NUDGE: flag@" + ::flagspawn._VecStr(fp) + " player@" + ::flagspawn._VecStr(pp) + " dist=" + dist);
+        } else {
+            ::flagspawn.Log("NUDGE: missing origin flag=" + (fp ? "ok" : "null") + " player=" + (pp ? "ok" : "null"));
         }
     }
 
@@ -629,8 +656,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     if (::flagspawn._IsFlagCarriedBy(flag, player)) {
         local ps = ::flagspawn._PS(player);
-        ps.used_this_life = true;
-        ps.pending_flag_eidx = -1;
+        if (::flagspawn.ENABLE_ONE_PER_LIFE) ps.used_this_life = true;
+        if (::flagspawn.ENABLE_PENDING_GUARD) ps.pending_flag_eidx = -1;
         ::flagspawn._KillWorldtextForFlag(flag);
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
         return;
@@ -638,7 +665,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     if (attempt >= ::flagspawn.PICKUP_RETRY_COUNT) {
         local ps2 = ::flagspawn._PS(player);
-        ps2.pending_flag_eidx = -1; // allow retry
+        if (::flagspawn.ENABLE_PENDING_GUARD) ps2.pending_flag_eidx = -1; // allow retry
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FAILED: owner still null after retries; pending cleared; flag left dropped.");
         ::flagspawn._ReconcileWorldtexts();
         return;
@@ -707,8 +734,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     }
 
     // One-per-life (after a successful pickup)
-    if (ps.used_this_life) { ::flagspawn.Log("OnSpawnerTouch DENY: used_this_life=true (no new flag until next spawn)"); return; }
-    if (ps.pending_flag_eidx != -1) { ::flagspawn.Log("OnSpawnerTouch DENY: pending flag already dispensed (try picking it up first)"); return; }
+    if (::flagspawn.ENABLE_ONE_PER_LIFE && ps.used_this_life) { ::flagspawn.Log("OnSpawnerTouch DENY: used_this_life=true (no new flag until next spawn)"); return; }
+    if (::flagspawn.ENABLE_PENDING_GUARD && ps.pending_flag_eidx != -1) { ::flagspawn.Log("OnSpawnerTouch DENY: pending flag already dispensed (try picking it up first)"); return; }
 
     local flag = ::flagspawn._TakeNextFromPool(spawnTeam);
     if (!flag) { ::flagspawn.Log("OnSpawnerTouch DENY: pool empty for spawnTeam=" + spawnTeam); return; }
