@@ -58,6 +58,9 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
 ::flagspawn.ENABLE_MANUAL_STACK <- true; // stack PointsValue when touching spawner while carrying
 ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- false; // avoid spawning extra neutral pickups while carrying
+::flagspawn.ENABLE_CARRY_MERGE_RECONCILE <- true; // merge if multiple carried flags are attached
+::flagspawn.ENABLE_DROPPED_MERGE <- true; // merge dropped flags when overlapping
+::flagspawn.DROPPED_MERGE_RADIUS <- 28.0; // units; tune to your slab size
 ::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
@@ -212,8 +215,12 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     } catch(e2) {}
 
     local param = "" + ::flagspawn.FLAG_BODYGROUP_INDEX + " " + v;
+    local paramSimple = "" + v;
+    try { flag.__KeyValueFromInt("body", v); } catch(e0) {}
     try { EntFireByHandle(flag, "SetBodyGroup", param, 0.0, null, null); } catch(e3) {}
     try { EntFireByHandle(flag, "SetBodygroup", param, 0.0, null, null); } catch(e4) {}
+    try { EntFireByHandle(flag, "SetBodyGroup", paramSimple, 0.0, null, null); } catch(e5) {}
+    try { EntFireByHandle(flag, "SetBodygroup", paramSimple, 0.0, null, null); } catch(e6) {}
 };
 
 ::flagspawn._GetFlagPointsValue <- function(flag) {
@@ -496,6 +503,79 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._SetFlagPointsValue(primary, total);
     ::flagspawn._EnsureFlagVisual(primary);
     ::flagspawn._ReconcileWorldtexts();
+};
+
+::flagspawn._IsMergeableDrop <- function(flag) {
+    if (!flag) return false;
+    if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
+    if (::flagspawn._FlagOwner(flag) != null) return false;
+    local parent = null;
+    try { parent = flag.GetMoveParent(); } catch(e) { parent = null; }
+    if (parent != null) return false;
+    return true;
+};
+
+::flagspawn._MergeNearbyDroppedFlags <- function() {
+    if (!::flagspawn.ENABLE_DROPPED_MERGE) return;
+    local flags = [];
+    local f = null;
+    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
+        if (::flagspawn._IsMergeableDrop(f)) flags.append(f);
+    }
+    if (flags.len() <= 1) return;
+
+    local merged = {};
+    local radius = ::flagspawn.DROPPED_MERGE_RADIUS;
+    for (local i = 0; i < flags.len(); i++) {
+        local a = flags[i];
+        if (!a) continue;
+        local aidx = 0; try { aidx = a.entindex(); } catch(ea) { aidx = 0; }
+        if (aidx in merged) continue;
+        local aorg = null;
+        try { aorg = a.GetAbsOrigin(); } catch(e0) { aorg = null; }
+        if (!aorg) continue;
+
+        local total = ::flagspawn._GetFlagPointsValue(a);
+        local changed = false;
+
+        for (local j = i + 1; j < flags.len(); j++) {
+            local b = flags[j];
+            if (!b) continue;
+            local bidx = 0; try { bidx = b.entindex(); } catch(eb) { bidx = 0; }
+            if (bidx in merged) continue;
+
+            local borg = null;
+            try { borg = b.GetAbsOrigin(); } catch(e1) { borg = null; }
+            if (!borg) continue;
+
+            local dx = aorg.x - borg.x;
+            local dy = aorg.y - borg.y;
+            local dz = aorg.z - borg.z;
+            local dist = sqrt((dx*dx) + (dy*dy) + (dz*dz));
+            if (dist > radius) continue;
+
+            total += ::flagspawn._GetFlagPointsValue(b);
+            ::flagspawn._ForceDroppedState(b);
+            ::flagspawn._MakeFlagNeutral(b);
+            ::flagspawn._HideFlag(b);
+            ::flagspawn._KillWorldtextForFlag(b);
+            merged[bidx] <- true;
+            changed = true;
+        }
+
+        if (changed) {
+            ::flagspawn._SetFlagPointsValue(a, total);
+            ::flagspawn._EnsureFlagVisual(a);
+            ::flagspawn._ReconcileWorldtexts();
+        }
+    }
+};
+
+::flagspawn._MergeCarriedFlagsAll <- function() {
+    local p = null;
+    while ((p = Entities.FindByClassname(p, "player")) != null) {
+        ::flagspawn._MergeCarriedFlags(p);
+    }
 };
 
 
@@ -1080,6 +1160,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._Think <- function() {
     ::flagspawn._ReconcileWorldtexts();
     ::flagspawn._ReconcileFlagVisuals();
+    if (::flagspawn.ENABLE_CARRY_MERGE_RECONCILE) ::flagspawn._MergeCarriedFlagsAll();
+    ::flagspawn._MergeNearbyDroppedFlags();
     ::flagspawn._ReconcileFlagBodygroups();
     return 0.25;
 };
