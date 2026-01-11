@@ -49,14 +49,14 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 #### Display Entities
 - **fs_stock_red** — point_worldtext for RED Fuel display
 - **fs_stock_blu** — point_worldtext for BLU Fuel display
-- **redflag** — prop_dynamic parent for RED spawner digits (optional)
-- **bluflag** — prop_dynamic parent for BLU spawner digits (optional)
+- **redflag** — prop_dynamic parent for RED spawner visuals (optional)
+- **bluflag** — prop_dynamic parent for BLU spawner visuals (optional)
 
 #### PD Logic
 - **fs_pd_logic** — tf_logic_player_destruction entity
 
 #### Custom Model
-- **models/props_custom/spinning_digit/spinning_digit.mdl** — digit display model with bodygroups 0–9
+- **models/props_custom/fs_meter/fs_meter.mdl** - meter model with bodygroup 0 values 0-100
 
 ---
 
@@ -159,25 +159,21 @@ rem  = n % 5
 
 ## Visual Systems
 
-### Digit Displays
+### Flag Value Meter (fs_meter)
 
-Each flag and spawner shows its value using two `prop_dynamic` entities:
-- **Ones digit** (rightmost)
-- **Tens digit** (leftmost, hidden if value < 10)
+Each carried/dropped pickup shows its value with a meter proxy instead of digits:
+- The `item_teamflag` briefcase is hidden (NODRAW/transparent).
+- A `prop_dynamic` using `models/props_custom/fs_meter/fs_meter.mdl` is parented to the flag center.
+- Bodygroup 0 represents 0-100 points and is updated on dispense/merge.
+- A `tf_glow` targets the proxy with team-colored glow (red/blue/neutral).
+- The meter model uses block segments (no digits) for clean outlines.
 
-**Scaling Rules:**
-- Single-digit values (0–9): **100% scale** (0.45 base scale)
-- Double-digit values (10–99): **75% scale** (0.3375 effective scale)
-- Offsets tightened by 75% for double-digit numbers
+---
 
-**Bodygroups:** Model must have bodygroup index 0 with values 0–9
+## Current Issues
 
-### Glow Outlines
-
-Each digit pair has matching `tf_glow` entities:
-- RED team: `255 60 60` (red glow)
-- BLU team: `60 90 255` (blue glow)
-- Always enabled for visibility
+- Flag drop is unreliable; still troubleshooting drop behavior in PD.
+- Merge testing for the meter blocks is blocked until drop works.
 
 ---
 
@@ -191,10 +187,8 @@ Each digit pair has matching `tf_glow` entities:
     CARRY_MAX    = 99,           // Max carried value
     HURT_CHUNK_DAMAGE = 15.0,    // Damage threshold for piñata
     HURT_MIN_INTERVAL = 0.20,    // Anti-spam gate
-    DIGIT_MODEL  = "models/props_custom/spinning_digit/spinning_digit.mdl",
-    DIGIT_OFFSET_ONES = Vector(0, 0, 18),
-    DIGIT_OFFSET_TENS = Vector(-10, 0, 18),
-    DIGIT_SCALE  = 0.45,
+    METER_MODEL  = "models/props_custom/fs_meter/fs_meter.mdl",
+    METER_LOCAL_OFFSET = Vector(0, 0, 0),
     DISPENSE_COOLDOWN = 0.35,
     POOL_STASH_ORIGIN = Vector(0, 0, -8000),
     DEBUG = true
@@ -208,7 +202,7 @@ Each digit pair has matching `tf_glow` entities:
     Score = { [2] = 0, [3] = 0 },         // Captured points (win at 100)
     Pool = { [2] = [], [3] = [] },        // Available flag entities
     Spawner = { [2] = null, [3] = null }, // Parent props (optional)
-    SpawnerDigits = { [2] = null, [3] = null }, // Digit display pairs
+    SpawnerMeter = { [2] = null, [3] = null }, // Spawner meter props (optional)
     SpawnerText = { [2] = null, [3] = null },   // point_worldtext
     NextDispenseAt = {},                  // Player cooldowns
     LastCarryValue = {},                  // Clamp tracking
@@ -230,7 +224,9 @@ Each pooled flag has a ValidateScriptScope with:
 | `fs_poolTeam` | int | Original team (2=RED, 3=BLU) |
 | `fs_beneficiaryTeam` | int | Team that gains Fuel on return |
 | `fs_dropTime` | float/null | Time() when dropped, null if carried |
-| `fs_digits` | table/null | `{ones, tens, glowOnes, glowTens}` |
+| `fs_value` | int | Cached PointsValue for meter display |
+| `fs_vis_eidx` | int | Entindex of meter proxy prop_dynamic |
+| `fs_glow_eidx` | int | Entindex of tf_glow attached to meter |
 | `fs_no_return` | bool | If true, never returns (remainder chunks) |
 
 ---
@@ -258,8 +254,8 @@ Each pooled flag has a ValidateScriptScope with:
 - ✅ Use bodygroup inputs for prop_dynamic, not animations
 - ✅ Parent entities via `EntFireByHandle(child, "SetParent", parentName, ...)`
 
-**Digit Model Requirements:**
-- Must have bodygroup 0 with values 0–9
+**Meter Model Requirements:**
+- Must have bodygroup 0 with values 0-100
 - No animation sequences required (bodygroup-only display)
 
 ### Pool Management
@@ -341,8 +337,8 @@ Set `CFG.DEBUG = true` to enable console output:
 
 **FS_GM1 PATCHED** (Current)
 - ✅ Crash-safe QAngle handling
-- ✅ Bodygroup-only digits (no animations)
-- ✅ 2-digit 75% scale cosmetic
+- ✅ Bodygroup-only meter display (no animations)
+- ✅ Team-colored tf_glow on meter proxy
 - ✅ Fuel nullification on capture
 - ✅ Death 5+1 split with no-return remainder
 - ✅ Improved pool management
@@ -357,4 +353,4 @@ Set `CFG.DEBUG = true` to enable console output:
 - Flicker/timer visuals for return countdown (not implemented)
 - Dynamic hotspot-based glow priority (not implemented)
 
-Current implementation focuses on core mechanics with reliable digit displays and Fuel economy.
+Current implementation focuses on core mechanics with a meter display and Fuel economy.
