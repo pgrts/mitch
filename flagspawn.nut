@@ -58,6 +58,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
 ::flagspawn.ENABLE_MANUAL_STACK <- false; // prefer engine PD merge when false
 ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- true; // spawn fresh PD pickup when already carrying
+::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
+::flagspawn.PD_GAMETYPE <- 6; // PD gametype for item_teamflag (override if needed)
 
 // Pickup verification (best-effort; PD uses different HUD, but owner should still become player)
 ::flagspawn.PICKUP_RETRY_COUNT <- 12;
@@ -239,7 +241,9 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         ::flagspawn._ps[k] <- {
             used_this_life = false,
             last_spawner_touch = -9999.0,
-            pending_flag_eidx = -1
+            pending_flag_eidx = -1,
+            pending_carry = -1,
+            has_carry = false
         };
     }
     return ::flagspawn._ps[k];
@@ -353,6 +357,51 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
 };
 
+::flagspawn._ForcePDMode <- function(flag) {
+    if (!flag) return;
+    local gt = ::flagspawn.PD_GAMETYPE;
+    try { flag.__KeyValueFromInt("GameType", gt); } catch(e0) {}
+    try { flag.__KeyValueFromInt("gametype", gt); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_nGameType", gt); } catch(e2) {}
+};
+
+::flagspawn._GetPlayerCarryCount <- function(player) {
+    if (!player) return -1;
+    try {
+        local c = player.GetNumCarryables();
+        if (typeof c == "integer") return c;
+    } catch(e0) {}
+    local names = [
+        ::flagspawn.CARRY_PROP_NAME,
+        "m_nNumCarryables",
+        "m_nNumCarriedFlags",
+        "m_nNumCarried",
+        "m_nNumCarriedPoints"
+    ];
+    foreach (n in names) {
+        if (!n || n.len() == 0) continue;
+        try { return NetProps.GetPropInt(player, n); } catch(e) {}
+    }
+    return -1;
+};
+
+::flagspawn.DebugCarryProps <- function(playerEidx) {
+    local player = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    if (!player) return;
+    try { ::flagspawn.Log("carryfunc GetNumCarryables=" + player.GetNumCarryables()); } catch(e0) {}
+    local names = [
+        ::flagspawn.CARRY_PROP_NAME,
+        "m_nNumCarryables",
+        "m_nNumCarriedFlags",
+        "m_nNumCarried",
+        "m_nNumCarriedPoints"
+    ];
+    foreach (n in names) {
+        try { ::flagspawn.Log("carryprop " + n + "=" + NetProps.GetPropInt(player, n)); } catch(e) {}
+    }
+};
+
 ::flagspawn._SpawnFreshPickupAtPlayer <- function(player, value) {
     if (!player) return null;
     local pos = ::flagspawn._GetEntOrigin(player);
@@ -363,7 +412,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try {
         f = SpawnEntityFromTable("item_teamflag", {
             TeamNum = 0,
-            GameType = 4,
+            GameType = ::flagspawn.PD_GAMETYPE,
             NeutralType = 1,
             ReturnBetweenWaves = 1,
             ReturnTime = ::flagspawn.RETURN_TIME_SECONDS,
@@ -374,8 +423,9 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     if (!f) return null;
 
     ::flagspawn._SetFlagPointsValue(f, value);
+    ::flagspawn._ForcePDMode(f);
     ::flagspawn._ForceDroppedState(f);
-    ::flagspawn._MakeFlagNeutral(f);
+    ::flagspawn._MakeFlagPickupable(f, player);
     ::flagspawn._EnsureFlagVisual(f);
     ::flagspawn._ReconcileWorldtexts();
     return f;
@@ -695,6 +745,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     ::flagspawn._ForceEnableFlag(flag);
     ::flagspawn._DetachFromPool(flag);
+    ::flagspawn._ForcePDMode(flag);
     if (::flagspawn.ENABLE_FORCE_DROPPED_STATE) ::flagspawn._ForceDroppedState(flag);
     if (::flagspawn.ENABLE_FORCE_PICKUPABLE) ::flagspawn._MakeFlagNeutral(flag);
 
@@ -743,15 +794,34 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         local ps = ::flagspawn._PS(player);
         if (::flagspawn.ENABLE_ONE_PER_LIFE) ps.used_this_life = true;
         if (::flagspawn.ENABLE_PENDING_GUARD) ps.pending_flag_eidx = -1;
+        ps.pending_carry = -1;
+        ps.has_carry = true;
         ::flagspawn._KillWorldtextForFlag(flag);
         ::flagspawn._MergeCarriedFlags(player);
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
         return;
     }
 
+    local ps_check = ::flagspawn._PS(player);
+    if (ps_check.pending_flag_eidx == flag.entindex() && ps_check.pending_carry >= 0) {
+        local carryNow = ::flagspawn._GetPlayerCarryCount(player);
+        if (carryNow > ps_check.pending_carry) {
+            if (::flagspawn.ENABLE_ONE_PER_LIFE) ps_check.used_this_life = true;
+            if (::flagspawn.ENABLE_PENDING_GUARD) ps_check.pending_flag_eidx = -1;
+            local prevCarry = ps_check.pending_carry;
+            ps_check.pending_carry = -1;
+            ::flagspawn._KillWorldtextForFlag(flag);
+            ::flagspawn._HideFlag(flag);
+            ::flagspawn._ReconcileWorldtexts();
+            if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED BY CARRY: " + ::flagspawn._SafeName(player) + " carry " + prevCarry + " -> " + carryNow);
+            return;
+        }
+    }
+
     if (attempt >= ::flagspawn.PICKUP_RETRY_COUNT) {
         local ps2 = ::flagspawn._PS(player);
         if (::flagspawn.ENABLE_PENDING_GUARD) ps2.pending_flag_eidx = -1; // allow retry
+        ps2.pending_carry = -1;
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FAILED: owner still null after retries; pending cleared; flag left dropped.");
         ::flagspawn._ReconcileWorldtexts();
         return;
@@ -792,6 +862,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         return;
     }
 
+    ::flagspawn._PS(player).has_carry = false;
     local v = ::flagspawn._GetFlagPointsValue(flag);
 
     ::flagspawn._ForceEnableFlag(flag);
@@ -833,6 +904,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     if (!player) return;
 
     local ps = ::flagspawn._PS(player);
+    local alreadyCarrying = ps.has_carry;
 
     local now = Time();
     if (now - ps.last_spawner_touch < ::flagspawn.SPAWNER_TOUCH_COOLDOWN) return;
@@ -853,6 +925,9 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     // If you are already carrying a PD flag, optionally stack manually or spawn a fresh pickup.
     local carried = ::flagspawn._ResolveCarriedFlag(player);
+    local carryCount = ::flagspawn._GetPlayerCarryCount(player);
+    local isCarrying = alreadyCarrying || (carried != null) || (carryCount > 0);
+    if (::flagspawn.DEBUG) ::flagspawn.Log("CARRY CHECK: flag=" + ::flagspawn._SafeName(carried) + " carryCount=" + carryCount);
     if (carried && ::flagspawn.ENABLE_MANUAL_STACK) {
         local add = ::flagspawn.GetClassBonus(player);
         local cur = ::flagspawn._GetFlagPointsValue(carried);
@@ -861,10 +936,12 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         ::flagspawn.Log("STACK: carried=" + ::flagspawn._SafeName(carried) + " PointsValue " + cur + " -> " + nxt);
         return;
     }
-    if (carried && ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY) {
+    if (isCarrying && ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY) {
         local add2 = ::flagspawn.GetClassBonus(player);
         local fresh = ::flagspawn._SpawnFreshPickupAtPlayer(player, add2);
         ::flagspawn.Log("FRESH PICKUP: val=" + add2 + " ent=" + ::flagspawn._SafeName(fresh));
+        ps.pending_flag_eidx = -1;
+        ps.pending_carry = -1;
         return;
     }
 
@@ -882,6 +959,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     ::flagspawn._ApplyReturnTime(flag);
 
     ps.pending_flag_eidx = flag.entindex();
+    ps.pending_carry = carryCount;
 
     ::flagspawn._NudgeForPickup(flag, player);
     ::flagspawn._StartVerifyPickup(player, flag, 0);
@@ -902,6 +980,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     local ps = ::flagspawn._PS(player);
     ps.used_this_life = false;
     ps.pending_flag_eidx = -1;
+    ps.pending_carry = -1;
+    ps.has_carry = false;
     ps.last_spawner_touch = -9999.0;
 
     if (::flagspawn.DEBUG) ::flagspawn.Log("player_spawn: reset used_this_life for " + ::flagspawn._SafeName(player));
@@ -933,6 +1013,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
         return;
     }
 
+    ::flagspawn._PS(player).has_carry = false;
     // Engine drop succeeded; just refresh visuals/text.
     ::flagspawn._ReconcileWorldtexts();
     ::flagspawn._ReconcileFlagVisuals();
@@ -972,6 +1053,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 // ------------------------------------------------------------
 ::flagspawn.OnCaptureTouch <- function(activator, teamParam) {
     // TODO: wire into your bank/capture logic.
+    if (activator) ::flagspawn._PS(activator).has_carry = false;
     ::flagspawn._ReconcileWorldtexts();
 };
 
