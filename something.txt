@@ -1,0 +1,446 @@
+Alright — here’s a clean event-driven plan that preserves real PD pickup/merge feedback (players actually run into pickups / see them on backs / hear pickup sounds), while still letting us keep authoritative script state for value + visuals.
+
+I’m grounding this in your own FS_GM1 tech doc + state table / scope vars plan. 
+
+README
+
+0) The core rule that makes this tractable
+
+Let PD own the “carrier + merge + drop” mechanics.
+Your script should never “just set the player’s value” as the normal path. Only use “set player value” as a bug fix / reconciliation tool.
+
+So the script’s job is:
+
+Spawn a real pickup (item_teamflag) into the world near the player so PD can touch-pick it up.
+
+Track it through states using events first, and a light pulse only as backup.
+
+Maintain visuals (meter bodygroup + glow) based on “what PD believes” the value is.
+
+This matches your doc’s philosophy: PD base system, VScript adds economy + visuals + extra rules. 
+
+README
+
+1) The flag state machine (simple + robust)
+
+Every flag you manage has a tiny state machine in script-scope:
+
+Flag-scoped fields (you already outlined these)
+
+fs_isFlagspawn (bool)
+
+fs_poolTeam (2/3)
+
+fs_beneficiaryTeam (2/3)
+
+fs_value (int cached for visuals)
+
+fs_dropTime (float|null)
+
+fs_no_return (bool)
+
+fs_vis_eidx, fs_glow_eidx (visual entities)
+
+These are explicitly in your doc. 
+
+README
+
+States
+
+We’ll treat state as derived from engine reality + a couple vars:
+
+A) POOLED / STASHED
+
+Not meant to be seen or touched
+
+At stash origin (0,0,-8000) per your CFG
+
+Has no active return timer
+
+B) WORLD / DROPPED
+
+Touch-pickup enabled
+
+Return timer running (unless fs_no_return)
+
+Meter/glow visible
+
+C) CARRIED
+
+PD has assigned it to a player
+
+Meter/glow usually should be attached to the flag / carried representation (depending on your setup)
+
+D) MERGED / CONSUMED (ephemeral)
+
+The “picked-up flag” that got merged into an already-carrying player
+
+This entity often disappears / gets removed / gets recycled by PD logic
+
+We must detect this and clean up our visuals / pool tracking
+
+2) Event sources: what we trust vs what we don’t
+Trust these first (event-driven)
+
+teamplay_flag_event game event
+This is the big one because entity I/O like OnPickup can fail in PD when the player is already carrying. (You already observed that bug.) The event list you saved includes it. 
+
+tf2_events
+
+player_death, player_hurt
+For your piñata + 5+1 split logic. 
+
+tf2_events
+
+Treat these as “nice-to-have”
+
+item_teamflag outputs: OnDrop, OnReturn, OnCapture
+Good when they fire, but PD has edge cases. Use them as extra signals, not the only truth.
+
+Pulse (backup only)
+
+A lightweight think (0.25s like your doc) that:
+
+Reconciles return timers
+
+Updates meter bodygroups
+
+Repairs missed merge detection
+
+Verifies visuals exist
+
+This matches your “Think loop handles… return timer checks / carry clamp / display updates / scope validation” outline. 
+
+README
+
+3) Dispense flow: “spawn a real pickup and guarantee it gets picked up”
+
+This is the hardest feel-good part: the player must physically pick it up, not just get value.
+
+The dispense pipeline
+
+OnSpawnerTouch(activator, enemyPoolTeam) (already in your map contract) 
+
+README
+
+Cooldown gate per player (0.35s) 
+
+README
+
+Pop a flag entity from pool (State.Pool[poolTeam].pop())
+
+Detach it from anything pool-related
+
+Clear parent
+
+Clear parentname
+
+Ensure it isn’t stuck at pool local coords (you’ve hit this before)
+
+Set script scope:
+
+fs_isFlagspawn = true
+
+fs_poolTeam = enemyPoolTeam
+
+fs_beneficiaryTeam = activator.GetTeam()
+
+fs_value = classBonus (your table) 
+
+README
+
+Configure it to be a PD-style pickup
+
+Neutral-ish behavior (teamnum 0 / PD-friendly config — you’ve been doing this)
+
+Teleport it to become touchable
+
+Place it slightly in front of the player and slightly above ground:
+
+forward * 24 units
+
+up * 24 units
+
+Why: avoids it spawning inside player hull / inside floor (both can break touch)
+
+“Nudge for pickup reliability”
+
+Immediately after teleport, do a tiny second teleport 0.01s later (same spot)
+
+This forces re-touch in Source sometimes when initial touch doesn’t register
+
+Spawn / attach meter+glow visuals to the flag
+
+Set meter bodygroup based on fs_value
+
+Glow color based on beneficiary team or neutral
+
+This stays faithful to your “pickup immediately available for PD system to assign to player” requirement. 
+
+README
+
+4) Tracking the value correctly (and updating visuals)
+Two truths: “display value” vs “actual carried value”
+
+fs_value is our cached display value (what we show on meter)
+
+PD also has an internal “points carried” concept that can change via merges
+
+So we do this:
+
+On spawn / split / spill
+
+We set fs_value ourselves and update the meter immediately.
+
+On pickup / merge
+
+We assume PD may change values, so we re-read or reconcile.
+
+Because TF2 PD can be weird about “which entity owns the number” after merges, the safe strategy is:
+
+Treat fs_value as “what this pickup is worth”
+
+Treat “player’s carried total” as separate — we track it with State.LastCarryValue[player] and update it based on events.
+
+Your doc already has LastCarryValue for clamp tracking, which is exactly the right pattern. 
+
+README
+
+5) The merge problem (the real crux)
+
+You described it perfectly:
+
+“OnPickup can be either a merge event… detecting when a player already was carrying a flag and has picked up another”
+
+The key insight
+
+A “merge” is just: player already carrying, then picks up another pickup.
+
+So you detect merge by comparing:
+
+carryBefore = State.LastCarryValue[player]
+
+pickup event arrives
+
+after a short delay (0.0–0.05s), compute carryAfter
+
+if carryAfter > carryBefore, then:
+
+we consider that pickup entity “consumed into carry”
+
+we should kill/recycle its visuals and return it to pool (or remove it) depending on how PD leaves it
+
+Where do we get carryAfter?
+
+Event-driven ideal:
+
+teamplay_flag_event gives you that something happened with a flag (pickup/drop/return etc). 
+
+tf2_events
+
+Then you compute the player’s carried amount using your own bookkeeping:
+
+on pickup, carryAfter = min(CARRY_MAX, carryBefore + pickedFlag.fs_value)
+
+then clamp/overflow logic to fuel (your doc’s carry clamp rule) 
+
+README
+
+This means we don’t have to rely on fragile netprops for carried value; we treat our value model as authoritative, while PD provides the tactile behavior.
+
+Yes, this is “coding for merge,” but only for tracking + visuals — not to force PD to merge. PD still merges physically; we just compute what it must have merged by using the picked flag’s value.
+
+Why this works in practice
+
+Because in your gamemode:
+
+Every pickup that matters is script-managed (fs_isFlagspawn)
+
+Every script-managed pickup has a known value (fs_value)
+So the merge math is deterministic even if PD hides details.
+
+6) Concrete event-driven flow per maneuver
+A) Pickup (normal OR merge)
+
+Signal: teamplay_flag_event says “picked up” (or flag output OnPickup if it fires). 
+
+tf2_events
+
+Handler:
+
+Identify the flag entity involved.
+
+If it’s not fs_isFlagspawn, ignore (stock PD stuff).
+
+Let v = flag.fs_value.
+
+Let before = LastCarryValue[player] (default 0).
+
+Set after = before + v.
+
+Apply clamp rule from your doc:
+
+if after > 99: overflow → Fuel, carry becomes 99 
+
+README
+
+Update LastCarryValue[player] = afterClamped.
+
+Now decide whether it was a merge:
+
+If before > 0 → merge happened (player already had points)
+
+If before == 0 → first pickup (no merge)
+
+Visual cleanup:
+
+For merge pickups, the consumed pickup’s meter/glow must be removed and the entity must be recycled to pool or hidden.
+
+For first pickup, keep visuals attached (or let PD carry visuals depending on your design).
+
+B) Drop
+
+Signal: flag output OnDrop/OnDrop1 OR teamplay_flag_event “dropped” 
+
+tf2_events
+
+Handler:
+
+Set flag.fs_dropTime = Time()
+
+Ensure meter/glow is visible and correctly set to flag.fs_value
+
+Start return timer unless fs_no_return
+
+C) Return (timer return)
+
+Signal: flag output OnReturn OR detected in Think loop by (Time()-fs_dropTime) >= RETURN_DELAY 
+
+README
+
+Handler:
+
+If fs_no_return, skip
+
+Add flag.fs_value to Fuel[flag.fs_beneficiaryTeam] (clamp 0–99)
+
+Recycle flag to pool stash
+
+Kill visuals
+
+D) Capture
+
+You’re using capture zones (func_capturezone) and driving scoring yourself; your doc describes the full capture effects. 
+
+README
+
+Handler:
+
+Read n = LastCarryValue[player]
+
+Score n via tf_logic_player_destruction (your method)
+
+Fuel changes:
+
+Fuel[team]+=n
+
+Fuel[enemy]-=n min 0 (nullification rule) 
+
+README
+
+Clear LastCarryValue[player]=0
+
+Recycle the carried flag entity (or whatever PD considers “carried”)
+
+E) Death split
+
+Your doc’s split math is already good. 
+
+README
+
+Handler:
+
+On player_death, if LastCarryValue[player] > 0:
+
+spawn 5 chunks + remainder chunk
+
+set each chunk’s fs_value
+
+set remainder’s fs_no_return = true (and in your doc: remainder should be banked instead of returning—your comment notes that special handling) 
+
+README
+
+7) The “pulse” reconciliation (minimal but essential)
+
+Even with events, we keep a tiny Think loop for 3 reasons:
+
+Return timer (authoritative, easy)
+
+Repair missed pickup/merge events
+
+Sometimes event ordering glitches; pulse can scan fs_isFlagspawn flags and ensure their visuals exist and their fs_value is consistent.
+
+Visual correctness
+
+meter bodygroup should always reflect fs_value
+
+This is exactly what your tech doc already calls out. 
+
+README
+
+The pulse should NOT be doing heavy “compute who carries what” logic every tick — just sanity + return + visuals.
+
+8) “Kill the merged pickup entity” — what we do safely
+
+Because PD may delete/hide/reassign that entity, the safest “merge cleanup” policy is:
+
+When we detect merge pickup:
+
+Immediately detach and delete its meter/glow props
+
+Then recycle the flag by stashing it and pushing back into its pool list
+(even if PD later also tries to do something, stashing makes it inert)
+
+This matches your pool management model: flags get stashed and reused. 
+
+README
+
+9) The one thing I’d lock in as the official “truth”
+
+To keep bugs from exploding later:
+
+Authoritative value sources
+
+Pickup value (fs_value) is always script-defined.
+
+Player carry total is script-tracked (LastCarryValue[player]).
+
+PD is only used for:
+
+the tactile pickup/drop/carry behavior
+
+the game’s built-in “has the intel” visuals/logic (if any)
+
+That separation is how you get:
+
+good player feedback (real pickups)
+
+deterministic merges (your math)
+
+reliable visuals (meter bodygroup always correct)
+
+If you want, next step I can turn this into a new smaller flagspawn.nut skeleton that only includes:
+
+pool scan/init
+
+dispense with “touch pickup reliability”
+
+teamplay_flag_event-based pickup/drop handling
+
+return timer
+
+meter+glow attach/update
+
+…and leaves piñata/death/capture as stubs so you can grow it back without the file ballooning again. 
+
+README
