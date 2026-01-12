@@ -1,0 +1,1121 @@
+
+<!DOCTYPE html>
+<html class="client-nojs" lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>tf_logic_robot_destruction - Valve Developer Community</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":false,"wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgRequestId":"d1a2cd2961118833edcab36a","wgCSPNonce":false,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Tf_logic_robot_destruction","wgTitle":"Tf logic robot destruction","wgCurRevisionId":454961,"wgRevisionId":454961,"wgArticleId":29138,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["CD CBaseEntity","Entities","Non-internal Team Fortress 2 entities","Pages with undefined internal keyvalue names","Point entities","Team Fortress 2 entities","Team Fortress 2 point entities"],"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgRelevantPageName":"Tf_logic_robot_destruction","wgRelevantArticleId":29138,"wgIsProbablyEditable":false,"wgRelevantPageIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[],"wgVector2022PreviewPages":[],"wgMediaViewerOnClick":true,"wgMediaViewerEnabledByDefault":true};
+RLSTATE={"site.styles":"ready","user.styles":"ready","user":"ready","user.options":"loading","skins.vector.styles.legacy":"ready"};RLPAGEMODULES=["site","mediawiki.page.ready","skins.vector.legacy.js","mmv.head","mmv.bootstrap.autostart"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});});});</script>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=skins.vector.styles.legacy&amp;only=styles&amp;skin=vector"/>
+<script async="" src="/w/load.php?lang=en&amp;modules=startup&amp;only=scripts&amp;raw=1&amp;skin=vector"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=site.styles&amp;only=styles&amp;skin=vector"/>
+<meta name="generator" content="MediaWiki 1.39.12"/>
+<meta name="format-detection" content="telephone=no"/>
+<meta name="viewport" content="width=1000"/>
+<link rel="icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/w/opensearch_desc.php" title="Valve Developer Community (en)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://developer.valvesoftware.com/w/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="Valve Developer Community Atom feed" href="/w/index.php?title=Special:RecentChanges&amp;feed=atom"/>
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-underline-never mw-hide-empty-elt ns-0 ns-subject page-Tf_logic_robot_destruction rootpage-Tf_logic_robot_destruction skin-vector action-view skin-vector-legacy vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-language-alert-in-sidebar-disabled vector-feature-sticky-header-disabled vector-feature-sticky-header-edit-disabled vector-feature-table-of-contents-disabled vector-feature-visual-enhancement-next-disabled"><div id="mw-page-base" class="noprint"></div>
+<div id="mw-head-base" class="noprint"></div>
+<div id="content" class="mw-body" role="main">
+	<a id="top"></a>
+	<div id="siteNotice"></div>
+	<div class="mw-indicators">
+	</div>
+	<h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="monospaced" style="font-family:monospace, monospace">tf_logic_robot_destruction</span></h1>
+	<div id="bodyContent" class="vector-body">
+		<div id="siteSub" class="noprint">From Valve Developer Community</div>
+		<div id="contentSub"></div>
+		<div id="contentSub2"></div>
+		
+		<div id="jump-to-nav"></div>
+		<a class="mw-jump-link" href="#mw-head">Jump to navigation</a>
+		<a class="mw-jump-link" href="#searchInput">Jump to search</a>
+		<div id="mw-content-text" class="mw-body-content mw-content-ltr" lang="en" dir="ltr"><div class="mw-parser-output"><table class="wikitable" align="right" style="clear:right; margin-left:2em">
+
+<tbody><tr>
+<th><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/CPP" title="C++"><img alt="C++" src="/w/images/thumb/7/7a/Icon-cpp.png/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032" /></a></span> <a href="/wiki/Class_hierarchy" title="Class hierarchy">Class hierarchy</a>
+</th></tr>
+<tr>
+<td><a href="/w/index.php?title=CTFRobotDestructionLogic&amp;action=edit&amp;redlink=1" class="new" title="CTFRobotDestructionLogic (page does not exist)">CTFRobotDestructionLogic </a>
+<dl><dd><a href="/wiki/Category:CD_CBaseEntity" title="Category:CD CBaseEntity">↳</a><a href="/wiki/CBaseEntity" title="CBaseEntity">CBaseEntity</a></dd></dl>
+</td></tr>
+<tr>
+<th><small><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/CPP" title="C++"><img alt="C++" src="/w/images/thumb/7/7a/Icon-cpp.png/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032" /></a></span> <kbd><i>tf_logic_robot_destruction.cpp</i></kbd></small>
+</th></tr></tbody></table>
+<p><code>tf_logic_robot_destruction</code>  is a   <a href="/wiki/Point_entity" title="Point entity">point entity</a>  <a href="/wiki/Entity_availability_overview" title="Entity availability overview">available</a> in <span style="white-space:nowrap; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px"><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span> <a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><span title="Team Fortress 2" style="color:#CF7336;">Team Fortress 2</span></a></span>.
+</p><p>The master control entity for the robot destruction game mode. It is the base entity used by <a href="/wiki/Tf_logic_player_destruction" title="Tf logic player destruction">Tf logic player destruction</a>.
+</p>
+<h2><span class="mw-headline" id="Keyvalues">Keyvalues</span></h2>
+<dl><dt><a href="/wiki/Targetname" title="Targetname">Name</a> <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(targetname)</span></kbd>  <kbd>&lt;<a href="/wiki/Targetname" title="Targetname">string</a>&gt;</kbd></dt>
+<dd>The name that other entities refer to this entity by, via <a href="/wiki/Inputs_and_Outputs" title="Inputs and Outputs">Inputs/Outputs</a> or other <a href="/wiki/Keyvalue" title="Keyvalue">keyvalues</a> (e.g. <code><a href="/wiki/Entity_Hierarchy_(parenting)#Parentname" title="Entity Hierarchy (parenting)">parentname</a></code> or <code>target</code>).<br />Also displayed in Hammer's 2D views and <a href="/wiki/Hammer_Entity_Report_Dialog" title="Hammer Entity Report Dialog">Entity Report</a>.</dd>
+<dd><i><div><span style="color:#bbb; display:table-cell; font-weight:0; padding-left:1.6em; white-space:nowrap;">See also:&#160;</span><span style="display:table-cell; padding:0.2em;"><a href="/wiki/Generic_Keyvalues,_Inputs_and_Outputs" title="Generic Keyvalues, Inputs and Outputs">Generic Keyvalues, Inputs and Outputs</a> available to all entities</span></div></i></dd></dl>
+<dl><dt>blue_respawn_time <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>The base respawn time for BLU team</dd></dl>
+<dl><dt>red_respawn_time <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>The base respawn time for RED team</dd></dl>
+<dl><dt>loser_respawn_bonus_per_bot <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd></dd></dl>
+<dl><dt>max_points <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>The number of cores to collect to win a round</dd></dl>
+<dl><dt>max_robots <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>The maximum number of robots active at the same time</dd></dl>
+<dl><dt>score_interval <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>How often a robot should score a point while hacking</dd></dl>
+<h2><span class="mw-headline" id="Outputs">Outputs</span></h2>
+<dl><dt><kbd>OnBlueFirstFlagStolen</kbd></dt>
+<dd>Sent when blue's first flag gets stolen.</dd></dl>
+<dl><dt><kbd>OnBlueFlagStolen</kbd></dt>
+<dd>Sent when a flag gets stolen from blue.</dd></dl>
+<dl><dt><kbd>OnBlueHasPoints</kbd></dt>
+<dd>Sent when Blue goes from 0 to any points</dd></dl>
+<dl><dt><kbd>OnBlueHitMaxPoints</kbd></dt>
+<dd>Sent when Blue hits the max points.</dd></dl>
+<dl><dt><kbd>OnBlueLeaveMaxPoints</kbd></dt>
+<dd>Sent when blue goes from max points to fewer.</dd></dl>
+<dl><dt><kbd>OnBlueHitZeroPoints</kbd></dt>
+<dd>Sent when Blue hits 0 points.</dd></dl>
+<dl><dt><kbd>OnBlueLastFlagReturned</kbd></dt>
+<dd>Sent when blue's last stolen flag gets returned.</dd></dl>
+<dl><dt><kbd>OnBlueFinalePeriodEnd</kbd></dt>
+<dd>Sent when the blue finale period ends.</dd></dl>
+<dl><dt><kbd>OnRedFirstFlagStolen</kbd></dt>
+<dd>Sent when red's first flag gets stolen.</dd></dl>
+<dl><dt><kbd>OnRedFlagStolen</kbd></dt>
+<dd>Sent when a flag gets stolen from red.</dd></dl>
+<dl><dt><kbd>OnRedHasPoints</kbd></dt>
+<dd>Sent when Red goes from 0 to any points</dd></dl>
+<dl><dt><kbd>OnRedHitMaxPoints</kbd></dt>
+<dd>Sent when Red hits the max points.</dd></dl>
+<dl><dt><kbd>OnRedLeaveMaxPoints</kbd></dt>
+<dd>Sent when red goes from max points to fewer.</dd></dl>
+<dl><dt><kbd>OnRedHitZeroPoints</kbd></dt>
+<dd>Sent when red hits 0 points.</dd></dl>
+<dl><dt><kbd>OnRedLastFlagReturned</kbd></dt>
+<dd>Sent when red's last stolen flag gets returned.</dd></dl>
+<dl><dt><kbd>OnRedFinalePeriodEnd</kbd></dt>
+<dd>Sent when the blue finale period ends.</dd></dl>
+<h2><span class="mw-headline" id="See_also">See also</span></h2>
+<ul><li><a href="/wiki/Item_bonuspack" title="Item bonuspack">item_bonuspack</a> - A Power Core dropped by the Robot Destruction robots.</li>
+<li><a href="/wiki/Tf_robot_destruction_spawn_group" title="Tf robot destruction spawn group">tf_robot_destruction_spawn_group</a> - Control a group of robot spawns and their hud elements. Use in conjunction with the below.</li>
+<li><a href="/wiki/Tf_robot_destruction_robot_spawn" title="Tf robot destruction robot spawn">tf_robot_destruction_robot_spawn</a> - Robot Spawn point for its respective spawn group. Use in conjunction with the above.</li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260112012905
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.217 seconds
+Real time usage: 0.225 seconds
+Preprocessor visited node count: 16238/1000000
+Post‐expand include size: 45380/2097152 bytes
+Template argument size: 51153/2097152 bytes
+Highest expansion depth: 48/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  208.182      1 -total
+ 61.06%  127.116      1 Template:This_is_a
+ 58.78%  122.372      3 Template:Str_right
+ 58.33%  121.423      3 Template:Str_sub_long
+ 57.70%  120.114      5 Template:This_is_a/strings
+ 53.90%  112.203     85 Template:Str_left
+ 50.74%  105.626      1 Template:A_or_an
+ 49.91%  103.898      1 Template:Delink
+ 49.58%  103.217      1 Template:Delink/phase_1_a
+ 37.19%   77.418      1 Template:Delink/phase_1_b
+-->
+
+<!-- Saved in parser cache with key developerwiki-mw_:pcache:idhash:29138-0!canonical and timestamp 20260112012905 and revision id 454961.
+ -->
+</div>
+<div class="printfooter" data-nosnippet="">Retrieved from "<a dir="ltr" href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_robot_destruction&amp;oldid=454961">https://developer.valvesoftware.com/w/index.php?title=Tf_logic_robot_destruction&amp;oldid=454961</a>"</div></div>
+		<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:Point_entities" title="Category:Point entities">Point entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_entities" title="Category:Team Fortress 2 entities">Team Fortress 2 entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_point_entities" title="Category:Team Fortress 2 point entities">Team Fortress 2 point entities</a></li></ul></div><div id="mw-hidden-catlinks" class="mw-hidden-catlinks mw-hidden-cats-hidden">Hidden categories: <ul><li><a href="/wiki/Category:CD_CBaseEntity" title="Category:CD CBaseEntity">CD CBaseEntity</a></li><li><a href="/wiki/Category:Entities" title="Category:Entities">Entities</a></li><li><a href="/wiki/Category:Non-internal_Team_Fortress_2_entities" title="Category:Non-internal Team Fortress 2 entities">Non-internal Team Fortress 2 entities</a></li><li><a href="/wiki/Category:Pages_with_undefined_internal_keyvalue_names" title="Category:Pages with undefined internal keyvalue names">Pages with undefined internal keyvalue names</a></li></ul></div></div>
+	</div>
+</div>
+
+<div id="mw-navigation">
+	<h2>Navigation menu</h2>
+	<div id="mw-head">
+		
+
+<nav id="p-personal" class="vector-menu mw-portlet mw-portlet-personal vector-user-menu-legacy" aria-labelledby="p-personal-label" role="navigation"  >
+	<h3
+		id="p-personal-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Personal tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="pt-createaccount" class="mw-list-item"><a href="/w/index.php?title=Special:CreateAccount&amp;returnto=Tf+logic+robot+destruction" title="You are encouraged to create an account and log in; however, it is not mandatory"><span>Create account</span></a></li><li id="pt-login" class="mw-list-item"><a href="/w/index.php?title=Special:UserLogin&amp;returnto=Tf+logic+robot+destruction" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o"><span>Log in</span></a></li></ul>
+		
+	</div>
+</nav>
+
+		<div id="left-navigation">
+			
+
+<nav id="p-namespaces" class="vector-menu mw-portlet mw-portlet-namespaces vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-namespaces-label" role="navigation"  >
+	<h3
+		id="p-namespaces-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Namespaces</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-nstab-main" class="selected mw-list-item"><a href="/wiki/Tf_logic_robot_destruction" title="View the content page [c]" accesskey="c"><span>Page</span></a></li><li id="ca-talk" class="new mw-list-item"><a href="/w/index.php?title=Talk:Tf_logic_robot_destruction&amp;action=edit&amp;redlink=1" rel="discussion" title="Discussion about the content page (page does not exist) [t]" accesskey="t"><span>Discussion</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-variants" class="vector-menu mw-portlet mw-portlet-variants emptyPortlet vector-menu-dropdown" aria-labelledby="p-variants-label" role="navigation"  >
+	<input type="checkbox"
+		id="p-variants-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-variants"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-variants-label"
+	/>
+	<label
+		id="p-variants-label"
+		 aria-label="Change language variant"
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">English</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+		</div>
+		<div id="right-navigation">
+			
+
+<nav id="p-views" class="vector-menu mw-portlet mw-portlet-views vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-views-label" role="navigation"  >
+	<h3
+		id="p-views-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Views</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-view" class="selected mw-list-item"><a href="/wiki/Tf_logic_robot_destruction"><span>Read</span></a></li><li id="ca-viewsource" class="mw-list-item"><a href="/w/index.php?title=Tf_logic_robot_destruction&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e"><span>View source</span></a></li><li id="ca-history" class="mw-list-item"><a href="/w/index.php?title=Tf_logic_robot_destruction&amp;action=history" title="Past revisions of this page [h]" accesskey="h"><span>View history</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-cactions" class="vector-menu mw-portlet mw-portlet-cactions emptyPortlet vector-menu-dropdown" aria-labelledby="p-cactions-label" role="navigation"  title="More options" >
+	<input type="checkbox"
+		id="p-cactions-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-cactions"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-cactions-label"
+	/>
+	<label
+		id="p-cactions-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">More</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+			
+<div id="p-search" role="search" class="vector-search-box-vue  vector-search-box-show-thumbnail vector-search-box-auto-expand-width vector-search-box">
+	<div>
+			<h3 >
+				<label for="searchInput">Search</label>
+			</h3>
+		<form action="/w/index.php" id="searchform"
+			class="vector-search-box-form">
+			<div id="simpleSearch"
+				class="vector-search-box-inner"
+				 data-search-loc="header-navigation">
+				<input class="vector-search-box-input"
+					 type="search" name="search" placeholder="Search Valve Developer Community" aria-label="Search Valve Developer Community" autocapitalize="sentences" title="Search Valve Developer Community [f]" accesskey="f" id="searchInput"
+				>
+				<input type="hidden" name="title" value="Special:Search">
+				<input id="mw-searchButton"
+					 class="searchButton mw-fallbackSearchButton" type="submit" name="fulltext" title="Search the pages for this text" value="Search">
+				<input id="searchButton"
+					 class="searchButton" type="submit" name="go" title="Go to a page with this exact name if it exists" value="Go">
+			</div>
+		</form>
+	</div>
+</div>
+
+		</div>
+	</div>
+	
+
+<div id="mw-panel">
+	<div id="p-logo" role="banner">
+		<a class="mw-wiki-logo" href="/wiki/Main_Page"
+			title="Visit the main page"></a>
+	</div>
+	
+
+<nav id="p-navigation" class="vector-menu mw-portlet mw-portlet-navigation vector-menu-portal portal" aria-labelledby="p-navigation-label" role="navigation"  >
+	<h3
+		id="p-navigation-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Navigation</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-mainpage" class="mw-list-item"><a href="/wiki/Main_Page" title="Visit the main page [z]" accesskey="z"><span>Main Page</span></a></li><li id="n-index" class="mw-list-item"><a href="/wiki/SDK_Docs"><span>Source SDK index</span></a></li><li id="n-recentchanges" class="mw-list-item"><a href="/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r"><span>Recent changes</span></a></li><li id="n-randompage" class="mw-list-item"><a href="/wiki/Special:RandomRootpage" title="Load a random page [x]" accesskey="x"><span>Random page</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+
+<nav id="p-workshop" class="vector-menu mw-portlet mw-portlet-workshop vector-menu-portal portal" aria-labelledby="p-workshop-label" role="navigation"  >
+	<h3
+		id="p-workshop-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Workshop</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-hlsdk" class="mw-list-item"><a href="/wiki/Half-Life_SDK"><span>Half-Life SDK</span></a></li><li id="n-hlatools" class="mw-list-item"><a href="/wiki/Half-Life:_Alyx_Workshop_Tools"><span>Half-Life: Alyx Tools</span></a></li><li id="n-dota2tools" class="mw-list-item"><a href="/wiki/Dota_2_Workshop_Tools"><span>Dota 2 Tools</span></a></li><li id="n-vrtools" class="mw-list-item"><a href="/wiki/SteamVR/Environments"><span>SteamVR Tools</span></a></li><li id="n-cs2tools" class="mw-list-item"><a href="/wiki/Counter-Strike_2_Workshop_Tools"><span>Counter-Strike 2 Tools</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-support" class="vector-menu mw-portlet mw-portlet-support vector-menu-portal portal" aria-labelledby="p-support-label" role="navigation"  >
+	<h3
+		id="p-support-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Support</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-communityportal" class="mw-list-item"><a href="/wiki/Valve_Developer_Community:Community_portal"><span>Community portal</span></a></li><li id="n-gettinghelp" class="mw-list-item"><a href="/wiki/Help:Contents"><span>Getting help</span></a></li><li id="n-sdkfaq" class="mw-list-item"><a href="/wiki/Category:Source_SDK_FAQ"><span>Source SDK FAQ</span></a></li><li id="n-ldfaq" class="mw-list-item"><a href="/wiki/Category:Level_Design_FAQ"><span>Level Design FAQ</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-steamcommunity" class="vector-menu mw-portlet mw-portlet-steamcommunity vector-menu-portal portal" aria-labelledby="p-steamcommunity-label" role="navigation"  >
+	<h3
+		id="p-steamcommunity-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Steam Community</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-sdkhub" class="mw-list-item"><a href="http://steamcommunity.com/app/211" rel="nofollow"><span>Source SDK Hub</span></a></li><li id="n-sdkdiscuss" class="mw-list-item"><a href="https://steamcommunity.com/app/211/discussions" rel="nofollow"><span>Source SDK Discussion</span></a></li><li id="n-steam" class="mw-list-item"><a href="http://www.steampowered.com" rel="nofollow"><span>Steam</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-tb" class="vector-menu mw-portlet mw-portlet-tb vector-menu-portal portal" aria-labelledby="p-tb-label" role="navigation"  >
+	<h3
+		id="p-tb-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="t-whatlinkshere" class="mw-list-item"><a href="/wiki/Special:WhatLinksHere/Tf_logic_robot_destruction" title="A list of all wiki pages that link here [j]" accesskey="j"><span>What links here</span></a></li><li id="t-recentchangeslinked" class="mw-list-item"><a href="/wiki/Special:RecentChangesLinked/Tf_logic_robot_destruction" rel="nofollow" title="Recent changes in pages linked from this page [k]" accesskey="k"><span>Related changes</span></a></li><li id="t-specialpages" class="mw-list-item"><a href="/wiki/Special:SpecialPages" title="A list of all special pages [q]" accesskey="q"><span>Special pages</span></a></li><li id="t-print" class="mw-list-item"><a href="javascript:print();" rel="alternate" title="Printable version of this page [p]" accesskey="p"><span>Printable version</span></a></li><li id="t-permalink" class="mw-list-item"><a href="/w/index.php?title=Tf_logic_robot_destruction&amp;oldid=454961" title="Permanent link to this revision of this page"><span>Permanent link</span></a></li><li id="t-info" class="mw-list-item"><a href="/w/index.php?title=Tf_logic_robot_destruction&amp;action=info" title="More information about this page"><span>Page information</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+</div>
+
+</div>
+
+<footer id="footer" class="mw-footer" role="contentinfo" >
+	<ul id="footer-info">
+	<li id="footer-info-lastmod"> This page was last edited on 25 September 2024, at 15:24.</li>
+</ul>
+
+	<ul id="footer-places">
+	<li id="footer-places-about"><a href="/wiki/Valve_Developer_Community:About">About Valve Developer Community</a></li>
+	<li id="footer-places-disclaimer"><a href="/wiki/Valve_Developer_Community:Terms_of_use">Terms of Use</a></li>
+	<li id="footer-places-legalnotices"><a href="Valve Developer Community:Third Party Legal Notices">Third Party Legal Notices</a></li>
+</ul>
+
+	<ul id="footer-icons" class="noprint">
+	<li id="footer-poweredbyico"><a href="https://www.mediawiki.org/"><img src="/w/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/w/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /w/resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31" loading="lazy"/></a></li>
+</ul>
+
+</footer>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.217","walltime":"0.225","ppvisitednodes":{"value":16238,"limit":1000000},"postexpandincludesize":{"value":45380,"limit":2097152},"templateargumentsize":{"value":51153,"limit":2097152},"expansiondepth":{"value":48,"limit":100},"expensivefunctioncount":{"value":0,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":0,"limit":5000000},"timingprofile":["100.00%  208.182      1 -total"," 61.06%  127.116      1 Template:This_is_a"," 58.78%  122.372      3 Template:Str_right"," 58.33%  121.423      3 Template:Str_sub_long"," 57.70%  120.114      5 Template:This_is_a/strings"," 53.90%  112.203     85 Template:Str_left"," 50.74%  105.626      1 Template:A_or_an"," 49.91%  103.898      1 Template:Delink"," 49.58%  103.217      1 Template:Delink/phase_1_a"," 37.19%   77.418      1 Template:Delink/phase_1_b"]},"cachereport":{"timestamp":"20260112012905","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":300});});</script>
+</body>
+</html> <- tf logic robot destruction
+eetc.. 
+<!DOCTYPE html>
+<html class="client-nojs" lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>item_bonuspack - Valve Developer Community</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":false,"wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgRequestId":"7f46f132fd099d4fc9b369d6","wgCSPNonce":false,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Item_bonuspack","wgTitle":"Item bonuspack","wgCurRevisionId":478364,"wgRevisionId":478364,"wgArticleId":29162,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["English","CD CCurrencyPack","Entities","CBaseAnimating","Model entities","Team Fortress 2 entities","Team Fortress 2 model entities"],"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgRelevantPageName":"Item_bonuspack","wgRelevantArticleId":29162,"wgIsProbablyEditable":false,"wgRelevantPageIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[],"wgVector2022PreviewPages":[],"wgMediaViewerOnClick":true,"wgMediaViewerEnabledByDefault":true};
+RLSTATE={"site.styles":"ready","user.styles":"ready","user":"ready","user.options":"loading","skins.vector.styles.legacy":"ready","jquery.makeCollapsible.styles":"ready"};RLPAGEMODULES=["site","mediawiki.page.ready","jquery.makeCollapsible","skins.vector.legacy.js","mmv.head","mmv.bootstrap.autostart"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});});});</script>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=jquery.makeCollapsible.styles%7Cskins.vector.styles.legacy&amp;only=styles&amp;skin=vector"/>
+<script async="" src="/w/load.php?lang=en&amp;modules=startup&amp;only=scripts&amp;raw=1&amp;skin=vector"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=site.styles&amp;only=styles&amp;skin=vector"/>
+<meta name="generator" content="MediaWiki 1.39.12"/>
+<meta name="format-detection" content="telephone=no"/>
+<meta name="viewport" content="width=1000"/>
+<link rel="icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/w/opensearch_desc.php" title="Valve Developer Community (en)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://developer.valvesoftware.com/w/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="Valve Developer Community Atom feed" href="/w/index.php?title=Special:RecentChanges&amp;feed=atom"/>
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-underline-never mw-hide-empty-elt ns-0 ns-subject page-Item_bonuspack rootpage-Item_bonuspack skin-vector action-view skin-vector-legacy vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-language-alert-in-sidebar-disabled vector-feature-sticky-header-disabled vector-feature-sticky-header-edit-disabled vector-feature-table-of-contents-disabled vector-feature-visual-enhancement-next-disabled"><div id="mw-page-base" class="noprint"></div>
+<div id="mw-head-base" class="noprint"></div>
+<div id="content" class="mw-body" role="main">
+	<a id="top"></a>
+	<div id="siteNotice"></div>
+	<div class="mw-indicators">
+	</div>
+	<h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="monospaced" style="font-family:monospace, monospace">item_bonuspack</span></h1>
+	<div id="bodyContent" class="vector-body">
+		<div id="siteSub" class="noprint">From Valve Developer Community</div>
+		<div id="contentSub"></div>
+		<div id="contentSub2"></div>
+		
+		<div id="jump-to-nav"></div>
+		<a class="mw-jump-link" href="#mw-head">Jump to navigation</a>
+		<a class="mw-jump-link" href="#searchInput">Jump to search</a>
+		<div id="mw-content-text" class="mw-body-content mw-content-ltr" lang="en" dir="ltr"><div class="mw-parser-output"><div style="direction:; display:flex; gap:4px; width:calc(100% + 4px); user-select:none; pointer-events:none; position:absolute; z-index:100; top:calc(-17px - 18px); left:-4px"><div style="height:19px; background-color:#262626; border:1px solid #65635F; border-bottom:0;border-radius:3px 3px 0 0; pointer-events:all; margin-left:auto"><span style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.3); border-radius:2px; padding:0 1px; margin:1px"><span style="user-select:none; position:relative; top:-1px"><img alt="English (en)" src="/w/images/3/37/Flag-en.png" decoding="async" title="English (en)" width="16" height="11" data-file-width="16" data-file-height="11" /></span></span><span class="mw-customtoggle-UntranslatedFlags" style="margin:1px; border:1px solid transparent"><span style="pointer-events:none;user-select:none; position:relative; top:-1px"><img alt="Translate (Translate)" src="/w/images/a/a8/Flag-Translate.png" decoding="async" title="Translate (Translate)" width="16" height="11" data-file-width="16" data-file-height="11" /></span></span>
+<div class="mw-collapsible mw-collapsed" id="mw-customcollapsible-UntranslatedFlags" style="display:none; position:absolute; right:0px; top:20px; z-index:1001; width:max-content; height:20px; background-color:#262626; border:1px solid #65635F; border-top:0px; border-radius:0 0 3px 3px; pointer-events:all;"><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=De/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Deutsch&amp;preloadparams%5B%5D=Item+bonuspack" title="Deutsch (de)" rel="nofollow"><img alt="Deutsch (de)" src="/w/images/b/b7/Flag-de.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Eo/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Esperanto&amp;preloadparams%5B%5D=Item+bonuspack" title="Esperanto (eo)" rel="nofollow"><img alt="Esperanto (eo)" src="/w/images/5/57/Flag-eo.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Es/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=espa%C3%B1ol&amp;preloadparams%5B%5D=Item+bonuspack" title="Español (es)" rel="nofollow"><img alt="Español (es)" src="/w/images/8/86/Flag-es.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Fr/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=fran%C3%A7ais&amp;preloadparams%5B%5D=Item+bonuspack" title="Français (fr)" rel="nofollow"><img alt="Français (fr)" src="/w/images/9/95/Flag-fr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Fi/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=suomi&amp;preloadparams%5B%5D=Item+bonuspack" title="Suomi (fi)" rel="nofollow"><img alt="Suomi (fi)" src="/w/images/d/d5/Flag-fi.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Hr/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=hrvatski&amp;preloadparams%5B%5D=Item+bonuspack" title="Hrvatski (hr)" rel="nofollow"><img alt="Hrvatski (hr)" src="/w/images/d/d6/Flag-hr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Hu/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=magyar&amp;preloadparams%5B%5D=Item+bonuspack" title="Magyar (hu)" rel="nofollow"><img alt="Magyar (hu)" src="/w/images/5/5b/Flag-hu.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=It/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=italiano&amp;preloadparams%5B%5D=Item+bonuspack" title="Italiano (it)" rel="nofollow"><img alt="Italiano (it)" src="/w/images/d/d3/Flag-it.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ja/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E6%97%A5%E6%9C%AC%E8%AA%9E&amp;preloadparams%5B%5D=Item+bonuspack" title="日本語 (ja)" rel="nofollow"><img alt="日本語 (ja)" src="/w/images/c/cd/Flag-ja.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ko/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%ED%95%9C%EA%B5%AD%EC%96%B4&amp;preloadparams%5B%5D=Item+bonuspack" title="한국어 (ko)" rel="nofollow"><img alt="한국어 (ko)" src="/w/images/f/f7/Flag-ko.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Nl/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Nederlands&amp;preloadparams%5B%5D=Item+bonuspack" title="Nederlands (nl)" rel="nofollow"><img alt="Nederlands (nl)" src="/w/images/8/83/Flag-nl.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pl/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=polski&amp;preloadparams%5B%5D=Item+bonuspack" title="Polski (pl)" rel="nofollow"><img alt="Polski (pl)" src="/w/images/9/9a/Flag-pl.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pt/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=portugu%C3%AAs&amp;preloadparams%5B%5D=Item+bonuspack" title="Português (pt)" rel="nofollow"><img alt="Português (pt)" src="/w/images/c/c8/Flag-pt.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pt-br/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=portugu%C3%AAs+do+Brasil&amp;preloadparams%5B%5D=Item+bonuspack" title="Português do Brasil (pt-br)" rel="nofollow"><img alt="Português do Brasil (pt-br)" src="/w/images/thumb/2/29/Flag-pt-br.png/16px-Flag-pt-br.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/2/29/Flag-pt-br.png/24px-Flag-pt-br.png 1.5x, /w/images/thumb/2/29/Flag-pt-br.png/32px-Flag-pt-br.png 2x" data-file-width="128" data-file-height="88" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ru/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%D1%80%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9&amp;preloadparams%5B%5D=Item+bonuspack" title="Русский (ru)" rel="nofollow"><img alt="Русский (ru)" src="/w/images/e/e1/Flag-ru.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Sk/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=sloven%C4%8Dina&amp;preloadparams%5B%5D=Item+bonuspack" title="Slovenčina (sk)" rel="nofollow"><img alt="Slovenčina (sk)" src="/w/images/d/d6/Flag-sk.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Sv/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=svenska&amp;preloadparams%5B%5D=Item+bonuspack" title="Svenska (sv)" rel="nofollow"><img alt="Svenska (sv)" src="/w/images/f/fb/Flag-sv.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Tr/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=T%C3%BCrk%C3%A7e&amp;preloadparams%5B%5D=Item+bonuspack" title="Türkçe (tr)" rel="nofollow"><img alt="Türkçe (tr)" src="/w/images/2/24/Flag-tr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Uk/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%D1%83%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0&amp;preloadparams%5B%5D=Item+bonuspack" title="Українська (uk)" rel="nofollow"><img alt="Українська (uk)" src="/w/images/2/2b/Flag-uk.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Vi/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Ti%E1%BA%BFng+Vi%E1%BB%87t&amp;preloadparams%5B%5D=Item+bonuspack" title="Tiếng Việt (vi)" rel="nofollow"><img alt="Tiếng Việt (vi)" src="/w/images/thumb/4/47/Flag-vi.png/16px-Flag-vi.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/4/47/Flag-vi.png/24px-Flag-vi.png 1.5x, /w/images/thumb/4/47/Flag-vi.png/32px-Flag-vi.png 2x" data-file-width="128" data-file-height="88" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Zh/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E4%B8%AD%E6%96%87&amp;preloadparams%5B%5D=Item+bonuspack" title="中文 (zh)" rel="nofollow"><img alt="中文 (zh)" src="/w/images/thumb/e/e9/Flag-zh.png/16px-Flag-zh.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/e/e9/Flag-zh.png/24px-Flag-zh.png 1.5x, /w/images/thumb/e/e9/Flag-zh.png/32px-Flag-zh.png 2x" data-file-width="128" data-file-height="88" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Zh-tw/Item_bonuspack&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E4%B8%AD%E6%96%87%EF%BC%88%E8%87%BA%E7%81%A3%EF%BC%89&amp;preloadparams%5B%5D=Item+bonuspack" title="中文（臺灣） (zh-tw)" rel="nofollow"><img alt="中文（臺灣） (zh-tw)" src="/w/images/e/e6/Flag-zh-tw.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Template:TranslationMark/Item_bonuspack&amp;action=edit&amp;preload=Template:TranslationMark/preload&amp;preloadparams%5B%5D=&amp;preloadparams%5B%5D=Item+bonuspack" title="Translationmark (TranslationMark)" rel="nofollow"><img alt="Translationmark (TranslationMark)" src="/w/images/6/69/Flag-TranslationMark.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="/wiki/Valve_Developer_Community:Alternative_Languages" title="Valve Developer Community:Alternative Languages"><img alt="Flag-white-i.png" src="/w/images/d/dc/Flag-white-i.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11" /></a></span></span>
+</div></div></div>
+<table class="wikitable" align="right" style="clear:right; margin-left:2em">
+
+<tbody><tr>
+<th><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/CPP" title="C++"><img alt="C++" src="/w/images/thumb/7/7a/Icon-cpp.png/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032" /></a></span> <a href="/wiki/Class_hierarchy" title="Class hierarchy">Class hierarchy</a>
+</th></tr>
+<tr>
+<td><a href="/w/index.php?title=CBonusPack&amp;action=edit&amp;redlink=1" class="new" title="CBonusPack (page does not exist)">CBonusPack </a>
+<dl><dd><a href="/wiki/Category:CD_CCurrencyPack" title="Category:CD CCurrencyPack">↳</a><a href="/w/index.php?title=CCurrencyPack&amp;action=edit&amp;redlink=1" class="new" title="CCurrencyPack (page does not exist)">CCurrencyPack</a>
+<dl><dd><a href="/wiki/Category:CD_CTFPowerup" title="Category:CD CTFPowerup">↳</a><a href="/w/index.php?title=CTFPowerup&amp;action=edit&amp;redlink=1" class="new" title="CTFPowerup (page does not exist)">CTFPowerup</a>
+<dl><dd><a href="/wiki/Category:CD_CItem" title="Category:CD CItem">↳</a><a href="/w/index.php?title=CItem&amp;action=edit&amp;redlink=1" class="new" title="CItem (page does not exist)">CItem</a>
+<dl><dd><a href="/wiki/Category:CD_CBaseAnimating" title="Category:CD CBaseAnimating">↳</a><a href="/wiki/CBaseAnimating" title="CBaseAnimating">CBaseAnimating</a>
+<dl><dd><a href="/wiki/Category:CD_CBaseEntity" title="Category:CD CBaseEntity">↳</a><a href="/wiki/CBaseEntity" title="CBaseEntity">CBaseEntity</a></dd></dl></dd></dl></dd></dl></dd></dl></dd></dl>
+</td></tr>
+<tr>
+<th><small><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/CPP" title="C++"><img alt="C++" src="/w/images/thumb/7/7a/Icon-cpp.png/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032" /></a></span> <kbd><i><a rel="nofollow" class="external text" href="https://github.com/ValveSoftware/source-sdk-2013/tree/master/src/game/shared/tf/entity_bonuspack.cpp">entity_bonuspack.cpp</a></i></kbd></small>
+</th></tr></tbody></table>
+<div class="thumb tright"><div class="thumbinner" style="width:202px;"><a href="/wiki/File:RED_Power_Core.png" class="image"><img alt="" src="/w/images/thumb/6/65/RED_Power_Core.png/200px-RED_Power_Core.png" decoding="async" width="200" height="213" class="thumbimage" srcset="/w/images/thumb/6/65/RED_Power_Core.png/300px-RED_Power_Core.png 1.5x, /w/images/thumb/6/65/RED_Power_Core.png/400px-RED_Power_Core.png 2x" data-file-width="686" data-file-height="729" /></a>  <div class="thumbcaption"><div class="magnify"><a href="/wiki/File:RED_Power_Core.png" class="internal" title="Enlarge"></a></div>A RED power core.</div></div></div>
+<p><code>item_bonuspack</code>  is a   <a href="/wiki/Model_entity" title="Model entity">model entity</a>  <a href="/wiki/Entity_availability_overview" title="Entity availability overview">available</a> in <span style="white-space:nowrap; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px"><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span> <a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><span title="Team Fortress 2" style="color:#CF7336;">Team Fortress 2</span></a></span>. It is the power core that the players collect in Robot Destruction. It adds one point to the team that picks it up and restores 5 HP (into overheal) and 5 ammo (flat amount).
+</p>
+<h2><span class="mw-headline" id="Keywords">Keywords</span></h2>
+<dl><dt><a href="/wiki/Targetname" title="Targetname">Name</a> <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(targetname)</span></kbd>  <kbd>&lt;<a href="/wiki/Targetname" title="Targetname">string</a>&gt;</kbd></dt>
+<dd>The name that other entities refer to this entity by, via <a href="/wiki/Inputs_and_Outputs" title="Inputs and Outputs">Inputs/Outputs</a> or other <a href="/wiki/Keyvalue" title="Keyvalue">keyvalues</a> (e.g. <code><a href="/wiki/Entity_Hierarchy_(parenting)#Parentname" title="Entity Hierarchy (parenting)">parentname</a></code> or <code>target</code>).<br />Also displayed in Hammer's 2D views and <a href="/wiki/Hammer_Entity_Report_Dialog" title="Hammer Entity Report Dialog">Entity Report</a>.</dd>
+<dd><i><div><span style="color:#bbb; display:table-cell; font-weight:0; padding-left:1.6em; white-space:nowrap;">See also:&#160;</span><span style="display:table-cell; padding:0.2em;"><a href="/wiki/Generic_Keyvalues,_Inputs_and_Outputs" title="Generic Keyvalues, Inputs and Outputs">Generic Keyvalues, Inputs and Outputs</a> available to all entities</span></div></i></dd></dl>
+<dl><dt>Auto-Materialize <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(automaterialize)</span></kbd>  <kbd>&lt;<a href="/wiki/Boolean" title="Boolean">boolean</a>&gt;</kbd></dt>
+<dd>Whether the pickup will automatically re-materialize after 10 seconds.</dd></dl>
+<dl><dt>Model <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(powerup_model)</span></kbd>  <kbd>&lt;<a href="/wiki/String" title="String">string</a>&gt;</kbd></dt>
+<dd>Changes the model to something other than the default.</dd></dl>
+<dl><dt>Initial Team <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(TeamNum)</span></kbd>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a> choices&gt;</kbd></dt>
+<dd>Which <a href="/wiki/Team" title="Team">team</a> the entity belongs / is assigned to on spawn
+<ul><li>0: None</li>
+<li>1: Spectator/Halloween Souls <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>2: RED <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>3: BLU/Robots <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>5: Halloween Bosses <span style="white-space:nowrap; color: #BB8B2D; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px">(<i>only</i> in <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span>)</span> <b><small><a href="/wiki/Non-FGD_features" title="Non-FGD features">!FGD</a></small></b></li></ul></dd></dl>
+<dl><dt>Start Disabled <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(StartDisabled)</span></kbd>  <kbd>&lt;<a href="/wiki/Boolean" title="Boolean">boolean</a>&gt;</kbd></dt>
+<dd>Stay dormant until activated (with the<code>Enable</code>input).</dd></dl>
+<h2><span class="mw-headline" id="Inputs">Inputs</span></h2>
+<p><i><span style="border-bottom:1px solid #3A3937;display:block">EnableDisable:</span></i>
+</p>
+<dl><dt><kbd>Enable / Disable</kbd>  <kbd>&lt;<span style="color:grey">void</span>&gt;</kbd></dt>
+<dd>Enable/disable this entity from performing its task. It might also disappear from view.</dd></dl>
+<dl><dt><kbd>Toggle</kbd></dt>
+<dd>Toggles the enabled/disabled status of the entity.</dd></dl>
+<h2><span class="mw-headline" id="Outputs">Outputs</span></h2>
+<dl><dt><kbd>OnPlayerTouch</kbd>  &#160;<b><small><a href="/wiki/Non-FGD_features" title="Non-FGD features">!FGD</a></small></b></dt>
+<dd>Sent when the entity is picked up by a player.</dd></dl>
+<!-- 
+NewPP limit report
+Cached time: 20260111172356
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.286 seconds
+Real time usage: 0.302 seconds
+Preprocessor visited node count: 14970/1000000
+Post‐expand include size: 126664/2097152 bytes
+Template argument size: 61544/2097152 bytes
+Highest expansion depth: 48/100
+Expensive parser function count: 23/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  256.916      1 -total
+ 49.62%  127.489      1 Template:This_is_a
+ 47.15%  121.135      3 Template:Str_right
+ 46.80%  120.237      3 Template:Str_sub_long
+ 46.46%  119.368      5 Template:This_is_a/strings
+ 42.91%  110.240     85 Template:Str_left
+ 40.27%  103.452      1 Template:A_or_an
+ 39.58%  101.690      1 Template:Delink
+ 39.31%  100.988      1 Template:Delink/phase_1_a
+ 29.32%   75.327      1 Template:Delink/phase_1_b
+-->
+
+<!-- Saved in parser cache with key developerwiki-mw_:pcache:idhash:29162-0!canonical and timestamp 20260111172356 and revision id 478364.
+ -->
+</div>
+<div class="printfooter" data-nosnippet="">Retrieved from "<a dir="ltr" href="https://developer.valvesoftware.com/w/index.php?title=Item_bonuspack&amp;oldid=478364">https://developer.valvesoftware.com/w/index.php?title=Item_bonuspack&amp;oldid=478364</a>"</div></div>
+		<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:CBaseAnimating" title="Category:CBaseAnimating">CBaseAnimating</a></li><li><a href="/wiki/Category:Model_entities" title="Category:Model entities">Model entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_entities" title="Category:Team Fortress 2 entities">Team Fortress 2 entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_model_entities" title="Category:Team Fortress 2 model entities">Team Fortress 2 model entities</a></li></ul></div><div id="mw-hidden-catlinks" class="mw-hidden-catlinks mw-hidden-cats-hidden">Hidden categories: <ul><li><a href="/wiki/Category:English" title="Category:English">English</a></li><li><a href="/wiki/Category:CD_CCurrencyPack" title="Category:CD CCurrencyPack">CD CCurrencyPack</a></li><li><a href="/wiki/Category:Entities" title="Category:Entities">Entities</a></li></ul></div></div>
+	</div>
+</div>
+
+<div id="mw-navigation">
+	<h2>Navigation menu</h2>
+	<div id="mw-head">
+		
+
+<nav id="p-personal" class="vector-menu mw-portlet mw-portlet-personal vector-user-menu-legacy" aria-labelledby="p-personal-label" role="navigation"  >
+	<h3
+		id="p-personal-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Personal tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="pt-createaccount" class="mw-list-item"><a href="/w/index.php?title=Special:CreateAccount&amp;returnto=Item+bonuspack" title="You are encouraged to create an account and log in; however, it is not mandatory"><span>Create account</span></a></li><li id="pt-login" class="mw-list-item"><a href="/w/index.php?title=Special:UserLogin&amp;returnto=Item+bonuspack" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o"><span>Log in</span></a></li></ul>
+		
+	</div>
+</nav>
+
+		<div id="left-navigation">
+			
+
+<nav id="p-namespaces" class="vector-menu mw-portlet mw-portlet-namespaces vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-namespaces-label" role="navigation"  >
+	<h3
+		id="p-namespaces-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Namespaces</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-nstab-main" class="selected mw-list-item"><a href="/wiki/Item_bonuspack" title="View the content page [c]" accesskey="c"><span>Page</span></a></li><li id="ca-talk" class="new mw-list-item"><a href="/w/index.php?title=Talk:Item_bonuspack&amp;action=edit&amp;redlink=1" rel="discussion" title="Discussion about the content page (page does not exist) [t]" accesskey="t"><span>Discussion</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-variants" class="vector-menu mw-portlet mw-portlet-variants emptyPortlet vector-menu-dropdown" aria-labelledby="p-variants-label" role="navigation"  >
+	<input type="checkbox"
+		id="p-variants-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-variants"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-variants-label"
+	/>
+	<label
+		id="p-variants-label"
+		 aria-label="Change language variant"
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">English</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+		</div>
+		<div id="right-navigation">
+			
+
+<nav id="p-views" class="vector-menu mw-portlet mw-portlet-views vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-views-label" role="navigation"  >
+	<h3
+		id="p-views-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Views</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-view" class="selected mw-list-item"><a href="/wiki/Item_bonuspack"><span>Read</span></a></li><li id="ca-viewsource" class="mw-list-item"><a href="/w/index.php?title=Item_bonuspack&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e"><span>View source</span></a></li><li id="ca-history" class="mw-list-item"><a href="/w/index.php?title=Item_bonuspack&amp;action=history" title="Past revisions of this page [h]" accesskey="h"><span>View history</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-cactions" class="vector-menu mw-portlet mw-portlet-cactions emptyPortlet vector-menu-dropdown" aria-labelledby="p-cactions-label" role="navigation"  title="More options" >
+	<input type="checkbox"
+		id="p-cactions-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-cactions"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-cactions-label"
+	/>
+	<label
+		id="p-cactions-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">More</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+			
+<div id="p-search" role="search" class="vector-search-box-vue  vector-search-box-show-thumbnail vector-search-box-auto-expand-width vector-search-box">
+	<div>
+			<h3 >
+				<label for="searchInput">Search</label>
+			</h3>
+		<form action="/w/index.php" id="searchform"
+			class="vector-search-box-form">
+			<div id="simpleSearch"
+				class="vector-search-box-inner"
+				 data-search-loc="header-navigation">
+				<input class="vector-search-box-input"
+					 type="search" name="search" placeholder="Search Valve Developer Community" aria-label="Search Valve Developer Community" autocapitalize="sentences" title="Search Valve Developer Community [f]" accesskey="f" id="searchInput"
+				>
+				<input type="hidden" name="title" value="Special:Search">
+				<input id="mw-searchButton"
+					 class="searchButton mw-fallbackSearchButton" type="submit" name="fulltext" title="Search the pages for this text" value="Search">
+				<input id="searchButton"
+					 class="searchButton" type="submit" name="go" title="Go to a page with this exact name if it exists" value="Go">
+			</div>
+		</form>
+	</div>
+</div>
+
+		</div>
+	</div>
+	
+
+<div id="mw-panel">
+	<div id="p-logo" role="banner">
+		<a class="mw-wiki-logo" href="/wiki/Main_Page"
+			title="Visit the main page"></a>
+	</div>
+	
+
+<nav id="p-navigation" class="vector-menu mw-portlet mw-portlet-navigation vector-menu-portal portal" aria-labelledby="p-navigation-label" role="navigation"  >
+	<h3
+		id="p-navigation-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Navigation</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-mainpage" class="mw-list-item"><a href="/wiki/Main_Page" title="Visit the main page [z]" accesskey="z"><span>Main Page</span></a></li><li id="n-index" class="mw-list-item"><a href="/wiki/SDK_Docs"><span>Source SDK index</span></a></li><li id="n-recentchanges" class="mw-list-item"><a href="/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r"><span>Recent changes</span></a></li><li id="n-randompage" class="mw-list-item"><a href="/wiki/Special:RandomRootpage" title="Load a random page [x]" accesskey="x"><span>Random page</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+
+<nav id="p-workshop" class="vector-menu mw-portlet mw-portlet-workshop vector-menu-portal portal" aria-labelledby="p-workshop-label" role="navigation"  >
+	<h3
+		id="p-workshop-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Workshop</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-hlsdk" class="mw-list-item"><a href="/wiki/Half-Life_SDK"><span>Half-Life SDK</span></a></li><li id="n-hlatools" class="mw-list-item"><a href="/wiki/Half-Life:_Alyx_Workshop_Tools"><span>Half-Life: Alyx Tools</span></a></li><li id="n-dota2tools" class="mw-list-item"><a href="/wiki/Dota_2_Workshop_Tools"><span>Dota 2 Tools</span></a></li><li id="n-vrtools" class="mw-list-item"><a href="/wiki/SteamVR/Environments"><span>SteamVR Tools</span></a></li><li id="n-cs2tools" class="mw-list-item"><a href="/wiki/Counter-Strike_2_Workshop_Tools"><span>Counter-Strike 2 Tools</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-support" class="vector-menu mw-portlet mw-portlet-support vector-menu-portal portal" aria-labelledby="p-support-label" role="navigation"  >
+	<h3
+		id="p-support-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Support</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-communityportal" class="mw-list-item"><a href="/wiki/Valve_Developer_Community:Community_portal"><span>Community portal</span></a></li><li id="n-gettinghelp" class="mw-list-item"><a href="/wiki/Help:Contents"><span>Getting help</span></a></li><li id="n-sdkfaq" class="mw-list-item"><a href="/wiki/Category:Source_SDK_FAQ"><span>Source SDK FAQ</span></a></li><li id="n-ldfaq" class="mw-list-item"><a href="/wiki/Category:Level_Design_FAQ"><span>Level Design FAQ</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-steamcommunity" class="vector-menu mw-portlet mw-portlet-steamcommunity vector-menu-portal portal" aria-labelledby="p-steamcommunity-label" role="navigation"  >
+	<h3
+		id="p-steamcommunity-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Steam Community</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-sdkhub" class="mw-list-item"><a href="http://steamcommunity.com/app/211" rel="nofollow"><span>Source SDK Hub</span></a></li><li id="n-sdkdiscuss" class="mw-list-item"><a href="https://steamcommunity.com/app/211/discussions" rel="nofollow"><span>Source SDK Discussion</span></a></li><li id="n-steam" class="mw-list-item"><a href="http://www.steampowered.com" rel="nofollow"><span>Steam</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-tb" class="vector-menu mw-portlet mw-portlet-tb vector-menu-portal portal" aria-labelledby="p-tb-label" role="navigation"  >
+	<h3
+		id="p-tb-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="t-whatlinkshere" class="mw-list-item"><a href="/wiki/Special:WhatLinksHere/Item_bonuspack" title="A list of all wiki pages that link here [j]" accesskey="j"><span>What links here</span></a></li><li id="t-recentchangeslinked" class="mw-list-item"><a href="/wiki/Special:RecentChangesLinked/Item_bonuspack" rel="nofollow" title="Recent changes in pages linked from this page [k]" accesskey="k"><span>Related changes</span></a></li><li id="t-specialpages" class="mw-list-item"><a href="/wiki/Special:SpecialPages" title="A list of all special pages [q]" accesskey="q"><span>Special pages</span></a></li><li id="t-print" class="mw-list-item"><a href="javascript:print();" rel="alternate" title="Printable version of this page [p]" accesskey="p"><span>Printable version</span></a></li><li id="t-permalink" class="mw-list-item"><a href="/w/index.php?title=Item_bonuspack&amp;oldid=478364" title="Permanent link to this revision of this page"><span>Permanent link</span></a></li><li id="t-info" class="mw-list-item"><a href="/w/index.php?title=Item_bonuspack&amp;action=info" title="More information about this page"><span>Page information</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+</div>
+
+</div>
+
+<footer id="footer" class="mw-footer" role="contentinfo" >
+	<ul id="footer-info">
+	<li id="footer-info-lastmod"> This page was last edited on 19 May 2025, at 05:00.</li>
+</ul>
+
+	<ul id="footer-places">
+	<li id="footer-places-about"><a href="/wiki/Valve_Developer_Community:About">About Valve Developer Community</a></li>
+	<li id="footer-places-disclaimer"><a href="/wiki/Valve_Developer_Community:Terms_of_use">Terms of Use</a></li>
+	<li id="footer-places-legalnotices"><a href="Valve Developer Community:Third Party Legal Notices">Third Party Legal Notices</a></li>
+</ul>
+
+	<ul id="footer-icons" class="noprint">
+	<li id="footer-poweredbyico"><a href="https://www.mediawiki.org/"><img src="/w/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/w/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /w/resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31" loading="lazy"/></a></li>
+</ul>
+
+</footer>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.286","walltime":"0.302","ppvisitednodes":{"value":14970,"limit":1000000},"postexpandincludesize":{"value":126664,"limit":2097152},"templateargumentsize":{"value":61544,"limit":2097152},"expansiondepth":{"value":48,"limit":100},"expensivefunctioncount":{"value":23,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":0,"limit":5000000},"timingprofile":["100.00%  256.916      1 -total"," 49.62%  127.489      1 Template:This_is_a"," 47.15%  121.135      3 Template:Str_right"," 46.80%  120.237      3 Template:Str_sub_long"," 46.46%  119.368      5 Template:This_is_a/strings"," 42.91%  110.240     85 Template:Str_left"," 40.27%  103.452      1 Template:A_or_an"," 39.58%  101.690      1 Template:Delink"," 39.31%  100.988      1 Template:Delink/phase_1_a"," 29.32%   75.327      1 Template:Delink/phase_1_b"]},"cachereport":{"timestamp":"20260111172356","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":73});});</script>
+</body>
+</html> <- item_bonuspack etc.. 
+<!DOCTYPE html>
+<html class="client-nojs" lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>tf_robot_destruction_spawn_group - Valve Developer Community</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":false,"wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgRequestId":"9a166922fd8a743cb8d7112c","wgCSPNonce":false,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Tf_robot_destruction_spawn_group","wgTitle":"Tf robot destruction spawn group","wgCurRevisionId":472260,"wgRevisionId":472260,"wgArticleId":29139,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Entities","Non-internal Team Fortress 2 entities","Pages with undefined internal keyvalue names","Point entities","Team Fortress 2 entities","Team Fortress 2 point entities"],"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgRelevantPageName":"Tf_robot_destruction_spawn_group","wgRelevantArticleId":29139,"wgIsProbablyEditable":false,"wgRelevantPageIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[],"wgVector2022PreviewPages":[],"wgMediaViewerOnClick":true,"wgMediaViewerEnabledByDefault":true};
+RLSTATE={"site.styles":"ready","user.styles":"ready","user":"ready","user.options":"loading","skins.vector.styles.legacy":"ready"};RLPAGEMODULES=["site","mediawiki.page.ready","mediawiki.toc","skins.vector.legacy.js","mmv.head","mmv.bootstrap.autostart"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});});});</script>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=skins.vector.styles.legacy&amp;only=styles&amp;skin=vector"/>
+<script async="" src="/w/load.php?lang=en&amp;modules=startup&amp;only=scripts&amp;raw=1&amp;skin=vector"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/w/load.php?lang=en&amp;modules=site.styles&amp;only=styles&amp;skin=vector"/>
+<meta name="generator" content="MediaWiki 1.39.12"/>
+<meta name="format-detection" content="telephone=no"/>
+<meta name="viewport" content="width=1000"/>
+<link rel="icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/w/opensearch_desc.php" title="Valve Developer Community (en)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://developer.valvesoftware.com/w/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="Valve Developer Community Atom feed" href="/w/index.php?title=Special:RecentChanges&amp;feed=atom"/>
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-underline-never mw-hide-empty-elt ns-0 ns-subject page-Tf_robot_destruction_spawn_group rootpage-Tf_robot_destruction_spawn_group skin-vector action-view skin-vector-legacy vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-language-alert-in-sidebar-disabled vector-feature-sticky-header-disabled vector-feature-sticky-header-edit-disabled vector-feature-table-of-contents-disabled vector-feature-visual-enhancement-next-disabled"><div id="mw-page-base" class="noprint"></div>
+<div id="mw-head-base" class="noprint"></div>
+<div id="content" class="mw-body" role="main">
+	<a id="top"></a>
+	<div id="siteNotice"></div>
+	<div class="mw-indicators">
+	</div>
+	<h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="monospaced" style="font-family:monospace, monospace">tf_robot_destruction_spawn_group</span></h1>
+	<div id="bodyContent" class="vector-body">
+		<div id="siteSub" class="noprint">From Valve Developer Community</div>
+		<div id="contentSub"></div>
+		<div id="contentSub2"></div>
+		
+		<div id="jump-to-nav"></div>
+		<a class="mw-jump-link" href="#mw-head">Jump to navigation</a>
+		<a class="mw-jump-link" href="#searchInput">Jump to search</a>
+		<div id="mw-content-text" class="mw-body-content mw-content-ltr" lang="en" dir="ltr"><div class="mw-parser-output"><p><code>tf_robot_destruction_spawn_group</code>  is a   <a href="/wiki/Point_entity" title="Point entity">point entity</a>  <a href="/wiki/Entity_availability_overview" title="Entity availability overview">available</a> in <span style="white-space:nowrap; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px"><span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span> <a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><span title="Team Fortress 2" style="color:#CF7336;">Team Fortress 2</span></a></span>.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#Entity_description"><span class="tocnumber">1</span> <span class="toctext">Entity description</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Keyvalues"><span class="tocnumber">2</span> <span class="toctext">Keyvalues</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#Inputs"><span class="tocnumber">3</span> <span class="toctext">Inputs</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="#Outputs"><span class="tocnumber">4</span> <span class="toctext">Outputs</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Entity_description">Entity description</span></h2>
+<p>The control entity for each of the robot groups in the robot destruction game mode.
+</p>
+<h2><span class="mw-headline" id="Keyvalues">Keyvalues</span></h2>
+<dl><dt><a href="/wiki/Targetname" title="Targetname">Name</a> <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(targetname)</span></kbd>  <kbd>&lt;<a href="/wiki/Targetname" title="Targetname">string</a>&gt;</kbd></dt>
+<dd>The name that other entities refer to this entity by, via <a href="/wiki/Inputs_and_Outputs" title="Inputs and Outputs">Inputs/Outputs</a> or other <a href="/wiki/Keyvalue" title="Keyvalue">keyvalues</a> (e.g. <code><a href="/wiki/Entity_Hierarchy_(parenting)#Parentname" title="Entity Hierarchy (parenting)">parentname</a></code> or <code>target</code>).<br />Also displayed in Hammer's 2D views and <a href="/wiki/Hammer_Entity_Report_Dialog" title="Hammer Entity Report Dialog">Entity Report</a>.</dd>
+<dd><i><div><span style="color:#bbb; display:table-cell; font-weight:0; padding-left:1.6em; white-space:nowrap;">See also:&#160;</span><span style="display:table-cell; padding:0.2em;"><a href="/wiki/Generic_Keyvalues,_Inputs_and_Outputs" title="Generic Keyvalues, Inputs and Outputs">Generic Keyvalues, Inputs and Outputs</a> available to all entities</span></div></i></dd></dl>
+<dl><dt>groupnumber <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>Which robot group it is (one indexed)</dd></dl>
+<dl><dt>hud_icon <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Material" title="Material">material</a>&gt;</kbd></dt>
+<dd>The material for the HUD</dd></dl>
+<dl><dt>respawn_time <small><kbd>(<abbr title="Non-SmartEdit KV name (&#39;intn&#39;) not defined, see Template:KV documentation" style="color:#8BC53F;font-weight:lighter">[todo internal name <a href="/wiki/Template:KeyValue#Examples_and_Parameters" title="Template:KeyValue">(i)</a>]</abbr>)</kbd></small>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>How long it takes for the group to respawn</dd></dl>
+<dl><dt>Initial Team <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(TeamNum)</span></kbd>  <kbd>&lt;<a href="/wiki/Integer" title="Integer">integer</a> choices&gt;</kbd></dt>
+<dd>Which <a href="/wiki/Team" title="Team">team</a> the entity belongs / is assigned to on spawn
+<ul><li>0: None</li>
+<li>1: Spectator/Halloween Souls <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>2: RED <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>3: BLU/Robots <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span></li>
+<li>5: Halloween Bosses <span style="white-space:nowrap; color: #BB8B2D; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px">(<i>only</i> in <span style="user-select:none; position:relative; bottom:.1em"><a href="/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="/w/images/thumb/8/84/Tf2-16px.png/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256" /></a></span>)</span> <b><small><a href="/wiki/Non-FGD_features" title="Non-FGD features">!FGD</a></small></b></li></ul></dd></dl>
+<p><br />
+</p>
+<h2><span class="mw-headline" id="Inputs">Inputs</span></h2>
+<h2><span class="mw-headline" id="Outputs">Outputs</span></h2>
+<dl><dt><kbd>OnAllRobotsDead</kbd></dt>
+<dd>Fires when all of the robots of the group are destroyed</dd></dl>
+<dl><dt><kbd>OnRobotsRespawn</kbd></dt>
+<dd>Fires when all of the robots of the group respawn</dd></dl>
+<!-- 
+NewPP limit report
+Cached time: 20260111104304
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.178 seconds
+Real time usage: 0.186 seconds
+Preprocessor visited node count: 11490/1000000
+Post‐expand include size: 50770/2097152 bytes
+Template argument size: 51767/2097152 bytes
+Highest expansion depth: 48/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  171.954      1 -total
+ 78.17%  134.425      1 Template:This_is_a
+ 76.78%  132.031      5 Template:This_is_a/strings
+ 72.80%  125.179      3 Template:Str_right
+ 72.18%  124.112      3 Template:Str_sub_long
+ 64.95%  111.686     85 Template:Str_left
+ 61.03%  104.940      1 Template:A_or_an
+ 60.07%  103.292      1 Template:Delink
+ 59.67%  102.608      1 Template:Delink/phase_1_a
+ 45.09%   77.531      1 Template:Delink/phase_1_b
+-->
+
+<!-- Saved in parser cache with key developerwiki-mw_:pcache:idhash:29139-0!canonical and timestamp 20260111104304 and revision id 472260.
+ -->
+</div>
+<div class="printfooter" data-nosnippet="">Retrieved from "<a dir="ltr" href="https://developer.valvesoftware.com/w/index.php?title=Tf_robot_destruction_spawn_group&amp;oldid=472260">https://developer.valvesoftware.com/w/index.php?title=Tf_robot_destruction_spawn_group&amp;oldid=472260</a>"</div></div>
+		<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:Point_entities" title="Category:Point entities">Point entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_entities" title="Category:Team Fortress 2 entities">Team Fortress 2 entities</a></li><li><a href="/wiki/Category:Team_Fortress_2_point_entities" title="Category:Team Fortress 2 point entities">Team Fortress 2 point entities</a></li></ul></div><div id="mw-hidden-catlinks" class="mw-hidden-catlinks mw-hidden-cats-hidden">Hidden categories: <ul><li><a href="/wiki/Category:Entities" title="Category:Entities">Entities</a></li><li><a href="/wiki/Category:Non-internal_Team_Fortress_2_entities" title="Category:Non-internal Team Fortress 2 entities">Non-internal Team Fortress 2 entities</a></li><li><a href="/wiki/Category:Pages_with_undefined_internal_keyvalue_names" title="Category:Pages with undefined internal keyvalue names">Pages with undefined internal keyvalue names</a></li></ul></div></div>
+	</div>
+</div>
+
+<div id="mw-navigation">
+	<h2>Navigation menu</h2>
+	<div id="mw-head">
+		
+
+<nav id="p-personal" class="vector-menu mw-portlet mw-portlet-personal vector-user-menu-legacy" aria-labelledby="p-personal-label" role="navigation"  >
+	<h3
+		id="p-personal-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Personal tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="pt-createaccount" class="mw-list-item"><a href="/w/index.php?title=Special:CreateAccount&amp;returnto=Tf+robot+destruction+spawn+group" title="You are encouraged to create an account and log in; however, it is not mandatory"><span>Create account</span></a></li><li id="pt-login" class="mw-list-item"><a href="/w/index.php?title=Special:UserLogin&amp;returnto=Tf+robot+destruction+spawn+group" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o"><span>Log in</span></a></li></ul>
+		
+	</div>
+</nav>
+
+		<div id="left-navigation">
+			
+
+<nav id="p-namespaces" class="vector-menu mw-portlet mw-portlet-namespaces vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-namespaces-label" role="navigation"  >
+	<h3
+		id="p-namespaces-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Namespaces</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-nstab-main" class="selected mw-list-item"><a href="/wiki/Tf_robot_destruction_spawn_group" title="View the content page [c]" accesskey="c"><span>Page</span></a></li><li id="ca-talk" class="new mw-list-item"><a href="/w/index.php?title=Talk:Tf_robot_destruction_spawn_group&amp;action=edit&amp;redlink=1" rel="discussion" title="Discussion about the content page (page does not exist) [t]" accesskey="t"><span>Discussion</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-variants" class="vector-menu mw-portlet mw-portlet-variants emptyPortlet vector-menu-dropdown" aria-labelledby="p-variants-label" role="navigation"  >
+	<input type="checkbox"
+		id="p-variants-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-variants"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-variants-label"
+	/>
+	<label
+		id="p-variants-label"
+		 aria-label="Change language variant"
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">English</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+		</div>
+		<div id="right-navigation">
+			
+
+<nav id="p-views" class="vector-menu mw-portlet mw-portlet-views vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-views-label" role="navigation"  >
+	<h3
+		id="p-views-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Views</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-view" class="selected mw-list-item"><a href="/wiki/Tf_robot_destruction_spawn_group"><span>Read</span></a></li><li id="ca-viewsource" class="mw-list-item"><a href="/w/index.php?title=Tf_robot_destruction_spawn_group&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e"><span>View source</span></a></li><li id="ca-history" class="mw-list-item"><a href="/w/index.php?title=Tf_robot_destruction_spawn_group&amp;action=history" title="Past revisions of this page [h]" accesskey="h"><span>View history</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-cactions" class="vector-menu mw-portlet mw-portlet-cactions emptyPortlet vector-menu-dropdown" aria-labelledby="p-cactions-label" role="navigation"  title="More options" >
+	<input type="checkbox"
+		id="p-cactions-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-cactions"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-cactions-label"
+	/>
+	<label
+		id="p-cactions-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">More</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+			
+<div id="p-search" role="search" class="vector-search-box-vue  vector-search-box-show-thumbnail vector-search-box-auto-expand-width vector-search-box">
+	<div>
+			<h3 >
+				<label for="searchInput">Search</label>
+			</h3>
+		<form action="/w/index.php" id="searchform"
+			class="vector-search-box-form">
+			<div id="simpleSearch"
+				class="vector-search-box-inner"
+				 data-search-loc="header-navigation">
+				<input class="vector-search-box-input"
+					 type="search" name="search" placeholder="Search Valve Developer Community" aria-label="Search Valve Developer Community" autocapitalize="sentences" title="Search Valve Developer Community [f]" accesskey="f" id="searchInput"
+				>
+				<input type="hidden" name="title" value="Special:Search">
+				<input id="mw-searchButton"
+					 class="searchButton mw-fallbackSearchButton" type="submit" name="fulltext" title="Search the pages for this text" value="Search">
+				<input id="searchButton"
+					 class="searchButton" type="submit" name="go" title="Go to a page with this exact name if it exists" value="Go">
+			</div>
+		</form>
+	</div>
+</div>
+
+		</div>
+	</div>
+	
+
+<div id="mw-panel">
+	<div id="p-logo" role="banner">
+		<a class="mw-wiki-logo" href="/wiki/Main_Page"
+			title="Visit the main page"></a>
+	</div>
+	
+
+<nav id="p-navigation" class="vector-menu mw-portlet mw-portlet-navigation vector-menu-portal portal" aria-labelledby="p-navigation-label" role="navigation"  >
+	<h3
+		id="p-navigation-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Navigation</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-mainpage" class="mw-list-item"><a href="/wiki/Main_Page" title="Visit the main page [z]" accesskey="z"><span>Main Page</span></a></li><li id="n-index" class="mw-list-item"><a href="/wiki/SDK_Docs"><span>Source SDK index</span></a></li><li id="n-recentchanges" class="mw-list-item"><a href="/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [r]" accesskey="r"><span>Recent changes</span></a></li><li id="n-randompage" class="mw-list-item"><a href="/wiki/Special:RandomRootpage" title="Load a random page [x]" accesskey="x"><span>Random page</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+
+<nav id="p-workshop" class="vector-menu mw-portlet mw-portlet-workshop vector-menu-portal portal" aria-labelledby="p-workshop-label" role="navigation"  >
+	<h3
+		id="p-workshop-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Workshop</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-hlsdk" class="mw-list-item"><a href="/wiki/Half-Life_SDK"><span>Half-Life SDK</span></a></li><li id="n-hlatools" class="mw-list-item"><a href="/wiki/Half-Life:_Alyx_Workshop_Tools"><span>Half-Life: Alyx Tools</span></a></li><li id="n-dota2tools" class="mw-list-item"><a href="/wiki/Dota_2_Workshop_Tools"><span>Dota 2 Tools</span></a></li><li id="n-vrtools" class="mw-list-item"><a href="/wiki/SteamVR/Environments"><span>SteamVR Tools</span></a></li><li id="n-cs2tools" class="mw-list-item"><a href="/wiki/Counter-Strike_2_Workshop_Tools"><span>Counter-Strike 2 Tools</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-support" class="vector-menu mw-portlet mw-portlet-support vector-menu-portal portal" aria-labelledby="p-support-label" role="navigation"  >
+	<h3
+		id="p-support-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Support</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-communityportal" class="mw-list-item"><a href="/wiki/Valve_Developer_Community:Community_portal"><span>Community portal</span></a></li><li id="n-gettinghelp" class="mw-list-item"><a href="/wiki/Help:Contents"><span>Getting help</span></a></li><li id="n-sdkfaq" class="mw-list-item"><a href="/wiki/Category:Source_SDK_FAQ"><span>Source SDK FAQ</span></a></li><li id="n-ldfaq" class="mw-list-item"><a href="/wiki/Category:Level_Design_FAQ"><span>Level Design FAQ</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-steamcommunity" class="vector-menu mw-portlet mw-portlet-steamcommunity vector-menu-portal portal" aria-labelledby="p-steamcommunity-label" role="navigation"  >
+	<h3
+		id="p-steamcommunity-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Steam Community</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-sdkhub" class="mw-list-item"><a href="http://steamcommunity.com/app/211" rel="nofollow"><span>Source SDK Hub</span></a></li><li id="n-sdkdiscuss" class="mw-list-item"><a href="https://steamcommunity.com/app/211/discussions" rel="nofollow"><span>Source SDK Discussion</span></a></li><li id="n-steam" class="mw-list-item"><a href="http://www.steampowered.com" rel="nofollow"><span>Steam</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-tb" class="vector-menu mw-portlet mw-portlet-tb vector-menu-portal portal" aria-labelledby="p-tb-label" role="navigation"  >
+	<h3
+		id="p-tb-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="t-whatlinkshere" class="mw-list-item"><a href="/wiki/Special:WhatLinksHere/Tf_robot_destruction_spawn_group" title="A list of all wiki pages that link here [j]" accesskey="j"><span>What links here</span></a></li><li id="t-recentchangeslinked" class="mw-list-item"><a href="/wiki/Special:RecentChangesLinked/Tf_robot_destruction_spawn_group" rel="nofollow" title="Recent changes in pages linked from this page [k]" accesskey="k"><span>Related changes</span></a></li><li id="t-specialpages" class="mw-list-item"><a href="/wiki/Special:SpecialPages" title="A list of all special pages [q]" accesskey="q"><span>Special pages</span></a></li><li id="t-print" class="mw-list-item"><a href="javascript:print();" rel="alternate" title="Printable version of this page [p]" accesskey="p"><span>Printable version</span></a></li><li id="t-permalink" class="mw-list-item"><a href="/w/index.php?title=Tf_robot_destruction_spawn_group&amp;oldid=472260" title="Permanent link to this revision of this page"><span>Permanent link</span></a></li><li id="t-info" class="mw-list-item"><a href="/w/index.php?title=Tf_robot_destruction_spawn_group&amp;action=info" title="More information about this page"><span>Page information</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+</div>
+
+</div>
+
+<footer id="footer" class="mw-footer" role="contentinfo" >
+	<ul id="footer-info">
+	<li id="footer-info-lastmod"> This page was last edited on 21 April 2025, at 06:52.</li>
+</ul>
+
+	<ul id="footer-places">
+	<li id="footer-places-about"><a href="/wiki/Valve_Developer_Community:About">About Valve Developer Community</a></li>
+	<li id="footer-places-disclaimer"><a href="/wiki/Valve_Developer_Community:Terms_of_use">Terms of Use</a></li>
+	<li id="footer-places-legalnotices"><a href="Valve Developer Community:Third Party Legal Notices">Third Party Legal Notices</a></li>
+</ul>
+
+	<ul id="footer-icons" class="noprint">
+	<li id="footer-poweredbyico"><a href="https://www.mediawiki.org/"><img src="/w/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/w/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /w/resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31" loading="lazy"/></a></li>
+</ul>
+
+</footer>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.178","walltime":"0.186","ppvisitednodes":{"value":11490,"limit":1000000},"postexpandincludesize":{"value":50770,"limit":2097152},"templateargumentsize":{"value":51767,"limit":2097152},"expansiondepth":{"value":48,"limit":100},"expensivefunctioncount":{"value":0,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":0,"limit":5000000},"timingprofile":["100.00%  171.954      1 -total"," 78.17%  134.425      1 Template:This_is_a"," 76.78%  132.031      5 Template:This_is_a/strings"," 72.80%  125.179      3 Template:Str_right"," 72.18%  124.112      3 Template:Str_sub_long"," 64.95%  111.686     85 Template:Str_left"," 61.03%  104.940      1 Template:A_or_an"," 60.07%  103.292      1 Template:Delink"," 59.67%  102.608      1 Template:Delink/phase_1_a"," 45.09%   77.531      1 Template:Delink/phase_1_b"]},"cachereport":{"timestamp":"20260111104304","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":71});});</script>
+</body>
+</html> <- tf_robot_destruction_spawn_group
