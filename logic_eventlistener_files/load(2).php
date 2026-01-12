@@ -1,0 +1,1 @@
+body.page-Main_Page #content{    background-image:url(https://developer.valvesoftware.com/w/images/c/cc/Main_Page_background.png);    background-repeat:no-repeat;    background-size:cover}.hideifnotnew{display:none}.new + .hideifnotnew{display:initial}

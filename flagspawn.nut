@@ -297,7 +297,11 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     try { NetProps.SetPropInt(flag, "m_iPointValue", v); } catch(e3) {}
 
     if (::flagspawn.CFG.SET_FLAG_BODYGROUP) ::flagspawn._SetBodygroupValue(flag, v);
-    if (::flagspawn.CFG.ENABLE_METER) ::flagspawn._SetBodygroupValue(EntIndexToHScript(data.vis_eidx), v);
+    if (::flagspawn.CFG.ENABLE_METER && data.vis_eidx > 0) {
+        local meter = null;
+        try { meter = EntIndexToHScript(data.vis_eidx); } catch(e4) { meter = null; }
+        ::flagspawn._SetBodygroupValue(meter, v);
+    }
 
     ::flagspawn._WriteFlagScope(flag, data);
 };
@@ -309,15 +313,31 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     return 0;
 };
 
+::flagspawn._ClearFlagOwner <- function(flag) {
+    if (!flag) return;
+    try { NetProps.SetPropEntity(flag, "m_hOwnerEntity", null); } catch(e0) {}
+    try { NetProps.SetPropEntity(flag, "m_hPrevOwner", null); } catch(e1) {}
+};
+
+::flagspawn._MakeFlagNeutral <- function(flag) {
+    if (!flag) return;
+    try { flag.SetTeam(0); } catch(e0) {}
+    try { NetProps.SetPropInt(flag, "m_iTeamNum", 0); } catch(e1) {}
+    try { NetProps.SetPropInt(flag, "m_iOriginalTeamNum", 0); } catch(e2) {}
+    try { flag.__KeyValueFromInt("TeamNum", 0); } catch(e3) {}
+    try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
+};
+
 // ------------------------------------------------------------
 // Pool helpers
 // ------------------------------------------------------------
-::flagspawn._HideFlag <- function(flag) {
+::flagspawn._HideFlag <- function(flag, stateOverride = null) {
     if (!flag) return;
     local data = ::flagspawn._EnsureFlagData(flag);
     if (!data) return;
 
-    data.state = "pooled";
+    if (stateOverride != null) data.state = stateOverride;
+    else data.state = "pooled";
     data.carrier_eidx = -1;
     data.return_deadline = null;
 
@@ -475,7 +495,7 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn._ReturnFlag <- function(flag, reason) {
     if (!flag) return;
     ::flagspawn._SetFlagState(flag, reason);
-    ::flagspawn._HideFlag(flag);
+    ::flagspawn._HideFlag(flag, reason);
 };
 
 // ------------------------------------------------------------
@@ -557,6 +577,9 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
     local ret = flag;
     if (!ret && player) ret = ::flagspawn._FindNearestDroppedFlag(player, ::flagspawn.CFG.SEARCH_RADIUS);
     if (!ret) return;
+
+    local data = ::flagspawn._EnsureFlagData(ret);
+    if (data && data.no_return) return;
 
     ::flagspawn._ReturnFlag(ret, "returned");
     ::flagspawn.Log("RETURN: flag=" + ::flagspawn._SafeName(ret));
@@ -685,6 +708,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
     // Reset and enable
     EntFireByHandle(flag, "ClearParent", "", 0.0, null, null);
+    ::flagspawn._ClearFlagOwner(flag);
+    ::flagspawn._MakeFlagNeutral(flag);
     EntFireByHandle(flag, "Enable", "", 0.0, null, null);
 
     // PD setup

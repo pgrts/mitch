@@ -83,6 +83,16 @@ A TF2 VScript game mode combining **Player Destruction** mechanics with **Fuel-b
 
 ### 2. Carrying & Merging
 
+- **Important PD quirk:** `item_teamflag` `OnPickup` / `OnPickup1` does **not** fire when the player already carries points (merge). The reliable merge signal is the global `teamplay_flag_event`.
+- **Merge detection (server/script):**
+  - Hook `teamplay_flag_event`.
+  - `eventtype` values: `1 = pickup`, `2 = capture`, `4 = dropped`.
+  - On `eventtype == 1`, compare previous carry total vs current to decide pickup-start vs merge.
+  - The engine increments the player's carried total on merge (NetProp like `m_nNumCarriedPoints` / `m_nNumCarried`), so treat that delta as the source of truth.
+- **Map-only workaround:**
+  - Use a `logic_eventlistener` with `EventName` = `teamplay_flag_event`.
+  - `FetchEventData` = `eventtype`, filter for `eventtype == 1`.
+
 - Players can carry and merge PD pickups normally
 - **Carry Clamp:** If carried value exceeds **99**:
   - Clamped back to 99
