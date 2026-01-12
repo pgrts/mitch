@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "8869"
-	"mapversion" "68"
+	"mapversion" "69"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -89,7 +89,7 @@ bgimages_plus
 world
 {
 	"id" "1"
-	"mapversion" "68"
+	"mapversion" "69"
 	"classname" "worldspawn"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
@@ -569,10 +569,10 @@ world
 	}
 	solid
 	{
-		"id" "5346"
+		"id" "5640"
 		side
 		{
-			"id" "2700"
+			"id" "1656"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -590,7 +590,7 @@ world
 		}
 		side
 		{
-			"id" "2699"
+			"id" "1655"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -608,7 +608,7 @@ world
 		}
 		side
 		{
-			"id" "2698"
+			"id" "1654"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -626,7 +626,7 @@ world
 		}
 		side
 		{
-			"id" "2697"
+			"id" "1653"
 			"plane" "(-3072 3072 1024) (-3072 -800 1024) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -644,7 +644,7 @@ world
 		}
 		side
 		{
-			"id" "2696"
+			"id" "1652"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (896 -800 1024)"
 			vertices_plus
 			{
@@ -662,7 +662,7 @@ world
 		}
 		side
 		{
-			"id" "2695"
+			"id" "1651"
 			"plane" "(-3072 -800 1024) (-3072 -800 -8704) (896 -800 -8704)"
 			vertices_plus
 			{
@@ -680,7 +680,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -688,10 +688,10 @@ world
 	}
 	solid
 	{
-		"id" "5344"
+		"id" "5638"
 		side
 		{
-			"id" "2706"
+			"id" "1662"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -709,7 +709,7 @@ world
 		}
 		side
 		{
-			"id" "2705"
+			"id" "1661"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -727,7 +727,7 @@ world
 		}
 		side
 		{
-			"id" "2704"
+			"id" "1660"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -745,7 +745,7 @@ world
 		}
 		side
 		{
-			"id" "2703"
+			"id" "1659"
 			"plane" "(-3072 3072 1024) (-3072 -800 1024) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -763,7 +763,7 @@ world
 		}
 		side
 		{
-			"id" "2702"
+			"id" "1658"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (896 -800 1024)"
 			vertices_plus
 			{
@@ -781,7 +781,7 @@ world
 		}
 		side
 		{
-			"id" "2701"
+			"id" "1657"
 			"plane" "(-3072 3072 -8704) (-3072 3072 1024) (896 3072 1024)"
 			vertices_plus
 			{
@@ -799,7 +799,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -807,10 +807,10 @@ world
 	}
 	solid
 	{
-		"id" "5342"
+		"id" "5636"
 		side
 		{
-			"id" "2712"
+			"id" "1668"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -828,7 +828,7 @@ world
 		}
 		side
 		{
-			"id" "2711"
+			"id" "1667"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -846,7 +846,7 @@ world
 		}
 		side
 		{
-			"id" "2710"
+			"id" "1666"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -864,7 +864,7 @@ world
 		}
 		side
 		{
-			"id" "2709"
+			"id" "1665"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -882,7 +882,7 @@ world
 		}
 		side
 		{
-			"id" "2708"
+			"id" "1664"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -900,7 +900,7 @@ world
 		}
 		side
 		{
-			"id" "2707"
+			"id" "1663"
 			"plane" "(896 -800 1024) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -918,7 +918,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -926,10 +926,10 @@ world
 	}
 	solid
 	{
-		"id" "5340"
+		"id" "5634"
 		side
 		{
-			"id" "2718"
+			"id" "1674"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -947,7 +947,7 @@ world
 		}
 		side
 		{
-			"id" "2717"
+			"id" "1673"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -965,7 +965,7 @@ world
 		}
 		side
 		{
-			"id" "2716"
+			"id" "1672"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -983,7 +983,7 @@ world
 		}
 		side
 		{
-			"id" "2715"
+			"id" "1671"
 			"plane" "(-3072 3072 1024) (896 3072 1024) (896 -800 1024)"
 			vertices_plus
 			{
@@ -1001,7 +1001,7 @@ world
 		}
 		side
 		{
-			"id" "2714"
+			"id" "1670"
 			"plane" "(-3072 -800 -8704) (896 -800 -8704) (896 3072 -8704)"
 			vertices_plus
 			{
@@ -1019,7 +1019,7 @@ world
 		}
 		side
 		{
-			"id" "2713"
+			"id" "1669"
 			"plane" "(-3072 -800 -8704) (-3072 -800 1024) (-3072 3072 1024)"
 			vertices_plus
 			{
@@ -1037,7 +1037,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1045,10 +1045,10 @@ world
 	}
 	solid
 	{
-		"id" "5338"
+		"id" "5632"
 		side
 		{
-			"id" "2724"
+			"id" "1680"
 			"plane" "(-16376 -16376 -16376) (16376 -16376 -16376) (16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1066,7 +1066,7 @@ world
 		}
 		side
 		{
-			"id" "2723"
+			"id" "1679"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1084,7 +1084,7 @@ world
 		}
 		side
 		{
-			"id" "2722"
+			"id" "1678"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1102,7 +1102,7 @@ world
 		}
 		side
 		{
-			"id" "2721"
+			"id" "1677"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1120,7 +1120,7 @@ world
 		}
 		side
 		{
-			"id" "2720"
+			"id" "1676"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1138,7 +1138,7 @@ world
 		}
 		side
 		{
-			"id" "2719"
+			"id" "1675"
 			"plane" "(896 3072 -8704) (896 -800 -8704) (-3072 -800 -8704)"
 			vertices_plus
 			{
@@ -1156,7 +1156,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1164,10 +1164,10 @@ world
 	}
 	solid
 	{
-		"id" "5336"
+		"id" "5630"
 		side
 		{
-			"id" "2730"
+			"id" "1686"
 			"plane" "(-16376 16376 16376) (16376 16376 16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1185,7 +1185,7 @@ world
 		}
 		side
 		{
-			"id" "2729"
+			"id" "1685"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1203,7 +1203,7 @@ world
 		}
 		side
 		{
-			"id" "2728"
+			"id" "1684"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1221,7 +1221,7 @@ world
 		}
 		side
 		{
-			"id" "2727"
+			"id" "1683"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1239,7 +1239,7 @@ world
 		}
 		side
 		{
-			"id" "2726"
+			"id" "1682"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1257,7 +1257,7 @@ world
 		}
 		side
 		{
-			"id" "2725"
+			"id" "1681"
 			"plane" "(896 -800 1024) (896 3072 1024) (-3072 3072 1024)"
 			vertices_plus
 			{
@@ -1275,7 +1275,7 @@ world
 		}
 		editor
 		{
-			"color" "0 128 217"
+			"color" "0 137 238"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -2079,6 +2079,13 @@ entity
 	"targetname" "fs_pool_red_01"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2087,14 +2094,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2113,6 +2112,13 @@ entity
 	"targetname" "fs_pool_red_02"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2121,14 +2127,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2147,6 +2145,13 @@ entity
 	"targetname" "fs_pool_red_03"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2155,14 +2160,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2181,6 +2178,13 @@ entity
 	"targetname" "fs_pool_red_04"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2189,14 +2193,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2215,6 +2211,13 @@ entity
 	"targetname" "fs_pool_red_05"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2223,14 +2226,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2249,6 +2244,13 @@ entity
 	"targetname" "fs_pool_red_06"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2257,14 +2259,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2283,6 +2277,13 @@ entity
 	"targetname" "fs_pool_red_07"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2291,14 +2292,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2317,6 +2310,13 @@ entity
 	"targetname" "fs_pool_red_08"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2325,14 +2325,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2351,6 +2343,13 @@ entity
 	"targetname" "fs_pool_red_09"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2359,14 +2358,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2385,6 +2376,13 @@ entity
 	"targetname" "fs_pool_red_10"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2393,14 +2391,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2419,6 +2409,13 @@ entity
 	"targetname" "fs_pool_red_11"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2427,14 +2424,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2453,6 +2442,13 @@ entity
 	"targetname" "fs_pool_red_12"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2461,14 +2457,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2487,6 +2475,13 @@ entity
 	"targetname" "fs_pool_red_13"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2495,14 +2490,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2521,6 +2508,13 @@ entity
 	"targetname" "fs_pool_red_14"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2529,14 +2523,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2555,6 +2541,13 @@ entity
 	"targetname" "fs_pool_red_15"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2563,14 +2556,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2589,6 +2574,13 @@ entity
 	"targetname" "fs_pool_red_16"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2597,14 +2589,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2623,6 +2607,13 @@ entity
 	"targetname" "fs_pool_red_17"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2631,14 +2622,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2657,6 +2640,13 @@ entity
 	"targetname" "fs_pool_red_18"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2665,14 +2655,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2691,6 +2673,13 @@ entity
 	"targetname" "fs_pool_red_19"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2699,14 +2688,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2725,6 +2706,13 @@ entity
 	"targetname" "fs_pool_red_20"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2733,14 +2721,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2759,6 +2739,13 @@ entity
 	"targetname" "fs_pool_red_21"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2767,14 +2754,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2793,6 +2772,13 @@ entity
 	"targetname" "fs_pool_red_22"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2801,14 +2787,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2827,6 +2805,13 @@ entity
 	"targetname" "fs_pool_red_23"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2835,14 +2820,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2861,6 +2838,13 @@ entity
 	"targetname" "fs_pool_red_24"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2869,14 +2853,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2895,6 +2871,13 @@ entity
 	"targetname" "fs_pool_red_25"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-864 480 -8000"
 	editor
 	{
@@ -2903,14 +2886,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2930,6 +2905,13 @@ entity
 	"targetname" "fs_pool_blu_01"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -2938,14 +2920,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -2965,6 +2939,13 @@ entity
 	"targetname" "fs_pool_blu_02"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -2973,14 +2954,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3000,6 +2973,13 @@ entity
 	"targetname" "fs_pool_blu_03"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3008,14 +2988,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3035,6 +3007,13 @@ entity
 	"targetname" "fs_pool_blu_04"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3043,14 +3022,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3070,6 +3041,13 @@ entity
 	"targetname" "fs_pool_blu_05"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3078,14 +3056,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3105,6 +3075,13 @@ entity
 	"targetname" "fs_pool_blu_07"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3113,14 +3090,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3140,6 +3109,13 @@ entity
 	"targetname" "fs_pool_blu_08"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3148,14 +3124,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3175,6 +3143,13 @@ entity
 	"targetname" "fs_pool_blu_09"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3183,14 +3158,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3210,6 +3177,13 @@ entity
 	"targetname" "fs_pool_blu_10"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3218,14 +3192,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3245,6 +3211,13 @@ entity
 	"targetname" "fs_pool_blu_12"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3253,14 +3226,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3280,6 +3245,13 @@ entity
 	"targetname" "fs_pool_blu_13"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3288,14 +3260,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3315,6 +3279,13 @@ entity
 	"targetname" "fs_pool_blu_15"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3323,14 +3294,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3350,6 +3313,13 @@ entity
 	"targetname" "fs_pool_blu_16"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3358,14 +3328,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3385,6 +3347,13 @@ entity
 	"targetname" "fs_pool_blu_17"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3393,14 +3362,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3420,6 +3381,13 @@ entity
 	"targetname" "fs_pool_blu_18"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3428,14 +3396,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3455,6 +3415,13 @@ entity
 	"targetname" "fs_pool_blu_19"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3463,14 +3430,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3490,6 +3449,13 @@ entity
 	"targetname" "fs_pool_blu_20"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3498,14 +3464,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3525,6 +3483,13 @@ entity
 	"targetname" "fs_pool_blu_21"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3533,14 +3498,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3560,6 +3517,13 @@ entity
 	"targetname" "fs_pool_blu_22"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3568,14 +3532,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3595,6 +3551,13 @@ entity
 	"targetname" "fs_pool_blu_23"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3603,14 +3566,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3630,6 +3585,13 @@ entity
 	"targetname" "fs_pool_blu_24"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3638,14 +3600,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3665,6 +3619,13 @@ entity
 	"targetname" "fs_pool_blu_25"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3673,14 +3634,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3706,47 +3659,6 @@ entity
 	"targetname" "filter_red_only"
 	"TeamNum" "2"
 	"origin" "-896 256 72"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "1900"
-	"classname" "prop_dynamic"
-	"angles" "0 0 0"
-	"DisableBoneFollowers" "0"
-	"disablereceiveshadows" "0"
-	"disableshadows" "0"
-	"ExplodeDamage" "0"
-	"ExplodeRadius" "0"
-	"fademaxdist" "0"
-	"fademindist" "-1"
-	"fadescale" "1"
-	"MaxAnimTime" "10"
-	"maxdxlevel" "0"
-	"MinAnimTime" "5"
-	"mindxlevel" "0"
-	"model" "models/props_custom/spinning_digit/spinning_digit.mdl"
-	"modelscale" "1.0"
-	"PerformanceMode" "0"
-	"pressuredelay" "0"
-	"RandomAnimation" "0"
-	"renderamt" "255"
-	"rendercolor" "255 255 255"
-	"renderfx" "0"
-	"rendermode" "0"
-	"SetBodyGroup" "0"
-	"skin" "0"
-	"solid" "6"
-	"spawnflags" "0"
-	"StartDisabled" "0"
-	"targetname" "digit1"
-	"origin" "-1280 544 160"
 	editor
 	{
 		"color" "220 30 220"
@@ -3789,6 +3701,13 @@ entity
 	"targetname" "fs_pool_blu_14"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3797,14 +3716,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3824,6 +3735,13 @@ entity
 	"targetname" "fs_pool_blu_11"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -3832,14 +3750,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -3999,6 +3909,13 @@ entity
 	"targetname" "fs_pool_blu_06"
 	"TeamNum" "0"
 	"trail_effect" "1"
+	connections
+	{
+		"OnPickup1" "scripterRunScriptCode::flagspawn.OnPoolFlagPickup(caller, activator)0-1"
+		"OnDrop1" "scripterRunScriptCode::flagspawn.OnPoolFlagDrop(caller, activator)0-1"
+		"OnReturn" "scripterRunScriptCode::flagspawn.OnPoolFlagReturn(caller)0-1"
+		"OnCapture1" "scripterRunScriptCode::flagspawn.OnPoolFlagCapture(caller, activator)0-1"
+	}
 	"origin" "-992 352 -8000"
 	editor
 	{
@@ -4007,14 +3924,6 @@ entity
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
 	}
-connections
-{
-	"OnPickup1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagPickup(caller, activator),0,-1"
-	"OnDrop1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagDrop(caller, activator),0,-1"
-	"OnReturn" "scripter,RunScriptCode,::flagspawn.OnPoolFlagReturn(caller),0,-1"
-	"OnCapture1" "scripter,RunScriptCode,::flagspawn.OnPoolFlagCapture(caller, activator),0,-1"
-}
-
 }
 entity
 {
@@ -4037,214 +3946,6 @@ entity
 		"visgroupshown" "1"
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "4761"
-	"classname" "item_teamflag"
-	"angles" "0 0 0"
-	"flag_icon" "../hud/objectives_flagpanel_carried"
-	"flag_model" "models/props_custom/fs_meter/fs_meter_slab_grid.mdl"
-	"flag_paper" "player_intel_papertrail"
-	"flag_trail" "flagtrail"
-	"GameType" "4"
-	"NeutralType" "1"
-	"PointValue" "55"
-	"ReturnBetweenWaves" "1"
-	"ReturnTime" "60"
-	"ScoringType" "0"
-	"ShotClockMode" "0"
-	"TeamNum" "0"
-	"trail_effect" "1"
-	"VisibleWhenDisabled" "0"
-	connections
-	{
-		"OnPickup" "!selfSetBodyGroup990-1"
-	}
-	"origin" "-848 608 65"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "4929"
-	"classname" "prop_dynamic"
-	"angles" "0 0 0"
-	"DisableBoneFollowers" "0"
-	"disablereceiveshadows" "0"
-	"disableshadows" "0"
-	"ExplodeDamage" "0"
-	"ExplodeRadius" "0"
-	"fademaxdist" "0"
-	"fademindist" "-1"
-	"fadescale" "1"
-	"MaxAnimTime" "10"
-	"maxdxlevel" "0"
-	"MinAnimTime" "5"
-	"mindxlevel" "0"
-	"model" "models/props_custom/fs_meter/fs_meter_slab_grid.mdl"
-	"modelscale" "1.0"
-	"PerformanceMode" "0"
-	"pressuredelay" "0"
-	"RandomAnimation" "0"
-	"renderamt" "255"
-	"rendercolor" "255 255 255"
-	"renderfx" "0"
-	"rendermode" "0"
-	"SetBodyGroup" "3"
-	"skin" "0"
-	"solid" "6"
-	"spawnflags" "0"
-	"targetname" "redspawnflag"
-	"origin" "-1024 608 96"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "4989"
-	"classname" "tf_glow"
-	"GlowColor" "255 0 0 255"
-	"Mode" "0"
-	"target" "redspawnflag"
-	"origin" "-1104 512 65"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 500]"
-	}
-}
-entity
-{
-	"id" "5229"
-	"classname" "prop_dynamic"
-	"angles" "0 0 0"
-	"DisableBoneFollowers" "0"
-	"disablereceiveshadows" "0"
-	"disableshadows" "0"
-	"ExplodeDamage" "0"
-	"ExplodeRadius" "0"
-	"fademaxdist" "0"
-	"fademindist" "-1"
-	"fadescale" "1"
-	"MaxAnimTime" "10"
-	"maxdxlevel" "0"
-	"MinAnimTime" "5"
-	"mindxlevel" "0"
-	"model" "models/props_custom/fs_meter/fs_meter_double_grid.mdl"
-	"modelscale" "1.0"
-	"PerformanceMode" "0"
-	"pressuredelay" "0"
-	"RandomAnimation" "0"
-	"renderamt" "255"
-	"rendercolor" "255 255 255"
-	"renderfx" "0"
-	"rendermode" "0"
-	"SetBodyGroup" "3"
-	"skin" "0"
-	"solid" "6"
-	"spawnflags" "0"
-	"targetname" "anotherflag"
-	"origin" "-1088 608 96"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "5257"
-	"classname" "item_teamflag"
-	"angles" "0 0 0"
-	"flag_icon" "../hud/objectives_flagpanel_carried"
-	"flag_model" "models/props_custom/fs_meter/fs_meter_slab_grid.mdl"
-	"flag_paper" "player_intel_papertrail"
-	"flag_trail" "flagtrail"
-	"GameType" "4"
-	"NeutralType" "1"
-	"PointValue" "3"
-	"ReturnBetweenWaves" "1"
-	"ReturnTime" "60"
-	"ScoringType" "0"
-	"ShotClockMode" "0"
-	"TeamNum" "0"
-	"trail_effect" "1"
-	"VisibleWhenDisabled" "0"
-	connections
-	{
-		"OnPickup" "!selfSetBodyGroup990-1"
-	}
-	"origin" "-1056 864 65"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "5270"
-	"classname" "item_teamflag"
-	"angles" "0 0 0"
-	"flag_icon" "../hud/objectives_flagpanel_carried"
-	"flag_model" "models/props_custom/fs_meter/fs_meter_slab_grid.mdl"
-	"flag_paper" "player_intel_papertrail"
-	"flag_trail" "flagtrail"
-	"GameType" "4"
-	"NeutralType" "1"
-	"PointValue" "1"
-	"ReturnBetweenWaves" "1"
-	"ReturnTime" "60"
-	"ScoringType" "0"
-	"ShotClockMode" "0"
-	"TeamNum" "0"
-	"trail_effect" "1"
-	"VisibleWhenDisabled" "0"
-	connections
-	{
-		"OnPickup" "!selfSetBodyGroup990-1"
-	}
-	"origin" "-864 896 65"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 0]"
-	}
-}
-entity
-{
-	"id" "5309"
-	"classname" "tf_glow"
-	"GlowColor" "6 0 255 255"
-	"Mode" "0"
-	"target" "anotherflag"
-	"origin" "-1152 576 65"
-	editor
-	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 500]"
 	}
 }
 cameras
