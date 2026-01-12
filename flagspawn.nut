@@ -56,8 +56,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_DROPITEM_HOOK <- true; // hook dropitem to enforce a real PD drop when needed
 ::flagspawn.ENABLE_FORCE_DROPPED_STATE <- true; // ensure dispensed flags are in dropped PD state
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
-::flagspawn.ENABLE_MANUAL_STACK <- false; // stack PointsValue when touching spawner while carrying
-::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- true; // spawn extra neutral pickups while carrying
+::flagspawn.ENABLE_MANUAL_STACK <- true; // stack PointsValue when touching spawner while carrying
+::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- false; // avoid spawning extra pickups while carrying
 ::flagspawn.ENABLE_CARRY_MERGE_RECONCILE <- true; // merge if multiple carried flags are attached
 ::flagspawn.ENABLE_DROPPED_MERGE <- true; // merge dropped flags when overlapping
 ::flagspawn.DROPPED_MERGE_RADIUS <- 28.0; // units; tune to your slab size
@@ -323,13 +323,21 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if ("carried_flag_eidx" in ps && ps.carried_flag_eidx > 0) {
         local f = null;
         try { f = EntIndexToHScript(ps.carried_flag_eidx); } catch(e0) { f = null; }
-        if (f && f.IsValid() && ::flagspawn._IsFlagCarriedBy(f, player)) return f;
+        if (f && f.IsValid() && ::flagspawn._IsFlagCarriedBy(f, player)) {
+            ps.has_carry = true;
+            return f;
+        }
         ps.carried_flag_eidx = -1;
     }
     local f = null;
     while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
-        if (::flagspawn._IsFlagCarriedBy(f, player)) return f;
+        if (::flagspawn._IsFlagCarriedBy(f, player)) {
+            ps.has_carry = true;
+            ps.carried_flag_eidx = f.entindex();
+            return f;
+        }
     }
+    if ("has_carry" in ps) ps.has_carry = false;
     return null;
 };
 
@@ -606,6 +614,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._IsMergeableDrop <- function(flag) {
     if (!flag) return false;
     if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
+    if (::flagspawn._FlagOwner(flag) != null) return false;
     local parent = null;
     try { parent = flag.GetMoveParent(); } catch(e) { parent = null; }
     if (parent != null) return false;
@@ -739,11 +748,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         local d = null;
         while ((d = Entities.FindByClassnameWithin(d, "item_teamflag", porg, radius)) != null) {
             if (d == carried) continue;
-            if (::flagspawn._IsFlagHiddenInPool(d)) continue;
-            local owner = ::flagspawn._FlagOwner(d);
-            if (owner && owner != p) continue;
-            local parent = null; try { parent = d.GetMoveParent(); } catch(e0) { parent = null; }
-            if (parent && parent != p) continue;
+            if (!::flagspawn._IsMergeableDrop(d)) continue;
 
             if (::flagspawn._MergeDropIntoCarrier(p, carried, d)) {
                 changed = true;
@@ -860,6 +865,9 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if (!flag) return false;
     if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
     if (::flagspawn._FlagOwner(flag) != null) return false;
+    local parent = null;
+    try { parent = flag.GetMoveParent(); } catch(e0) { parent = null; }
+    if (parent != null) return false;
     return true;
 };
 
@@ -1272,9 +1280,14 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
             local prevCarry = ps_check.pending_carry;
             ps_check.pending_carry = -1;
             ps_check.has_carry = true;
-            ps_check.carried_flag_eidx = -1;
+            if (::flagspawn.ENABLE_FORCE_ATTACH_ON_PICKUP_FAIL) {
+                if (::flagspawn._ForceAttachToPlayer(flag, player)) return;
+            }
+            ps_check.carried_flag_eidx = flag.entindex();
+            ::flagspawn._SetFlagScriptOwner(flag, player);
             ::flagspawn._KillWorldtextForFlag(flag);
-            ::flagspawn._HideFlag(flag);
+            ::flagspawn._EnsureFlagGlow(flag);
+            ::flagspawn._UpdateFlagBodygroup(flag, ::flagspawn._GetFlagPointsValue(flag));
             ::flagspawn._ReconcileWorldtexts();
             if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED BY CARRY: " + ::flagspawn._SafeName(player) + " carry " + prevCarry + " -> " + carryNow);
             return;
@@ -1289,6 +1302,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         if (::flagspawn.ENABLE_PENDING_GUARD) ps2.pending_flag_eidx = -1; // allow retry
         ps2.pending_carry = -1;
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP FAILED: owner still null after retries; pending cleared; flag left dropped.");
+        ::flagspawn._MarkDroppedFlag(flag);
         ::flagspawn._ReconcileWorldtexts();
         return;
     }
@@ -1396,11 +1410,16 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     local carryCount = ::flagspawn._GetPlayerCarryCount(player);
     local isCarrying = alreadyCarrying || (carried != null) || (carryCount > 0);
     if (::flagspawn.DEBUG) ::flagspawn.Log("CARRY CHECK: flag=" + ::flagspawn._SafeName(carried) + " carryCount=" + carryCount);
+    if (isCarrying && !carried && carryCount > 0) {
+        if (::flagspawn.DEBUG) ::flagspawn.Log("CARRY CHECK: carryCount>0 but no carried flag resolved; skip dispense");
+        return;
+    }
     if (carried && ::flagspawn.ENABLE_MANUAL_STACK) {
         local add = ::flagspawn.GetClassBonus(player);
         local cur = ::flagspawn._GetFlagPointsValue(carried);
         local nxt = cur + add;
         ::flagspawn._SetFlagPointsValue(carried, nxt);
+        ::flagspawn._EnsureFlagGlow(carried);
         ::flagspawn.Log("STACK: carried=" + ::flagspawn._SafeName(carried) + " PointsValue " + cur + " -> " + nxt);
         return;
     }
