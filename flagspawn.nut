@@ -48,6 +48,8 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 
 // Return delay for dropped flags (seconds)
 ::flagspawn.RETURN_TIME_SECONDS <- 60.0;
+::flagspawn.DROP_PUSH_DISTANCE <- 32.0;
+::flagspawn.DROP_PUSH_SPEED <- 120.0;
 
 // One-per-life gate
 ::flagspawn.SPAWNER_TOUCH_COOLDOWN <- 0.35;
@@ -546,6 +548,48 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
 };
 
+::flagspawn._SetPlayerCarryCount <- function(player, v) {
+    if (!player) return;
+    local names = [
+        ::flagspawn.CARRY_PROP_NAME,
+        "m_nNumCarryables",
+        "m_nNumCarriedFlags",
+        "m_nNumCarried"
+    ];
+    foreach (n in names) {
+        if (!n || n.len() == 0) continue;
+        try { NetProps.SetPropInt(player, n, v); } catch(e) {}
+    }
+};
+
+::flagspawn._ClearPlayerCarry <- function(player, forceClear = false) {
+    if (!player) return;
+    if (!forceClear) {
+        local still = ::flagspawn._ResolveCarriedFlag(player);
+        if (still) return;
+    }
+    try { player.SetNumCarryables(0); } catch(e0) {}
+    ::flagspawn._SetPlayerCarriedPoints(player, 0);
+    ::flagspawn._SetPlayerCarryCount(player, 0);
+    local entProps = [
+        "m_hItem",
+        "m_hItemPickup",
+        "m_hItemCarried",
+        "m_hCarriedObject",
+        "m_hCarriedFlag"
+    ];
+    foreach (p in entProps) {
+        try { NetProps.SetPropEntity(player, p, null); } catch(e1) {}
+    }
+    local ps = ::flagspawn._PS(player);
+    ps.has_carry = false;
+    ps.carried_flag_eidx = -1;
+    ps.last_carry_points = 0;
+    if (::flagspawn.DEBUG) {
+        ::flagspawn.Log("CLEAR CARRY: player=" + ::flagspawn._SafeName(player));
+    }
+};
+
 ::flagspawn._GetCarryValueForPlayer <- function(player) {
     if (!player) return 0;
     local v = ::flagspawn._GetPlayerCarriedPoints(player);
@@ -888,15 +932,23 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._TakeNextFromPool <- function(team) {
     if (team == ::flagspawn.TEAM_RED) {
         if (::flagspawn._Pool.red.len() <= 0) return null;
-        local f = ::flagspawn._Pool.red[::flagspawn._Pool.red_i % ::flagspawn._Pool.red.len()];
-        ::flagspawn._Pool.red_i++;
-        return f;
+        local count = ::flagspawn._Pool.red.len();
+        for (local i = 0; i < count; i++) {
+            local f = ::flagspawn._Pool.red[::flagspawn._Pool.red_i % count];
+            ::flagspawn._Pool.red_i++;
+            if (f && f.IsValid() && ::flagspawn._IsFlagHiddenInPool(f)) return f;
+        }
+        return null;
     }
     if (team == ::flagspawn.TEAM_BLU) {
         if (::flagspawn._Pool.blu.len() <= 0) return null;
-        local f2 = ::flagspawn._Pool.blu[::flagspawn._Pool.blu_i % ::flagspawn._Pool.blu.len()];
-        ::flagspawn._Pool.blu_i++;
-        return f2;
+        local count2 = ::flagspawn._Pool.blu.len();
+        for (local j = 0; j < count2; j++) {
+            local f2 = ::flagspawn._Pool.blu[::flagspawn._Pool.blu_i % count2];
+            ::flagspawn._Pool.blu_i++;
+            if (f2 && f2.IsValid() && ::flagspawn._IsFlagHiddenInPool(f2)) return f2;
+        }
+        return null;
     }
     return null;
 };
@@ -1482,18 +1534,17 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._ForceDroppedState(flag);
     ::flagspawn._MakeFlagPickupable(flag, player);
 
-    local pos = ::flagspawn._GetEntOrigin(player);
-    if (!pos) pos = Vector(0,0,0);
-    local dropPos = pos + Vector(0,0,2);
+    local dropPos = ::flagspawn._GetDropOrigin(player) + ::flagspawn._GetDropOffset(player);
 
     try { flag.SetAbsOrigin(dropPos); } catch(e2) {}
     try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(dropPos), 0.0, null, null); } catch(e3) {}
-    try { flag.SetAbsVelocity(Vector(0,0,0)); } catch(e4) {}
+    try { flag.SetAbsVelocity(::flagspawn._GetDropVelocity(player)); } catch(e4) {}
 
     ::flagspawn._SetFlagPointsValue(flag, v);
     ::flagspawn._MarkDroppedFlag(flag);
 
     ::flagspawn._ReconcileWorldtexts();
+    ::flagspawn._ClearPlayerCarry(player, true);
 
     if (::flagspawn.DEBUG) ::flagspawn.Log("DROP: player=" + ::flagspawn._SafeName(player) + " flag=" + ::flagspawn._SafeName(flag));
 };
@@ -1507,6 +1558,40 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
     if (!player) return;
     ::flagspawn.DropCarriedFlag(player);
+};
+
+::flagspawn._GetDropOrigin <- function(player) {
+    local pos = ::flagspawn._GetEntOrigin(player);
+    if (!pos) return Vector(0,0,0);
+
+    local start = pos + Vector(0,0,8);
+    local end = pos - Vector(0,0,72);
+    local frac = null;
+    try { frac = TraceLine(start, end, player); } catch(e) { frac = null; }
+
+    if (frac != null) {
+        try { frac = frac.tofloat(); } catch(e2) {}
+        if (frac < 1.0) {
+            local dir = end - start;
+            local hit = start + (dir * frac);
+            return hit + Vector(0,0,2);
+        }
+    }
+    return pos + Vector(0,0,2);
+};
+
+::flagspawn._GetDropOffset <- function(player) {
+    if (!player) return Vector(0,0,0);
+    local fwd = Vector(1,0,0);
+    try { fwd = player.EyeAngles().Forward(); } catch(e) {}
+    return fwd * ::flagspawn.DROP_PUSH_DISTANCE;
+};
+
+::flagspawn._GetDropVelocity <- function(player) {
+    if (!player) return Vector(0,0,0);
+    local fwd = Vector(1,0,0);
+    try { fwd = player.EyeAngles().Forward(); } catch(e) {}
+    return fwd * ::flagspawn.DROP_PUSH_SPEED;
 };
 
 // ------------------------------------------------------------
@@ -1539,6 +1624,12 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._DetachFromPool(flag);
     ::flagspawn._ForceDroppedState(flag);
     ::flagspawn._EnsureDroppedState(flag);
+    if (player) {
+        local dropPos = ::flagspawn._GetDropOrigin(player) + ::flagspawn._GetDropOffset(player);
+        try { flag.SetAbsOrigin(dropPos); } catch(e0) {}
+        try { EntFireByHandle(flag, "Teleport", ::flagspawn._VecStr(dropPos), 0.0, null, null); } catch(e1) {}
+        try { flag.SetAbsVelocity(::flagspawn._GetDropVelocity(player)); } catch(e2) {}
+    }
     ::flagspawn._EnsureFlagVisual(flag);
     ::flagspawn._EnsureFlagGlow(flag);
     ::flagspawn._UpdateFlagBodygroup(flag, ::flagspawn._GetFlagPointsValue(flag));
@@ -1549,6 +1640,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         ps.has_carry = false;
         ps.carried_flag_eidx = -1;
         ps.last_carry_points = 0;
+        local code = "if (::flagspawn != null) ::flagspawn._AfterDropCarrySync(" + player.entindex() + ");";
+        ::flagspawn._FireScriptCode(0.05, code);
     }
 
     if (::flagspawn.DEBUG) {
@@ -1579,6 +1672,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         ps.has_carry = false;
         ps.carried_flag_eidx = -1;
         ps.last_carry_points = 0;
+        ::flagspawn._ClearPlayerCarry(player, true);
     }
 
     if (::flagspawn.DEBUG) {
@@ -1723,6 +1817,15 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._HandleCarryDelta(player, prevCarry, carryNow, eventType);
 };
 
+::flagspawn._AfterDropCarrySync <- function(playerEidx) {
+    local player = null;
+    try { player = EntIndexToHScript(playerEidx); } catch(e) { player = null; }
+    if (!player) return;
+    local carried = ::flagspawn._ResolveCarriedFlag(player);
+    if (carried) return;
+    ::flagspawn._ClearPlayerCarry(player, true);
+};
+
 ::flagspawn.OnGameEvent_teamplay_flag_event <- function(params) {
     // Any flag event -> update worldtexts + track carry deltas for merges.
     ::flagspawn._ReconcileWorldtexts();
@@ -1735,6 +1838,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if ("eventtype" in params) eventType = params.eventtype;
     else if ("eventType" in params) eventType = params.eventType;
     try { eventType = eventType.tointeger(); } catch(e) { eventType = -1; }
+    if (eventType != 1) return;
 
     local code = "if (::flagspawn != null) ::flagspawn._AfterFlagEventCarry(" +
         player.entindex() + "," + prevCarry + "," + eventType + ");";
@@ -1763,6 +1867,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
 
     ::flagspawn._PS(player).has_carry = false;
+    ::flagspawn._ClearPlayerCarry(player, true);
     ::flagspawn._PS(player).last_carry_points = 0;
     // Engine drop succeeded; just refresh visuals/text.
     ::flagspawn._ReconcileWorldtexts();
@@ -1844,6 +1949,7 @@ FlagspawnThink <- function() {
         ps.has_carry = false;
         ps.carried_flag_eidx = -1;
         ps.last_carry_points = 0;
+        ::flagspawn._ClearPlayerCarry(activator, true);
     }
     ::flagspawn._ReconcileWorldtexts();
 };
