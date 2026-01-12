@@ -1,0 +1,44 @@
+i want 60s return time. the drop is not as fluid as i expect an item_teamflag entity to be tbh. i feel like we should begin a new flagspawn.nut from scratch. ONLY REFERENCE THE ORIGINAl. CREATE A NEW ONE. we aren't detecting merges on flags we spawn + drop. we need to track tehse things using flag outputs. to detect merges...its a n_strength calculation of some kind. gemini_response.txt: It appears you are asking about the technical implementation of Player Destruction in the Source Engine (for map-making or server configuration), specifically regarding how the "flags" (pickups) are handled and merged.
+
+In TF2's code, the "pickups" (beer, souls, etc.) are actually modified Capture the Flag entities. Here is the "secret code" logic for how they work and how to set them up:
+
+1. The "Secret" Entity Code
+The items you collect in Player Destruction are not unique entities; they are item_teamflag entities (the same as the Intelligence briefcase) with a specific setting changed.
+
+Entity: item_teamflag
+
+Keyvalue: Game Type (Internal name: gametype)
+
+Value: 6 (Player Destruction)
+
+Setting the Game Type to 6 transforms the briefcase into a collectible "pickup" that merges (stacks) when a player touches multiple of them.
+
+2. The Logic Controller
+To make the mode function, you must have the master control entity in your map. This entity handles the scoring, the "Leader" logic (dispenser beam), and the HUD.
+
+Entity: tf_logic_player_destruction
+
+Keyvalue: Point Value (How many points each flag is worth).
+
+Keyvalue: Max Points (The score limit to win).
+
+3. "Merging" Flags (Stacking Logic)
+The "merging" behavior—where touching a dropped item adds it to your count rather than swapping it—is hardcoded into Game Type 6.
+
+On Pickup: The game checks if the player is already carrying "PD Flags." If yes, it increments their count.
+
+On Death: The game spawns a number of item_teamflag entities equal to the player's counter + 1 (for their own death).
+
+4. Useful Console Commands / Inputs
+If you are running a server and want to manipulate the current game state:
+
+Change Score Limit: ent_fire tf_logic_player_destruction SetMaxPoints <number>
+
+Force Points (Blue Team): ent_fire tf_logic_player_destruction ScoreBluePoints <number>
+
+Force Points (Red Team): ent_fire tf_logic_player_destruction ScoreRedPoints <number>
+
+5. Customizing the HUD
+The "secret code" for the HUD allows you to change the countdown timer and images (like the seal or UFO). You can override the default HUD by creating a .res file and linking it in the tf_logic_player_destruction entity under the Resource File property.
+
+Would you like me to generate a specific console command to change the score limit or timer on your current server? .. END OF FILE. we want to track flag state with oncaptured onreturn ondrop onpickup (or ondrop1 onpickup1 etcc. ) check item_teamflag.html
