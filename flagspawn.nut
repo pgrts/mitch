@@ -509,6 +509,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     } catch(e0) {}
     local names = [
         ::flagspawn.CARRY_PROP_NAME,
+        "m_nStrength",
         "m_nNumCarryables",
         "m_nNumCarriedFlags",
         "m_nNumCarried",
@@ -552,6 +553,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if (!player) return;
     local names = [
         ::flagspawn.CARRY_PROP_NAME,
+        "m_nStrength",
         "m_nNumCarryables",
         "m_nNumCarriedFlags",
         "m_nNumCarried"
@@ -652,6 +654,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     try { ::flagspawn.Log("carryfunc GetNumCarryables=" + player.GetNumCarryables()); } catch(e0) {}
     local names = [
         ::flagspawn.CARRY_PROP_NAME,
+        "m_nStrength",
         "m_nNumCarryables",
         "m_nNumCarriedFlags",
         "m_nNumCarried",
@@ -1621,6 +1624,31 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn.OnPoolFlagDrop <- function(flag, player) {
     if (!flag) return;
+    if (player) {
+        if (::flagspawn._IsFlagCarriedBy(flag, player)) {
+            if (::flagspawn.DEBUG) {
+                ::flagspawn.Log("POOL DROP ignored (still carried): flag=" + ::flagspawn._SafeName(flag) +
+                    " player=" + ::flagspawn._SafeName(player));
+            }
+            return;
+        }
+        local owner = ::flagspawn._FlagOwner(flag);
+        if (owner == player) {
+            if (::flagspawn.DEBUG) {
+                ::flagspawn.Log("POOL DROP ignored (owner still set): flag=" + ::flagspawn._SafeName(flag) +
+                    " player=" + ::flagspawn._SafeName(player));
+            }
+            return;
+        }
+    }
+    local status = null;
+    try { status = NetProps.GetPropInt(flag, "m_nFlagStatus"); } catch(eS) { status = null; }
+    if (status == 1) {
+        if (::flagspawn.DEBUG) {
+            ::flagspawn.Log("POOL DROP ignored (status=carried): flag=" + ::flagspawn._SafeName(flag));
+        }
+        return;
+    }
     ::flagspawn._DetachFromPool(flag);
     ::flagspawn._ForceDroppedState(flag);
     ::flagspawn._EnsureDroppedState(flag);
@@ -1636,10 +1664,6 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._ReconcileWorldtexts();
 
     if (player) {
-        local ps = ::flagspawn._PS(player);
-        ps.has_carry = false;
-        ps.carried_flag_eidx = -1;
-        ps.last_carry_points = 0;
         local code = "if (::flagspawn != null) ::flagspawn._AfterDropCarrySync(" + player.entindex() + ");";
         ::flagspawn._FireScriptCode(0.05, code);
     }
