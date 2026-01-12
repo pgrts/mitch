@@ -57,13 +57,14 @@ if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
 ::flagspawn.ENABLE_FORCE_DROPPED_STATE <- true; // ensure dispensed flags are in dropped PD state
 ::flagspawn.ENABLE_FORCE_PICKUPABLE <- true; // ensure neutral PD pickup state when dispensing
 ::flagspawn.ENABLE_MANUAL_STACK <- true; // stack PointsValue when touching spawner while carrying
-::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- false; // avoid spawning extra pickups while carrying
+::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY <- false; // spawn extra pickup while carrying (PD HUD update)
 ::flagspawn.ENABLE_CARRY_MERGE_RECONCILE <- true; // merge if multiple carried flags are attached
 ::flagspawn.ENABLE_DROPPED_MERGE <- true; // merge dropped flags when overlapping
 ::flagspawn.DROPPED_MERGE_RADIUS <- 28.0; // units; tune to your slab size
+::flagspawn.DROPPED_GRACE_SECONDS <- 0.20; // seconds before a drop can merge
 ::flagspawn.ENABLE_CARRY_DROP_MERGE <- true; // merge dropped flags into carried on proximity
 ::flagspawn.CARRY_DROP_MERGE_RADIUS <- 36.0; // units; tune for pickup feel
-::flagspawn.ENABLE_FORCE_ATTACH_ON_PICKUP_FAIL <- true; // fallback if TouchTest fails
+::flagspawn.ENABLE_FORCE_ATTACH_ON_PICKUP_FAIL <- false; // fallback if TouchTest fails
 ::flagspawn.CARRY_PROP_NAME <- "m_nNumCarried"; // override if needed for your TF2 build
 ::flagspawn.CARRY_POINTS_PROP_NAME <- "m_nNumCarriedPoints"; // override if needed for your TF2 build
 
@@ -290,6 +291,8 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         flag.ValidateScriptScope();
         local ss = flag.GetScriptScope();
         ss.fs_owner_eidx <- (player ? player.entindex() : -1);
+        ss.fs_dropTime <- null;
+        ss.fs_isFlagspawn <- true;
     } catch(e) {}
     ::flagspawn._UnmarkDroppedFlag(flag);
 };
@@ -303,6 +306,16 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     } catch(e) {}
 };
 
+::flagspawn._InitFlagScript <- function(flag) {
+    if (!flag) return;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        ss.fs_isFlagspawn <- true;
+        if (!("fs_dropTime" in ss)) ss.fs_dropTime <- null;
+    } catch(e) {}
+};
+
 ::flagspawn._IsFlagCarriedBy <- function(flag, player) {
     if (!flag || !player) return false;
     if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
@@ -310,6 +323,10 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         local eidx = flag.entindex();
         if (eidx in ::flagspawn._dropped_flags) return false;
     } catch(e0) {}
+    try {
+        local status = NetProps.GetPropInt(flag, "m_nFlagStatus");
+        if (status == 2) return false; // dropped
+    } catch(e1) {}
     local owner = ::flagspawn._FlagOwner(flag);
     if (owner == player) return true;
     local parent = null;
@@ -386,6 +403,12 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     ::flagspawn._ClearFlagScriptOwner(flag);
     ::flagspawn._UnmarkDroppedFlag(flag);
     ::flagspawn._KillFlagGlow(flag);
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        ss.fs_dropTime <- null;
+        ss.fs_isFlagspawn <- true;
+    } catch(e0) {}
     try { flag.SetAbsOrigin(::flagspawn.POOL_HIDE_ORIGIN); } catch(e) {}
     try { EntFireByHandle(flag, "ForceReset", "", 0, null, null); } catch(e2) {}
 };
@@ -571,6 +594,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
     if (!f) return null;
 
+    ::flagspawn._InitFlagScript(f);
     ::flagspawn._ApplyFlagModel(f);
     ::flagspawn._SetFlagPointsValue(f, value);
     ::flagspawn._ForceDroppedState(f);
@@ -613,11 +637,14 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._IsMergeableDrop <- function(flag) {
     if (!flag) return false;
-    if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
-    if (::flagspawn._FlagOwner(flag) != null) return false;
-    local parent = null;
-    try { parent = flag.GetMoveParent(); } catch(e) { parent = null; }
-    if (parent != null) return false;
+    if (!::flagspawn._EnsureDroppedState(flag)) return false;
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if (("fs_dropTime" in ss) && ss.fs_dropTime != null) {
+            if ((Time() - ss.fs_dropTime) < ::flagspawn.DROPPED_GRACE_SECONDS) return false;
+        }
+    } catch(e2) {}
     return true;
 };
 
@@ -781,6 +808,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         local bf = ::flagspawn._FindByName(bn);
 
         if (rf) {
+            ::flagspawn._InitFlagScript(rf);
             ::flagspawn._ApplyFlagModel(rf);
             ::flagspawn._ApplyReturnTime(rf);
             ::flagspawn._HideFlag(rf);
@@ -789,6 +817,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         else if (::flagspawn.DEBUG) ::flagspawn.Log("POOL WARN: missing " + rn);
 
         if (bf) {
+            ::flagspawn._InitFlagScript(bf);
             ::flagspawn._ApplyFlagModel(bf);
             ::flagspawn._ApplyReturnTime(bf);
             ::flagspawn._HideFlag(bf);
@@ -836,6 +865,30 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if (eidx > 0 && eidx in ::flagspawn._dropped_flags) delete ::flagspawn._dropped_flags[eidx];
 };
 
+::flagspawn._EnsureDroppedState <- function(flag) {
+    if (!flag) return false;
+    if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
+    local netOwner = null;
+    try { netOwner = NetProps.GetPropEntity(flag, "m_hOwnerEntity"); } catch(e0) { netOwner = null; }
+    local owner = ::flagspawn._FlagOwner(flag);
+    local parent = null;
+    try { parent = flag.GetMoveParent(); } catch(e) { parent = null; }
+    if (netOwner != null || owner != null || parent != null) return false;
+
+    try {
+        flag.ValidateScriptScope();
+        local ss = flag.GetScriptScope();
+        if (!("fs_isFlagspawn" in ss) || !ss.fs_isFlagspawn) return false;
+        if ("fs_owner_eidx" in ss && ss.fs_owner_eidx != -1) ss.fs_owner_eidx <- -1;
+        if (!("fs_dropTime" in ss) || ss.fs_dropTime == null) {
+            ss.fs_dropTime <- Time();
+            ::flagspawn._MarkDroppedFlag(flag);
+            if (::flagspawn.DEBUG) ::flagspawn.Log("DROP HEAL: " + ::flagspawn._SafeName(flag));
+        }
+    } catch(e2) { return false; }
+    return true;
+};
+
 ::flagspawn._KillWorldtextForFlag <- function(flag) {
     if (!flag) return;
     local fe = -1;
@@ -864,9 +917,11 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 ::flagspawn._IsFlagDropped <- function(flag) {
     if (!flag) return false;
     if (::flagspawn._IsFlagHiddenInPool(flag)) return false;
-    if (::flagspawn._FlagOwner(flag) != null) return false;
+    local netOwner = null;
+    try { netOwner = NetProps.GetPropEntity(flag, "m_hOwnerEntity"); } catch(e0) { netOwner = null; }
+    if (netOwner != null || ::flagspawn._FlagOwner(flag) != null) return false;
     local parent = null;
-    try { parent = flag.GetMoveParent(); } catch(e0) { parent = null; }
+    try { parent = flag.GetMoveParent(); } catch(e1) { parent = null; }
     if (parent != null) return false;
     return true;
 };
@@ -1078,6 +1133,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
 ::flagspawn._MergeDropIntoCarrier <- function(player, carried, dropped) {
     if (!carried || !dropped) return false;
+    ::flagspawn._DetachFromPool(dropped);
     local add = ::flagspawn._GetFlagPointsValue(dropped);
     if (add <= 0) add = 1;
     local total = ::flagspawn._GetFlagPointsValue(carried) + add;
@@ -1204,7 +1260,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 // ------------------------------------------------------------
 // Dispense + pickup verify
 // ------------------------------------------------------------
-::flagspawn._NudgeForPickup <- function(flag, player) {
+::flagspawn._NudgeForPickup <- function(flag, player, forceTouch = false) {
     if (!flag || !player) return;
 
     if (::flagspawn.DEBUG) {
@@ -1249,7 +1305,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
 
     // If already carrying, let physics touch drive merge instead of forcing TouchTest.
     local carrying = ::flagspawn._ResolveCarriedFlag(player);
-    if (!carrying || carrying == flag) {
+    if (forceTouch || !carrying || carrying == flag) {
         try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e8) {}
     }
 };
@@ -1263,9 +1319,27 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
         if (::flagspawn.ENABLE_PENDING_GUARD) ps.pending_flag_eidx = -1;
         ps.pending_carry = -1;
         ps.has_carry = true;
-        ps.carried_flag_eidx = flag.entindex();
+
+        local primary = null;
+        if ("carried_flag_eidx" in ps && ps.carried_flag_eidx > 0) {
+            try { primary = EntIndexToHScript(ps.carried_flag_eidx); } catch(e0) { primary = null; }
+            if (!primary || !primary.IsValid() || primary == flag || !::flagspawn._IsFlagCarriedBy(primary, player)) {
+                primary = null;
+            }
+        }
+        if (!primary) primary = flag;
+
         ::flagspawn._SetFlagScriptOwner(flag, player);
         ::flagspawn._KillWorldtextForFlag(flag);
+
+        if (primary != flag) {
+            ::flagspawn._MergeDropIntoCarrier(player, primary, flag);
+            ps.carried_flag_eidx = primary.entindex();
+            if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: merged extra " + ::flagspawn._SafeName(flag) + " into " + ::flagspawn._SafeName(primary));
+            return;
+        }
+
+        ps.carried_flag_eidx = flag.entindex();
         ::flagspawn._MergeCarriedFlags(player);
         if (::flagspawn.DEBUG) ::flagspawn.Log("PICKUP VERIFIED: " + ::flagspawn._SafeName(player) + " owns " + ::flagspawn._SafeName(flag));
         return;
@@ -1386,7 +1460,6 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     if (!player) return;
 
     local ps = ::flagspawn._PS(player);
-    local alreadyCarrying = ps.has_carry;
 
     local now = Time();
     if (now - ps.last_spawner_touch < ::flagspawn.SPAWNER_TOUCH_COOLDOWN) return;
@@ -1408,7 +1481,7 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     // If you are already carrying a PD flag, optionally stack manually or spawn a fresh pickup.
     local carried = ::flagspawn._ResolveCarriedFlag(player);
     local carryCount = ::flagspawn._GetPlayerCarryCount(player);
-    local isCarrying = alreadyCarrying || (carried != null) || (carryCount > 0);
+    local isCarrying = (carried != null) || (carryCount > 0);
     if (::flagspawn.DEBUG) ::flagspawn.Log("CARRY CHECK: flag=" + ::flagspawn._SafeName(carried) + " carryCount=" + carryCount);
     if (isCarrying && !carried && carryCount > 0) {
         if (::flagspawn.DEBUG) ::flagspawn.Log("CARRY CHECK: carryCount>0 but no carried flag resolved; skip dispense");
@@ -1425,16 +1498,24 @@ if (::flagspawn.USE_FLAG_MODEL_BODYGROUP) {
     }
     if (isCarrying && ::flagspawn.ENABLE_FRESH_PICKUP_ON_CARRY) {
         local add2 = ::flagspawn.GetClassBonus(player);
-        local fresh = ::flagspawn._SpawnFreshPickupAtPlayer(player, add2);
-        ::flagspawn.Log("FRESH PICKUP: val=" + add2 + " ent=" + ::flagspawn._SafeName(fresh));
-        local carried2 = ::flagspawn._ResolveCarriedFlag(player);
-        if (carried2 && fresh) {
-            ::flagspawn._MergeDropIntoCarrier(player, carried2, fresh);
-        } else if (::flagspawn.DEBUG) {
-            ::flagspawn.Log("FRESH PICKUP WARN: carried=" + ::flagspawn._SafeName(carried2) + " fresh=" + ::flagspawn._SafeName(fresh));
+        local extra = ::flagspawn._TakeNextFromPool(spawnTeam);
+        if (!extra) {
+            ::flagspawn.Log("OnSpawnerTouch DENY: pool empty for extra pickup spawnTeam=" + spawnTeam);
+            return;
         }
-        ps.pending_flag_eidx = -1;
-        ps.pending_carry = -1;
+        ::flagspawn._DetachFromPool(extra);
+        ::flagspawn._ApplyFlagModel(extra);
+        ::flagspawn._SetFlagPointsValue(extra, add2);
+        ::flagspawn._ApplyReturnTime(extra);
+
+        ps.pending_flag_eidx = extra.entindex();
+        ps.pending_carry = carryCount;
+
+        ::flagspawn._NudgeForPickup(extra, player, true);
+        ::flagspawn._StartVerifyPickup(player, extra, 0);
+
+        ::flagspawn.Log("EXTRA PICKUP: val=" + add2 + " flag=" + ::flagspawn._SafeName(extra));
+        ::flagspawn._ReconcileWorldtexts();
         return;
     }
 
