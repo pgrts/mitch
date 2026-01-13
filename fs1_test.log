@@ -1,0 +1,129 @@
+
+
+
+Using shader api: shaderapiempty.dll
+materialPath: C:\Program Files (x86)\Steam\steamapps\common\Team Fortress 2\tf\materials
+Loading C:\Users\mitch\Documents\GitHub\mitch\fs1_test.vmf
+fixing up env_cubemap materials on brush sides...
+0...1...2...3...4...5...6...7...8...9...100...1...2...3...4...5...6...7...8...9...10Processing areas...done (0)
+Building Faces...done (0)
+FixTjuncs...
+PruneNodes...
+WriteBSP...
+done (0)
+writing C:\Users\mitch\Documents\GitHub\mitch\fs1_test.prt...Building visibility clusters...
+done (0)
+Creating default LDR cubemaps for env_cubemap using skybox materials:
+   skybox/sky_day01_01*.vmt
+ ! Run buildcubemaps in the engine to get the correct cube maps.
+Creating default HDR cubemaps for env_cubemap using skybox materials:
+   skybox/sky_day01_01*.vmt
+ ! Run buildcubemaps in the engine to get the correct cube maps.
+Finding displacement neighbors...
+Finding lightmap sample positions...
+Displacement Alpha : 0...1...2...3...4...5...6...7...8...9...10
+Building Physics collision data...
+done (0) (7050 bytes)
+Placing detail props : 0...1...2...3...4...5...6...7...8...9...10
+Compacting texture/material tables...
+Reduced 25 texinfos to 22
+Reduced 6 texdatas to 5 (153 bytes to 112)
+Writing C:\Users\mitch\Documents\GitHub\mitch\fs1_test.bsp
+MSG_FILEWRITE - Filesystem was asked to write to 'C:\Users\mitch\Documents\GitHub\mitch\fs1_test.bsp', but we don't own that location. Allowing.
+Wrote ZIP buffer, estimated size 212162, actual size 211546
+0 seconds elapsed
+
+
+
+12 threads
+reading c:\users\mitch\documents\github\mitch\fs1_test.bsp
+reading c:\users\mitch\documents\github\mitch\fs1_test.prt
+  41 portalclusters
+ 102 numportals
+0...1...2...3...4...5...6...7...8...9...10Optimized: 0 visible clusters (0.00%)
+Total clusters visible: 1673
+Average clusters visible: 40
+Building PAS...
+Average clusters audible: 41
+visdatasize:824  compressed from 656
+writing c:\users\mitch\documents\github\mitch\fs1_test.bsp
+MSG_FILEWRITE - Filesystem was asked to write to 'c:\users\mitch\documents\github\mitch\fs1_test.bsp', but we don't own that location. Allowing.
+0 seconds elapsed
+
+
+
+[Reading texlights from 'lights.rad']
+[56 texlights parsed from 'lights.rad']
+
+Loading c:\users\mitch\documents\github\mitch\fs1_test.bsp
+162 faces
+200647 square feet [28893184.00 square inches]
+0 Displacements
+0 Square Feet [0.00 Square Inches]
+162 patches before subdivision
+162 patches after subdivision
+2 direct lights
+0...1...2...3...4...5...6...7...8...9...100...1...2...3...4...5...6...7...8...9...10transfers 2328, max 55
+transfer lists:   0.0 megs
+0...1...2...3...4...5...6...7...8...9...10	Bounce #1 added RGB(145, 159, 140)
+0...1...2...3...4...5...6...7...8...9...10	Bounce #2 added RGB(1, 2, 1)
+0...1...2...3...4...5...6...7...8...9...10	Bounce #3 added RGB(0, 0, 0)
+Build Patch/Sample Hash Table(s).....Done<0.0009 sec>
+0...1...2...3...4...5...6...7...8...9...10FinalLightFace Done
+0 of 0 (0% of) surface lights went in leaf ambient cubes.
+0...1...2...3...4...5...6...7...8...9...10Writing leaf ambient...done
+Ready to Finish
+
+Object names       Objects/Maxobjs  Memory / Maxmem  Fullness 
+------------       ---------------  ---------------  -------- 
+models                   6/1024          288/49152    ( 0.6%) 
+brushes                 16/8192          192/98304    ( 0.2%) 
+brushsides             100/65536         800/524288   ( 0.2%) 
+planes                 258/65536        5160/1310720  ( 0.4%) 
+vertexes               232/65536        2784/786432   ( 0.4%) 
+nodes                  159/65536        5088/2097152  ( 0.2%) 
+texinfos                22/12288        1584/884736   ( 0.2%) 
+texdata                  5/2048          160/65536    ( 0.2%) 
+dispinfos                0/0               0/0        ( 0.0%) 
+disp_verts               0/0               0/0        ( 0.0%) 
+disp_tris                0/0               0/0        ( 0.0%) 
+disp_lmsamples           0/0               0/0        ( 0.0%) 
+faces                  162/65536        9072/3670016  ( 0.2%) 
+hdr faces                0/65536           0/3670016  ( 0.0%) 
+origfaces               62/65536        3472/3670016  ( 0.1%) 
+leaves                 166/65536        5312/2097152  ( 0.3%) 
+leaffaces              198/65536         396/131072   ( 0.3%) 
+leafbrushes            184/65536         368/131072   ( 0.3%) 
+areas                    2/256            16/2048     ( 0.8%) 
+surfedges              978/512000       3912/2048000  ( 0.2%) 
+edges                  510/256000       2040/1024000  ( 0.2%) 
+LDR worldlights          2/8192          176/720896   ( 0.0%) 
+HDR worldlights          0/8192            0/720896   ( 0.0%) 
+leafwaterdata            0/32768           0/393216   ( 0.0%) 
+waterstrips             10/32768         100/327680   ( 0.0%) 
+waterverts               0/65536           0/786432   ( 0.0%) 
+waterindices           126/65536         252/131072   ( 0.2%) 
+cubemapsamples           0/1024            0/16384    ( 0.0%) 
+overlays                 0/512             0/180224   ( 0.0%) 
+LDR lightdata         [variable]      134080/0        ( 0.0%) 
+HDR lightdata         [variable]           0/0        ( 0.0%) 
+visdata               [variable]         824/16777216 ( 0.0%) 
+entdata               [variable]        4452/393216   ( 1.1%) 
+LDR ambient table      166/65536         664/262144   ( 0.3%) 
+HDR ambient table      166/65536         664/262144   ( 0.3%) 
+LDR leaf ambient       499/65536       13972/1835008  ( 0.8%) 
+HDR leaf ambient       166/65536        4648/1835008  ( 0.3%) 
+occluders                0/0               0/0        ( 0.0%) 
+occluder polygons        0/0               0/0        ( 0.0%) 
+occluder vert ind        0/0               0/0        ( 0.0%) 
+detail props          [variable]           1/12       ( 8.3%) 
+static props          [variable]           1/12       ( 8.3%) 
+pakfile               [variable]      211546/0        ( 0.0%) 
+physics               [variable]        7050/4194304  ( 0.2%) 
+physics terrain       [variable]           2/1048576  ( 0.0%) 
+
+Level flags = 0
+
+Total triangle count: 406
+Writing c:\users\mitch\documents\github\mitch\fs1_test.bsp
+0 seconds elapsed

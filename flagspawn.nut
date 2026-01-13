@@ -1,826 +1,867 @@
-// ============================================================
-// flagspawn_pd_core.nut
-// ------------------------------------------------------------
-// Event-driven PD pickup tracking with logic_eventlistener +
-// item_teamflag outputs. Tracks flag state + player carry totals,
-// updates meter bodygroup, and handles 60s returns.
-// ============================================================
+//==============================================================
+// Flagspawn (PD Fuel) - MINIMAL CORE REWRITE
+// Focus: spawn PD pickups reliably, PD merge works, visual meter on back + ground.
+//==============================================================
+//
+// Map wiring (from README):
+//  - logic_script targetname: scripter, script: flagspawn.nut
+//  - spawner triggers call:
+//      flagspawn.OnSpawnerTouch(activator, 3)   // redtrigger (BLU base) => spawns for RED? (beneficiary=3)
+//      flagspawn.OnSpawnerTouch(activator, 2)   // blutrigger (RED base) => spawns for BLU? (beneficiary=2)
+//  - pooled flags in map:
+//      fs_pool_red_01..25 (item_teamflag)
+//      fs_pool_blu_01..25 (item_teamflag)
+//
+// NOTE: PD stacking/merging is hardcoded when item_teamflag GameType=6 (PD).
+// We do NOT re-implement merging. We only:
+//   - dispense PD pickups from a pool
+//   - set their per-flag value (best-effort; see _SetPDValueOnFlag)
+//   - track flag entities + attach a meter proxy prop_dynamic to show value
+//   - keep the meter on the carrier's back via SetParent + SetParentAttachment "flag"
+//   - keep the meter on the dropped pickup on the ground by parenting to the flag
+//
+// Docs used:
+//  - item_teamflag supports SetParent/SetParentAttachment/ClearParent inputs, and player attachment "flag" exists【turn9file2†L1-L5】.
+//==============================================================
 
-// ---- ROOT TABLE SETUP ----
-local rt = getroottable();
-if (!("flagspawn" in rt)) rt["flagspawn"] <- {};
-::flagspawn <- rt["flagspawn"];
+// TF2 VScript uses an older Squirrel; avoid `??` and always anchor the table in the root.
+local _rt = getroottable()
+if (!("flagspawn" in _rt)) {
+    _rt.flagspawn <- {}
+} else {
+    try {
+        if (typeof _rt.flagspawn != "table") _rt.flagspawn <- {}
+    } catch (_e) {
+        _rt.flagspawn <- {}
+    }
+}
+local flagspawn = _rt.flagspawn
+try {
+    if (!("flagspawn" in this)) this.flagspawn <- _rt.flagspawn
+    else this.flagspawn = _rt.flagspawn
+} catch (_e) {}
 
-// ------------------------------------------------------------
-// Config
-// ------------------------------------------------------------
-::flagspawn.TEAM_RED <- 2;
-::flagspawn.TEAM_BLU <- 3;
+flagspawn.TEAM_RED <- 2
+flagspawn.TEAM_BLU <- 3
+flagspawn.TEAM_NONE <- 0
 
-::flagspawn.CFG <- {
+flagspawn.CFG <- {
     DEBUG = true,
 
-    RETURN_DELAY = 60.0,
-    CARRY_MAX = 99,
+    // what each dispense is worth (for this "core test" phase you asked for)
+    DISPENSE_VALUE = 3,
 
+    // If true: a player can only be dispensed 1 pickup per life.
+    // You requested this be disabled so you can spam 3-point pickups.
+    ONE_PER_LIFE = false,
+
+    // Cooldown per player to avoid accidental double-dispense in the trigger volume.
     DISPENSE_COOLDOWN = 0.35,
+
+    // When we "drop on your head", place the pickup here:
     DISPENSE_FWD = 24.0,
-    DISPENSE_UP = 24.0,
+    DISPENSE_UP  = 52.0,
 
-    POOL_PER_TEAM = 25,
-    POOL_NAME_RED_PREFIX = "fs_pool_red_",
-    POOL_NAME_BLU_PREFIX = "fs_pool_blu_",
-    POOL_HIDE_ORIGIN = Vector(0, 0, -8000),
-
+    // Meter proxy
     METER_MODEL = "models/props_custom/fs_meter/fs_meter_slab_grid.mdl",
+    // Bodygroup index for fill (usually 0 in your models)
     METER_BODYGROUP = 0,
-    METER_FLAG_ATTACHMENT = "origin",
-    ENABLE_METER = true,
 
-    SET_FLAG_BODYGROUP = true,
-    BODYGROUP_MAX = 99,
+    // If your meter needs scale tweaks for readability:
+    METER_SCALE_SINGLE = 1.0,
+    METER_SCALE_DOUBLE = 0.75,
 
-    SEARCH_RADIUS = 96.0,
-    EVENT_DEBOUNCE = 0.05,
-};
+    // Where to stash pooled flags
+    POOL_STASH_ORIGIN = Vector(0, 0, -8000),
 
-// ------------------------------------------------------------
-// State
-// ------------------------------------------------------------
-::flagspawn.State <- {
-    Flags = {},      // entindex -> { value, state, carrier_eidx, return_deadline, vis_eidx, glow_eidx, no_return, pool_team, beneficiary_team }
-    Players = {},    // entindex -> { carried_total, last_event_time, last_event_type, last_flag_eidx, last_spawn_flag, last_spawn_time }
-    Pool = { [2] = [], [3] = [] },
-    NextDispenseAt = {}
-};
+    // Map listener entity (logic_eventlistener) used when ListenToGameEvent isn't available.
+    FLAG_LISTENER_NAME = "flag_listener",
 
-// ------------------------------------------------------------
-// Logging + helpers
-// ------------------------------------------------------------
-::flagspawn.Log <- function(s) {
-    if (::flagspawn.CFG.DEBUG) printl("[flagspawn] " + s);
-};
+    // item_teamflag GameType for Player Destruction (PD).
+    // Per VDC item_teamflag docs: 6 = Player Destruction, 5 = Robot Destruction.
+    PD_GAMETYPE = 6,
 
-::flagspawn._Now <- function() { return Time(); };
+    // If true, flags are assigned to a team and the other team can't pick them up.
+    // If false, dispensed flags are neutral (team 0).
+    RESTRICT_PICKUP_TO_TEAM = true,
 
-::flagspawn._EntIndex <- function(ent) {
-    if (!ent) return -1;
-    try { return ent.entindex(); } catch(e) { return -1; }
-};
+    // Meter glow (tf_glow) on the proxy prop_dynamic.
+    ENABLE_METER_GLOW = true,
+    GLOW_RED = "255 0 0 255",
+    GLOW_BLU = "0 0 255 255",
+    GLOW_NEUTRAL = "255 255 255 255",
 
-::flagspawn._IsPlayer <- function(ent) {
-    return ent && ent.IsValid && ent.IsValid() && ent.GetClassname && ent.GetClassname() == "player";
-};
+    // sanity clamp for visuals
+    VALUE_CLAMP_MAX = 99,
+}
 
-::flagspawn._SafeName <- function(ent) {
-    if (!ent) return "null";
-    local nm = "";
-    try { nm = ent.GetName(); } catch(e) { nm = ""; }
-    if (nm == null || nm == "") {
-        try { nm = ent.GetClassname() + "#" + ent.entindex(); } catch(e2) { nm = "ent"; }
-    }
-    return nm;
-};
+flagspawn.State <- {
+    Inited = false,
 
-::flagspawn._ParseInt <- function(v, defval) {
-    if (v == null) return defval;
-    if (typeof v == "integer") return v;
-    if (typeof v == "float") return v.tointeger();
-    if (typeof v == "string") {
-        if (v.len() == 0) return defval;
-        try { return v.tointeger(); } catch(e) { return defval; }
-    }
-    return defval;
-};
+    // pools (arrays of handles)
+    PoolRed = [],
+    PoolBlu = [],
 
-::flagspawn._OppTeam <- function(team) {
-    if (team == ::flagspawn.TEAM_RED) return ::flagspawn.TEAM_BLU;
-    if (team == ::flagspawn.TEAM_BLU) return ::flagspawn.TEAM_RED;
-    return 0;
-};
+    // next dispense index (simple round-robin)
+    PoolIdxRed = 0,
+    PoolIdxBlu = 0,
 
-::flagspawn._PoolTeamFromName <- function(flag) {
-    if (!flag) return 0;
-    local nm = "";
-    try { nm = flag.GetName(); } catch(e) { nm = ""; }
-    if (nm.len() >= ::flagspawn.CFG.POOL_NAME_RED_PREFIX.len() && nm.find(::flagspawn.CFG.POOL_NAME_RED_PREFIX) == 0) return ::flagspawn.TEAM_RED;
-    if (nm.len() >= ::flagspawn.CFG.POOL_NAME_BLU_PREFIX.len() && nm.find(::flagspawn.CFG.POOL_NAME_BLU_PREFIX) == 0) return ::flagspawn.TEAM_BLU;
-    return 0;
-};
+    // per-player cooldown + per-life tracking
+    NextDispenseTime = {},   // userid -> time
+    GivenThisLife = {},      // userid -> bool
 
-// ------------------------------------------------------------
-// Player state
-// ------------------------------------------------------------
-::flagspawn._PS <- function(player) {
-    local k = ::flagspawn._EntIndex(player);
-    if (k <= 0) return null;
-    if (!(k in ::flagspawn.State.Players)) {
-        ::flagspawn.State.Players[k] <- {
-            carried_total = 0,
-            last_event_time = 0.0,
-            last_event_type = -1,
-            last_flag_eidx = -1,
-            last_spawn_flag = -1,
-            last_spawn_time = 0.0
-        };
-    }
-    return ::flagspawn.State.Players[k];
-};
+    // tracked flags: entindex -> table{ value, meter, carrier_userid }
+    Flags = {},
 
-// ------------------------------------------------------------
-// Flag state
-// ------------------------------------------------------------
-::flagspawn._EnsureFlagData <- function(flag) {
-    if (!flag) return null;
-    local ei = ::flagspawn._EntIndex(flag);
-    if (ei <= 0) return null;
+    WarnedNoEventData = false,
 
-    if (!(ei in ::flagspawn.State.Flags)) {
-        local data = {
-            value = 1,
-            state = "pooled",
-            carrier_eidx = -1,
-            return_deadline = null,
-            vis_eidx = -1,
-            glow_eidx = -1,
-            no_return = false,
-            pool_team = 0,
-            beneficiary_team = 0
-        };
+    // player entindex -> meter handle (lets us poll carried points when events aren't hookable)
+    PlayerMeters = {},
+}
 
-        // Restore from script scope if present
-        try {
-            flag.ValidateScriptScope();
-            local ss = flag.GetScriptScope();
-            if ("fs_value" in ss) data.value = ss.fs_value.tointeger();
-            if ("fs_state" in ss) data.state = ss.fs_state;
-            if ("fs_poolTeam" in ss) data.pool_team = ss.fs_poolTeam.tointeger();
-            if ("fs_beneficiaryTeam" in ss) data.beneficiary_team = ss.fs_beneficiaryTeam.tointeger();
-            if ("fs_no_return" in ss) data.no_return = ss.fs_no_return;
-            if ("fs_vis_eidx" in ss) data.vis_eidx = ss.fs_vis_eidx.tointeger();
-            if ("fs_glow_eidx" in ss) data.glow_eidx = ss.fs_glow_eidx.tointeger();
-            if ("fs_dropTime" in ss && typeof ss.fs_dropTime == "float") {
-                data.return_deadline = ss.fs_dropTime + ::flagspawn.CFG.RETURN_DELAY;
-            }
-        } catch(e) {}
+flagspawn._Log <- function(msg) {
+    if (!flagspawn.CFG.DEBUG) return
+    printl("[FLAGSPAWN] " + msg)
+}
 
-        if (data.pool_team == 0) data.pool_team = ::flagspawn._PoolTeamFromName(flag);
+flagspawn._ClampInt <- function(v, lo, hi) {
+    if (v < lo) return lo
+    if (v > hi) return hi
+    return v
+}
 
-        ::flagspawn.State.Flags[ei] <- data;
-    }
+flagspawn._GlowColorForTeam <- function(team) {
+    if (team == flagspawn.TEAM_RED) return flagspawn.CFG.GLOW_RED
+    if (team == flagspawn.TEAM_BLU) return flagspawn.CFG.GLOW_BLU
+    return flagspawn.CFG.GLOW_NEUTRAL
+}
 
-    // Ensure script scope markers
+flagspawn._EntIndex <- function(h) {
+    if (!h) return -1
+    try { return h.entindex() } catch(e) { return -1 }
+}
+
+flagspawn._IsUsableEnt <- function(h) {
+    // Some TF2 entity states can make IsValid() unreliable; entindex() is the safest probe.
+    if (!h) return false
+    try { h.entindex(); return true } catch (e) { return false }
+}
+
+flagspawn._Now <- function() { return Time() }
+
+flagspawn._IsPlayer <- function(ent) {
+    return ent && ent.IsValid && ent.IsValid() && ent.GetClassname && ent.GetClassname() == "player"
+}
+
+// Helper wrappers: keep them on flagspawn, plus global aliases for mixed call sites.
+flagspawn._GetOrigin <- function(ent) {
+    if (!ent) return Vector(0, 0, 0)
+    try { if ("GetOrigin" in ent) return ent.GetOrigin() } catch(e) {}
+    try { if ("GetAbsOrigin" in ent) return ent.GetAbsOrigin() } catch(e) {}
+    return Vector(0, 0, 0)
+}
+
+flagspawn._SetOrigin <- function(ent, pos) {
+    if (!ent) return
+    try { if ("SetAbsOrigin" in ent) { ent.SetAbsOrigin(pos); return } } catch(e) {}
+    try { if ("SetOrigin" in ent) { ent.SetOrigin(pos); return } } catch(e) {}
+}
+
+flagspawn._GetForward <- function(ent) {
+    if (!ent) return Vector(1, 0, 0)
+    try { if ("GetForwardVector" in ent) return ent.GetForwardVector() } catch(e) {}
     try {
-        flag.ValidateScriptScope();
-        local ss2 = flag.GetScriptScope();
-        ss2.fs_isFlagspawn <- true;
-        if (!("fs_poolTeam" in ss2)) ss2.fs_poolTeam <- ::flagspawn._PoolTeamFromName(flag);
-    } catch(e2) {}
-
-    return ::flagspawn.State.Flags[ei];
-};
-
-::flagspawn._WriteFlagScope <- function(flag, data) {
-    if (!flag || !data) return;
-    try {
-        flag.ValidateScriptScope();
-        local ss = flag.GetScriptScope();
-        ss.fs_value <- data.value;
-        ss.fs_state <- data.state;
-        ss.fs_poolTeam <- data.pool_team;
-        ss.fs_beneficiaryTeam <- data.beneficiary_team;
-        ss.fs_no_return <- data.no_return;
-        ss.fs_vis_eidx <- data.vis_eidx;
-        ss.fs_glow_eidx <- data.glow_eidx;
-        if (data.state == "dropped") ss.fs_dropTime <- ::flagspawn._Now();
-        if (data.state != "dropped") ss.fs_dropTime <- null;
+        if ("EyeAngles" in ent) return ent.EyeAngles().Forward()
+        if ("GetAbsAngles" in ent) return ent.GetAbsAngles().Forward()
     } catch(e) {}
-};
+    return Vector(1, 0, 0)
+}
 
-::flagspawn._IsFlagHiddenInPool <- function(flag) {
-    if (!flag) return true;
-    local org = null;
-    try { org = flag.GetAbsOrigin(); } catch(e) { org = null; }
-    if (!org) return true;
-    return (org.z < -7000);
-};
+if (!("_GetOrigin" in getroottable())) ::_GetOrigin <- function(ent) { return flagspawn._GetOrigin(ent) }
+if (!("_SetOrigin" in getroottable())) ::_SetOrigin <- function(ent, pos) { return flagspawn._SetOrigin(ent, pos) }
+if (!("_GetForward" in getroottable())) ::_GetForward <- function(ent) { return flagspawn._GetForward(ent) }
 
-// ------------------------------------------------------------
-// Meter proxy
-// ------------------------------------------------------------
-::flagspawn._EnsureMeter <- function(flag, data) {
-    if (!::flagspawn.CFG.ENABLE_METER) return null;
-    if (!data) return null;
+flagspawn._GetPlayerCarriedPoints <- function(ply) {
+    if (!ply) return 0
+    if (!("NetProps" in getroottable())) return 0
 
-    local meter = null;
-    if (data.vis_eidx > 0) {
-        try { meter = EntIndexToHScript(data.vis_eidx); } catch(e0) { meter = null; }
-        if (meter && meter.IsValid()) return meter;
+    // TF2 PD carried-points netprop names vary by build/mod; try a few common candidates.
+    foreach (propName in [
+        "m_nNumCarriedPoints",
+        "m_nNumCarried",
+        "m_nCarried",
+        "m_nCarriedPoints",
+        "m_nCurrentPoints",
+        "m_nPoints"
+    ]) {
+        try {
+            local v = NetProps.GetPropInt(ply, propName)
+            if (typeof v == "integer" && v >= 0) return v
+        } catch (e) {}
+    }
+    return 0
+}
+
+flagspawn._EnsurePDFlag <- function(flag) {
+    if (!flag) return
+    // Best-effort: force the flag into PD behavior (otherwise it behaves like SD/CTF and won't "merge").
+    try { flag.__KeyValueFromInt("GameType", flagspawn.CFG.PD_GAMETYPE) } catch (e) {}
+    EntFireByHandle(flag, "AddOutput", "GameType " + flagspawn.CFG.PD_GAMETYPE, 0.0, null, null)
+    try { flag.__KeyValueFromInt("NeutralType", 1) } catch (e) {}
+    EntFireByHandle(flag, "AddOutput", "NeutralType 1", 0.0, null, null)
+}
+
+flagspawn._HideFlagModel <- function(flag) {
+    if (!flag) return
+    // Hide the briefcase model while keeping the pickup/collision active.
+    // (effects 32 = EF_NODRAW, rendermode 10 = kRenderTransAlpha, renderamt 0 = fully transparent)
+    try { flag.AddEffects(32) } catch (e) {}
+    try { flag.__KeyValueFromInt("effects", 32) } catch (e) {}
+    try { flag.__KeyValueFromInt("rendermode", 10) } catch (e) {}
+    try { flag.__KeyValueFromInt("renderamt", 0) } catch (e) {}
+    EntFireByHandle(flag, "AddOutput", "effects 32", 0.0, null, null)
+    EntFireByHandle(flag, "AddOutput", "rendermode 10", 0.0, null, null)
+    EntFireByHandle(flag, "AddOutput", "renderamt 0", 0.0, null, null)
+}
+
+flagspawn._SetFlagTeam <- function(flag, team) {
+    if (!flag) return
+    // SetTeam input exists on item_teamflag. TeamNum key is also written for robustness.
+    EntFireByHandle(flag, "SetTeam", "" + team, 0.0, null, null)
+    try { flag.__KeyValueFromInt("TeamNum", team) } catch (e) {}
+    EntFireByHandle(flag, "AddOutput", "TeamNum " + team, 0.0, null, null)
+}
+
+//--------------------------------------------------------------
+// INIT / POOLS
+//--------------------------------------------------------------
+flagspawn.Init <- function() {
+    if (flagspawn.State.Inited) return
+    flagspawn.State.Inited = true
+
+    flagspawn._Log("Init()")
+    // Optional: use a Hammer logic_eventlistener instead of (or in addition to) ListenToGameEvent.
+    // Wire: logic_eventlistener (event_name=teamplay_flag_event, fetch_event_data=Yes) ->
+    //       OnEventFired -> logic_script "scripter" : CallScriptFunction : FS_OnFlagEvent : 0
+    // FS_OnFlagEvent() below will read activator.event_data and route it to the same handler.
+
+    flagspawn._RebuildPoolsByScan()
+
+    // Hook events (merge-friendly; OnPickup outputs can be buggy in PD when already carrying)
+    // We still listen to these for debugging + meter parenting updates.
+    if ("ListenToGameEvent" in getroottable()) {
+        ListenToGameEvent("teamplay_flag_event", flagspawn._OnTeamplayFlagEvent, flagspawn)
+        ListenToGameEvent("player_death", flagspawn._OnPlayerDeath, flagspawn)
+        ListenToGameEvent("player_spawn", flagspawn._OnPlayerSpawn, flagspawn)
+    } else {
+        flagspawn._Log("WARNING: ListenToGameEvent missing; using logic_eventlistener only.")
+        local l = null
+        try { l = Entities.FindByName(null, flagspawn.CFG.FLAG_LISTENER_NAME) } catch (_e) { l = null }
+        if (!l) flagspawn._Log("WARNING: no logic_eventlistener named '" + flagspawn.CFG.FLAG_LISTENER_NAME + "' found (merges won't update meter unless OnPickup outputs work).")
     }
 
+    // Think loop to clean up invalid refs
+    AddThinkToEnt(Entities.First(), "flagspawn._Think")
+}
+
+flagspawn._RebuildPoolsByScan <- function() {
+    flagspawn.State.PoolRed.clear()
+    flagspawn.State.PoolBlu.clear()
+    flagspawn.State.PoolIdxRed = 0
+    flagspawn.State.PoolIdxBlu = 0
+
+    local total = 0
+    local other = []
+
+    local e = null
+    while ((e = Entities.FindByClassname(e, "item_teamflag")) != null) {
+        total++
+        local nm = ""
+        try { nm = e.GetName() } catch(_e) { nm = "" }
+
+        if (nm.len() >= 12 && nm.slice(0, 12) == "fs_pool_red_") {
+            flagspawn.State.PoolRed.append(e)
+            flagspawn._PrepPoolFlag(e)
+        } else if (nm.len() >= 12 && nm.slice(0, 12) == "fs_pool_blu_") {
+            flagspawn.State.PoolBlu.append(e)
+            flagspawn._PrepPoolFlag(e)
+        } else {
+            if (other.len() < 8) other.append(nm)
+        }
+    }
+
+    flagspawn._Log("Pool init(scan): red=" + flagspawn.State.PoolRed.len() + " blu=" + flagspawn.State.PoolBlu.len())
+    if (flagspawn.State.PoolRed.len() == 0 && flagspawn.State.PoolBlu.len() == 0) {
+        if (total == 0) {
+            flagspawn._Log("Pool scan found 0 item_teamflag entities. Wrong BSP loaded, entities missing, or executed before map spawned.")
+        } else {
+            flagspawn._Log("Pool scan saw item_teamflag but none matched fs_pool_red_*/fs_pool_blu_*; examples: " + other.tostring())
+        }
+        flagspawn._Log("Run: script flagspawn.DumpTeamFlags() to see what the map actually has.")
+    }
+}
+
+// Put pooled flags into a safe "inactive" state.
+flagspawn._PrepPoolFlag <- function(flag) {
+    if (!flag) return
+    flagspawn._EnsurePDFlag(flag)
+    flagspawn._HideFlagModel(flag)
+    // stash + disable, neutral teamnum 0 so it doesn't act like intel
+    EntFireByHandle(flag, "ClearParent", "", 0.0, null, null)
+    EntFireByHandle(flag, "Disable", "", 0.0, null, null)
+    flagspawn._SetFlagTeam(flag, flagspawn.TEAM_NONE)
+    try { flag.SetAbsOrigin(flagspawn.CFG.POOL_STASH_ORIGIN) } catch(e) {}
+}
+
+// Debug helper: prints teamflags found in the map.
+flagspawn.DumpTeamFlags <- function(limit = 64) {
+    local e = null
+    local n = 0
+    while ((e = Entities.FindByClassname(e, "item_teamflag")) != null) {
+        local nm = ""
+        try { nm = e.GetName() } catch (_e) { nm = "" }
+        local org = flagspawn._GetOrigin(e)
+        flagspawn._Log("teamflag[" + n + "] name='" + nm + "' org=" + org)
+        n++
+        if (n >= limit) break
+    }
+    flagspawn._Log("DumpTeamFlags: total_shown=" + n)
+}
+
+flagspawn.DumpPools <- function(limit = 12) {
+    local dump = function(label, pool) {
+        flagspawn._Log(label + " len=" + pool.len())
+        local n = (pool.len() < limit) ? pool.len() : limit
+        for (local i = 0; i < n; i++) {
+            local f = pool[i]
+            local ok = flagspawn._IsUsableEnt(f)
+            local nm = ""
+            local ei = -1
+            try { if (f) { nm = f.GetName(); ei = f.entindex(); } } catch (_e) { nm = ""; ei = -1 }
+            flagspawn._Log("  [" + i + "] ok=" + ok + " ei=" + ei + " name='" + nm + "'")
+        }
+    }
+    dump("PoolRed", flagspawn.State.PoolRed)
+    dump("PoolBlu", flagspawn.State.PoolBlu)
+}
+
+// Dispense a flag from pool; returns handle or null
+flagspawn._DispenseFromPool <- function(beneficiaryTeam) {
+    local isRed = (beneficiaryTeam == flagspawn.TEAM_RED)
+    local pool = isRed ? flagspawn.State.PoolRed : flagspawn.State.PoolBlu
+    if (pool.len() <= 0) {
+        // If init ran before the map/entities were ready (or map changed), rescan once.
+        flagspawn._RebuildPoolsByScan()
+        pool = isRed ? flagspawn.State.PoolRed : flagspawn.State.PoolBlu
+        if (pool.len() <= 0) return null
+    }
+
+    local idxRef = (beneficiaryTeam == flagspawn.TEAM_RED) ? "PoolIdxRed" : "PoolIdxBlu"
+    local idx = flagspawn.State[idxRef] % pool.len()
+
+    // find a valid flag; advance if invalid
+    local tries = pool.len()
+    local invalid = 0
+    while (tries > 0) {
+        local f = pool[idx]
+        if (flagspawn._IsUsableEnt(f)) {
+            flagspawn.State[idxRef] = (idx + 1) % pool.len()
+            return f
+        }
+        invalid++
+        idx = (idx + 1) % pool.len()
+        tries--
+    }
+
+    // If we had entries but none were valid, the map probably changed or entities were removed.
+    // Rebuild pools once and retry.
+    flagspawn._Log("Dispense: pool had " + pool.len() + " entries but " + invalid + " were invalid; rescanning.")
+    flagspawn._RebuildPoolsByScan()
+    pool = isRed ? flagspawn.State.PoolRed : flagspawn.State.PoolBlu
+    if (pool.len() <= 0) return null
+    idx = flagspawn.State[idxRef] % pool.len()
+    tries = pool.len()
+    while (tries > 0) {
+        local f2 = pool[idx]
+        if (flagspawn._IsUsableEnt(f2)) {
+            flagspawn.State[idxRef] = (idx + 1) % pool.len()
+            return f2
+        }
+        idx = (idx + 1) % pool.len()
+        tries--
+    }
+    return null
+}
+
+//--------------------------------------------------------------
+// SPAWNER TOUCH
+//--------------------------------------------------------------
+flagspawn.OnSpawnerTouch <- function(activator, beneficiaryTeam) {
+    // beneficiaryTeam is the team that "owns" this pickup for fuel/return rules in later phases.
+    if (!flagspawn.State.Inited) flagspawn.Init()
+    if (!flagspawn._IsPlayer(activator)) return
+
+    // Reduce Hammer-wiring footguns: if pickup is team-restricted, default to the toucher’s team.
+    local activatorTeam = 0
+    try { activatorTeam = activator.GetTeam() } catch (_e) { activatorTeam = 0 }
+    if (beneficiaryTeam != flagspawn.TEAM_RED && beneficiaryTeam != flagspawn.TEAM_BLU) {
+        beneficiaryTeam = activatorTeam
+    } else if (flagspawn.CFG.RESTRICT_PICKUP_TO_TEAM && activatorTeam != 0 && beneficiaryTeam != activatorTeam) {
+        flagspawn._Log("SpawnerTouch: overriding beneficiaryTeam=" + beneficiaryTeam + " -> " + activatorTeam + " (team-restricted pickup).")
+        beneficiaryTeam = activatorTeam
+    }
+
+    // If pools are empty (common after map swaps without a clean script reload), rescan now.
+    if (flagspawn.State.PoolRed.len() == 0 && flagspawn.State.PoolBlu.len() == 0) {
+        flagspawn._RebuildPoolsByScan()
+    }
+
+    local pid = activator.entindex() // TF2: GetPlayerUserId doesn't exist
+    local now = flagspawn._Now()
+
+    // cooldown
+    if (pid in flagspawn.State.NextDispenseTime && flagspawn.State.NextDispenseTime[pid] > now) {
+        return
+    }
+    flagspawn.State.NextDispenseTime[pid] <- now + flagspawn.CFG.DISPENSE_COOLDOWN
+
+    // one-per-life (disabled by default per your request)
+    if (flagspawn.CFG.ONE_PER_LIFE) {
+        if (pid in flagspawn.State.GivenThisLife && flagspawn.State.GivenThisLife[pid]) return
+        flagspawn.State.GivenThisLife[pid] <- true
+    }
+
+    local flag = flagspawn._DispenseFromPool(beneficiaryTeam)
+    if (!flag) {
+        flagspawn._Log("DISPENSE FAIL: pool empty for team " + beneficiaryTeam)
+        return
+    }
+
+    // Detach from pool + enable
+    EntFireByHandle(flag, "ClearParent", "", 0.0, null, null)
+
+    // Force PD behavior + hide the briefcase model (meter proxy is the visual).
+    flagspawn._EnsurePDFlag(flag)
+    flagspawn._HideFlagModel(flag)
+
+    // Team rules: restrict pickup or leave neutral.
+    local pickupTeam = flagspawn.CFG.RESTRICT_PICKUP_TO_TEAM ? beneficiaryTeam : flagspawn.TEAM_NONE
+    flagspawn._SetFlagTeam(flag, pickupTeam)
+
+    // Make it a PD pickup (GameType=6 should already be set in Hammer on the pooled flags,
+    // but we keep the value-setting here in case you change pools.)
+    // We DO NOT SetModel in KV to avoid disk lookup lag; set model in Hammer or elsewhere【turn9file18†L1-L4】.
+
+    // Put it in front of player, slightly up (so it falls/touches and gives good feedback).
+    // TF2 safety: never call GetAbsOrigin/GetForwardVector directly on players.
+    local org = flagspawn._GetOrigin(activator)
+    local fwd = flagspawn._GetForward(activator)
+    local spawnPos = org + fwd * flagspawn.CFG.DISPENSE_FWD + Vector(0,0, flagspawn.CFG.DISPENSE_UP)
+
+    // Set origin safely. (If you still see rare snap-back, we can add a logic_timer-based re-teleport.)
+    flagspawn._SetOrigin(flag, spawnPos)
+
+    // NOTE: SetTeam already applied above (team rules).
+
+    // Assign the value (best effort) BEFORE enabling so PD reads it on activation.
+    local v = flagspawn._ClampInt(flagspawn.CFG.DISPENSE_VALUE, 1, flagspawn.CFG.VALUE_CLAMP_MAX)
+    flagspawn._SetPDValueOnFlag(flag, v)
+
+    EntFireByHandle(flag, "Enable", "", 0.0, null, null)
+
+    // Track it + spawn/attach its meter (meter will re-parent on pickup event)
+    flagspawn._RegisterFlag(flag, v, pickupTeam)
+
+    // Put meter on the dropped pickup immediately (ground view). When PD picks it up, we move it to back.
+    flagspawn._AttachMeterToFlag(flag)
+
+    flagspawn._Log("Dispensed value=" + v + " to player pid=" + pid + " team=" + beneficiaryTeam)
+}
+
+//--------------------------------------------------------------
+// FLAG VALUE + VISUALS
+//--------------------------------------------------------------
+flagspawn._RegisterFlag <- function(flag, value, team = null) {
+    local ei = flagspawn._EntIndex(flag)
+    if (ei < 0) return
+
+    if (!(ei in flagspawn.State.Flags)) {
+        local t = team
+        if (t == null) {
+            try { t = flag.GetTeam() } catch (_e) { t = flagspawn.TEAM_NONE }
+        }
+        flagspawn.State.Flags[ei] <- { value = value, meter = null, glow = null, carrier_userid = 0, team = t }
+    } else {
+        flagspawn.State.Flags[ei].value = value
+        if (team != null) flagspawn.State.Flags[ei].team = team
+    }
+
+    // Ensure meter exists
+    if (!flagspawn.State.Flags[ei].meter || !flagspawn.State.Flags[ei].meter.IsValid()) {
+        flagspawn.State.Flags[ei].meter = flagspawn._SpawnMeterProxy()
+    }
+
+    flagspawn._EnsureMeterGlow(flagspawn.State.Flags[ei])
+
+    // Apply bodygroup to meter
+    flagspawn._SetMeterValue(flagspawn.State.Flags[ei].meter, value)
+}
+
+flagspawn._SpawnMeterProxy <- function() {
     local kv = {
-        targetname = "fs_meter_" + UniqueString("m"),
-        model = ::flagspawn.CFG.METER_MODEL,
+        targetname = "fs_meter_proxy_" + UniqueString("m"),
+        model = flagspawn.CFG.METER_MODEL,
         solid = 0,
         rendermode = 0,
-        disableshadows = 1
-    };
-    meter = SpawnEntityFromTable("prop_dynamic", kv);
-    if (!meter) return null;
+        disableshadows = 1,
+    }
+    local p = SpawnEntityFromTable("prop_dynamic", kv)
+    if (!p) return null
 
-    data.vis_eidx = meter.entindex();
-    try { meter.SetAbsOrigin(::flagspawn.CFG.POOL_HIDE_ORIGIN); } catch(e1) {}
+    // Hide until we parent it somewhere
+    try { p.SetAbsOrigin(flagspawn.CFG.POOL_STASH_ORIGIN) } catch(e) {}
+    try { p.SetModelScale(flagspawn.CFG.METER_SCALE_SINGLE, 0.0) } catch(e) {}
 
-    return meter;
-};
+    // Optional: you can attach tf_glow in Hammer or later; this script doesn’t require it for core testing.
+    return p
+}
 
-::flagspawn._SetBodygroupValue <- function(ent, value) {
-    if (!ent) return;
-    local v = value;
-    try { v = v.tointeger(); } catch(e) {}
-    if (v < 0) v = 0;
-    if (v > ::flagspawn.CFG.BODYGROUP_MAX) v = ::flagspawn.CFG.BODYGROUP_MAX;
+flagspawn._EnsureMeterGlow <- function(data) {
+    if (!flagspawn.CFG.ENABLE_METER_GLOW) return
+    if (!data) return
+    if (!("meter" in data) || !data.meter || !data.meter.IsValid()) return
 
-    local param = "" + ::flagspawn.CFG.METER_BODYGROUP + " " + v;
-    try { EntFireByHandle(ent, "SetBodyGroup", param, 0.0, null, null); } catch(e0) {}
-    try { EntFireByHandle(ent, "SetBodygroup", param, 0.0, null, null); } catch(e1) {}
-    try { EntFireByHandle(ent, "SetBodyGroup", "" + v, 0.0, null, null); } catch(e2) {}
-    try { EntFireByHandle(ent, "SetBodygroup", "" + v, 0.0, null, null); } catch(e3) {}
-};
+    local team = ("team" in data) ? data.team : flagspawn.TEAM_NONE
+    local color = flagspawn._GlowColorForTeam(team)
 
-::flagspawn._AttachMeterToFlag <- function(flag, data) {
-    if (!flag || !data) return;
-    local meter = ::flagspawn._EnsureMeter(flag, data);
-    if (!meter) return;
+    // Update existing glow if present.
+    if ("glow" in data && data.glow && data.glow.IsValid()) {
+        try { data.glow.__KeyValueFromString("GlowColor", color) } catch (e) {}
+        EntFireByHandle(data.glow, "AddOutput", "GlowColor " + color, 0.0, null, null)
+        return
+    }
 
-    local fname = "";
-    try { fname = flag.GetName(); } catch(e0) { fname = ""; }
+    local targetName = ""
+    try { targetName = data.meter.GetName() } catch (e) { targetName = "" }
+    if (targetName == null || targetName == "") return
+
+    local g = null
+    try {
+        g = SpawnEntityFromTable("tf_glow", {
+            target = targetName,
+            Mode = 0,
+            GlowColor = color,
+            StartDisabled = 0
+        })
+    } catch (e) { g = null }
+    if (!g) return
+    try { g.SetParent(data.meter, "") } catch (e) {}
+    data.glow <- g
+}
+
+flagspawn._SetMeterValue <- function(meter, value) {
+    if (!meter || !meter.IsValid()) return
+    local v = flagspawn._ClampInt(value, 0, flagspawn.CFG.VALUE_CLAMP_MAX)
+
+    // scale tweak: 2-digit (>=10) uses 0.75 per your cosmetic rule
+    local sc = (v >= 10) ? flagspawn.CFG.METER_SCALE_DOUBLE : flagspawn.CFG.METER_SCALE_SINGLE
+    try { meter.SetModelScale(sc, 0.0) } catch(e) {}
+
+    // Bodygroup set by input (works even without sequences)
+    EntFireByHandle(meter, "SetBodyGroup", "" + v, 0.0, null, null)
+}
+
+flagspawn._AttachMeterToPlayer <- function(flag, player) {
+    local ei = flagspawn._EntIndex(flag)
+    if (!(ei in flagspawn.State.Flags)) return
+    local data = flagspawn.State.Flags[ei]
+    if (!data.meter || !data.meter.IsValid()) data.meter = flagspawn._SpawnMeterProxy()
+    if (!data.meter) return
+
+    flagspawn._EnsureMeterGlow(data)
+
+    // Parent meter to player and use the "flag" attachment on players【turn9file2†L1-L5】.
+    // Note: inputs require targetname, so ensure player has a name.
+    local pname = player.GetName()
+    if (pname == null || pname == "") {
+        pname = "fs_p_" + player.entindex()
+        try { player.__KeyValueFromString("targetname", pname) } catch(e) {}
+    }
+
+    EntFireByHandle(data.meter, "ClearParent", "", 0.0, null, null)
+    EntFireByHandle(data.meter, "SetParent", pname, 0.0, null, null)
+    EntFireByHandle(data.meter, "SetParentAttachment", "flag", 0.01, null, null)
+
+    // keep the actual item_teamflag un-parented (PD handles its carry visual/logic)
+    data.carrier_userid = player.entindex() // TF2: use entindex
+
+    // Remember which meter is on this player so we can poll/refresh value even without teamplay_flag_event.
+    flagspawn.State.PlayerMeters[data.carrier_userid] <- data.meter
+
+    flagspawn._SetMeterValue(data.meter, data.value)
+}
+
+flagspawn._AttachMeterToFlag <- function(flag) {
+    local ei = flagspawn._EntIndex(flag)
+    if (!(ei in flagspawn.State.Flags)) return
+    local data = flagspawn.State.Flags[ei]
+    if (!data.meter || !data.meter.IsValid()) data.meter = flagspawn._SpawnMeterProxy()
+    if (!data.meter) return
+
+    flagspawn._EnsureMeterGlow(data)
+
+    local fname = flag.GetName()
     if (fname == null || fname == "") {
-        fname = "fs_flag_" + flag.entindex();
-        try { flag.__KeyValueFromString("targetname", fname); } catch(e1) {}
+        fname = "fs_f_" + ei
+        try { flag.__KeyValueFromString("targetname", fname) } catch(e) {}
     }
 
-    EntFireByHandle(meter, "ClearParent", "", 0.0, null, null);
-    EntFireByHandle(meter, "SetParent", fname, 0.0, null, null);
-    EntFireByHandle(meter, "SetParentAttachment", ::flagspawn.CFG.METER_FLAG_ATTACHMENT, 0.0, null, null);
-    ::flagspawn._SetBodygroupValue(meter, data.value);
-};
+    EntFireByHandle(data.meter, "ClearParent", "", 0.0, null, null)
+    // Parent without attachments: item_teamflag doesn't expose an "origin" attachment.
+    // We snap the proxy to the flag's world origin first so it stays visually aligned.
+    flagspawn._SetOrigin(data.meter, flagspawn._GetOrigin(flag))
+    EntFireByHandle(data.meter, "SetParent", fname, 0.0, null, null)
 
-::flagspawn._HideMeter <- function(data) {
-    if (!data) return;
-    if (data.vis_eidx <= 0) return;
-    local meter = null;
-    try { meter = EntIndexToHScript(data.vis_eidx); } catch(e) { meter = null; }
-    if (!meter || !meter.IsValid()) return;
-    EntFireByHandle(meter, "ClearParent", "", 0.0, null, null);
-    try { meter.SetAbsOrigin(::flagspawn.CFG.POOL_HIDE_ORIGIN); } catch(e2) {}
-};
+    data.carrier_userid = 0
+    flagspawn._SetMeterValue(data.meter, data.value)
+}
 
-// ------------------------------------------------------------
-// Flag value
-// ------------------------------------------------------------
-::flagspawn._SetFlagValue <- function(flag, value) {
-    if (!flag) return;
-    local data = ::flagspawn._EnsureFlagData(flag);
-    if (!data) return;
+// Try to set the value in a way PD will respect.
+// This is necessarily "best effort" because TF2’s PD internals aren’t fully exposed in VScript.
+// For your test goal (bottom-left PD points increasing), this is the key hook to iterate on.
+flagspawn._SetPDValueOnFlag <- function(flag, value) {
+    // 1) Try keyvalues (common patterns: point_value / PointValue / n_strength).
+    // These calls are safe: if the KV doesn’t exist, it usually no-ops.
+    try { flag.__KeyValueFromInt("point_value", value) } catch(e) {}
+    try { flag.__KeyValueFromInt("PointValue", value) } catch(e) {}
+    try { flag.__KeyValueFromInt("n_strength", value) } catch(e) {}
+    try { flag.__KeyValueFromInt("strength", value) } catch(e) {}
+    EntFireByHandle(flag, "AddOutput", "PointValue " + value, 0.0, null, null)
 
-    local v = value;
-    try { v = v.tointeger(); } catch(e) {}
-    if (v < 0) v = 0;
-    if (v > ::flagspawn.CFG.CARRY_MAX) v = ::flagspawn.CFG.CARRY_MAX;
-
-    data.value = v;
-
-    try { flag.__KeyValueFromInt("PointsValue", v); } catch(e0) {}
-    try { flag.__KeyValueFromInt("pointsvalue", v); } catch(e1) {}
-    try { NetProps.SetPropInt(flag, "m_nPointValue", v); } catch(e2) {}
-    try { NetProps.SetPropInt(flag, "m_iPointValue", v); } catch(e3) {}
-
-    if (::flagspawn.CFG.SET_FLAG_BODYGROUP) ::flagspawn._SetBodygroupValue(flag, v);
-    if (::flagspawn.CFG.ENABLE_METER && data.vis_eidx > 0) {
-        local meter = null;
-        try { meter = EntIndexToHScript(data.vis_eidx); } catch(e4) { meter = null; }
-        ::flagspawn._SetBodygroupValue(meter, v);
+    // 2) Try netprops (if present). Wrapped so it never crashes if prop name is wrong.
+    // You’ll confirm the correct prop name by printing with netprops tools or trial.
+    if ("NetProps" in getroottable()) {
+        try { NetProps.SetPropInt(flag, "m_nPointValue", value) } catch(e) {}
+        try { NetProps.SetPropInt(flag, "m_nFlagValue", value) } catch(e) {}
+        try { NetProps.SetPropInt(flag, "m_nPoints", value) } catch(e) {}
     }
 
-    ::flagspawn._WriteFlagScope(flag, data);
-};
-
-::flagspawn._GetFlagValue <- function(flag) {
-    if (!flag) return 0;
-    local data = ::flagspawn._EnsureFlagData(flag);
-    if (data) return data.value;
-    return 0;
-};
-
-::flagspawn._ClearFlagOwner <- function(flag) {
-    if (!flag) return;
-    try { NetProps.SetPropEntity(flag, "m_hOwnerEntity", null); } catch(e0) {}
-    try { NetProps.SetPropEntity(flag, "m_hPrevOwner", null); } catch(e1) {}
-};
-
-::flagspawn._MakeFlagNeutral <- function(flag) {
-    if (!flag) return;
-    try { flag.SetTeam(0); } catch(e0) {}
-    try { NetProps.SetPropInt(flag, "m_iTeamNum", 0); } catch(e1) {}
-    try { NetProps.SetPropInt(flag, "m_iOriginalTeamNum", 0); } catch(e2) {}
-    try { flag.__KeyValueFromInt("TeamNum", 0); } catch(e3) {}
-    try { flag.__KeyValueFromInt("teamnum", 0); } catch(e4) {}
-};
-
-// ------------------------------------------------------------
-// Pool helpers
-// ------------------------------------------------------------
-::flagspawn._HideFlag <- function(flag, stateOverride = null) {
-    if (!flag) return;
-    local data = ::flagspawn._EnsureFlagData(flag);
-    if (!data) return;
-
-    if (stateOverride != null) data.state = stateOverride;
-    else data.state = "pooled";
-    data.carrier_eidx = -1;
-    data.return_deadline = null;
-
-    try { flag.__KeyValueFromInt("ReturnTime", ::flagspawn.CFG.RETURN_DELAY); } catch(e0) {}
-    try { EntFireByHandle(flag, "ClearParent", "", 0.0, null, null); } catch(e1) {}
-    try { EntFireByHandle(flag, "Disable", "", 0.0, null, null); } catch(e2) {}
-    try { flag.SetAbsOrigin(::flagspawn.CFG.POOL_HIDE_ORIGIN); } catch(e3) {}
-
-    ::flagspawn._HideMeter(data);
-    ::flagspawn._WriteFlagScope(flag, data);
-};
-
-::flagspawn._TakeNextFromPool <- function(team) {
-    local list = null;
-    if (team == ::flagspawn.TEAM_RED) list = ::flagspawn.State.Pool[::flagspawn.TEAM_RED];
-    if (team == ::flagspawn.TEAM_BLU) list = ::flagspawn.State.Pool[::flagspawn.TEAM_BLU];
-    if (!list || list.len() <= 0) return null;
-
-    foreach (f in list) {
-        if (f && f.IsValid() && ::flagspawn._IsFlagHiddenInPool(f)) return f;
+    // 3) Cache our value for visuals even if PD ignores it.
+    local ei = flagspawn._EntIndex(flag)
+    if (ei >= 0) {
+        if (!(ei in flagspawn.State.Flags)) {
+            local t = flagspawn.TEAM_NONE
+            try { t = flag.GetTeam() } catch (_e) { t = flagspawn.TEAM_NONE }
+            flagspawn.State.Flags[ei] <- { value = value, meter = null, glow = null, carrier_userid = 0, team = t }
+        }
+        else flagspawn.State.Flags[ei].value = value
     }
-    return null;
-};
+}
 
-::flagspawn._InitPool <- function() {
-    ::flagspawn.State.Pool[::flagspawn.TEAM_RED].clear();
-    ::flagspawn.State.Pool[::flagspawn.TEAM_BLU].clear();
+//--------------------------------------------------------------
+// EVENTS
+//--------------------------------------------------------------
 
-    for (local i = 1; i <= ::flagspawn.CFG.POOL_PER_TEAM; i++) {
-        local rn = ::flagspawn.CFG.POOL_NAME_RED_PREFIX + ((i < 10) ? "0" + i : "" + i);
-        local bn = ::flagspawn.CFG.POOL_NAME_BLU_PREFIX + ((i < 10) ? "0" + i : "" + i);
 
-        local rf = Entities.FindByName(null, rn);
-        if (rf) {
-            ::flagspawn._EnsureFlagData(rf);
-            ::flagspawn._HideFlag(rf);
-            ::flagspawn.State.Pool[::flagspawn.TEAM_RED].append(rf);
-        } else {
-            ::flagspawn.Log("POOL WARN: missing " + rn);
+// VMF logic_eventlistener entrypoint.
+// When logic_eventlistener has FetchEventData enabled, it populates a table named "event_data" in its script scope.
+// The listener entity is usually available as `caller` (and sometimes `activator`), so we read from its script scope.
+function FS_OnFlagEvent()
+{
+    // Ensure core is up
+    if (!flagspawn.State.Inited) flagspawn.Init()
+
+    local listener = null
+    try { if (caller && caller.IsValid()) listener = caller } catch (_e) {}
+    try { if (!listener && activator && activator.IsValid()) listener = activator } catch (_e) {}
+    if (!listener) {
+        try { listener = Entities.FindByName(null, flagspawn.CFG.FLAG_LISTENER_NAME) } catch (_e) { listener = null }
+    }
+    if (!listener || !listener.IsValid()) return
+    if (!listener.ValidateScriptScope()) return
+    local scope = listener.GetScriptScope()
+    if (!("event_data" in scope)) {
+        if (!flagspawn.State.WarnedNoEventData) {
+            flagspawn.State.WarnedNoEventData = true
+            flagspawn._Log("FS_OnFlagEvent: no event_data on listener (set FetchEventData=1 on logic_eventlistener).")
+        }
+        return
+    }
+    local ev = scope.event_data
+    if (typeof ev != "table") return
+
+    // Route to the same handler used by ListenToGameEvent.
+    flagspawn._OnTeamplayFlagEvent(ev)
+}
+
+// Alias in case you prefer a namespaced call in Hammer: flagspawn.FS_OnFlagEvent
+flagspawn.FS_OnFlagEvent <- FS_OnFlagEvent
+
+// Compatibility alias for older VMF wiring (RunScriptCode -> ::flagspawn.OnTeamplayFlagEvent()).
+flagspawn.OnTeamplayFlagEvent <- function(ev = null) {
+    if (typeof ev == "table") return flagspawn._OnTeamplayFlagEvent(ev)
+    return FS_OnFlagEvent()
+}
+
+// teamplay_flag_event tip for tracking PD merges【turn9file8†L1-L2】
+// We use it to move the meter between "ground" and "back".
+flagspawn._OnTeamplayFlagEvent <- function(ev) {
+    // Fields vary by build; we only use what exists.
+    // Typical: ev.eventtype, ev.player (userid), ev.team, ev.flagname, ev.carrier, etc.
+    local et = ("eventtype" in ev) ? ev.eventtype : -1
+    local userid = ("player" in ev) ? ev.player : (("userid" in ev) ? ev.userid : 0)
+    local flagname = ("flagname" in ev) ? ev.flagname : ""
+
+    // best-effort resolve flag handle by name (when present)
+    local flag = null
+    if (flagname != "") flag = Entities.FindByName(null, flagname)
+
+    // Resolve player handle
+    local ply = (userid != 0) ? GetPlayerFromUserID(userid) : null
+
+    // We don't rely on exact constants here; we use validity + whether player exists.
+    // If the flag exists and a player exists, we treat as "picked up" and parent meter to player.
+    if (flag && ply) {
+        // On PD merge, a player already carrying may not fire OnPickup outputs,
+        // but this event is the recommended multi-flag tracking path【turn9file8†L1-L2】.
+        local ei = flagspawn._EntIndex(flag)
+        if (ei >= 0 && !(ei in flagspawn.State.Flags)) {
+            local t = flagspawn.TEAM_NONE
+            try { t = flag.GetTeam() } catch (_e) { t = flagspawn.TEAM_NONE }
+            flagspawn.State.Flags[ei] <- { value = flagspawn.CFG.DISPENSE_VALUE, meter = null, glow = null, carrier_userid = userid, team = t }
         }
 
-        local bf = Entities.FindByName(null, bn);
-        if (bf) {
-            ::flagspawn._EnsureFlagData(bf);
-            ::flagspawn._HideFlag(bf);
-            ::flagspawn.State.Pool[::flagspawn.TEAM_BLU].append(bf);
-        } else {
-            ::flagspawn.Log("POOL WARN: missing " + bn);
+        flagspawn._AttachMeterToPlayer(flag, ply)
+
+        // Best-effort: update the meter to the *current carried total* so merges are reflected.
+        local carry = flagspawn._GetPlayerCarriedPoints(ply)
+        if (carry > 0 && ei >= 0 && (ei in flagspawn.State.Flags)) {
+            flagspawn.State.Flags[ei].value = carry
+            if (flagspawn.State.Flags[ei].meter) flagspawn._SetMeterValue(flagspawn.State.Flags[ei].meter, carry)
         }
+        flagspawn._Log("flag_event type=" + et + " pickup-ish flag=" + flagname + " userid=" + userid)
+        return
     }
 
-    ::flagspawn.Log("Pool init: red=" + ::flagspawn.State.Pool[::flagspawn.TEAM_RED].len() + " blu=" + ::flagspawn.State.Pool[::flagspawn.TEAM_BLU].len());
-};
-
-// ------------------------------------------------------------
-// Class bonus (Heavy=5)
-// ------------------------------------------------------------
-::flagspawn._GetPlayerClassNum <- function(player) {
-    if (!player) return 0;
-    try { local c = player.GetPlayerClass(); if (typeof c == "integer") return c; } catch(e) {}
-    try { return NetProps.GetPropInt(player, "m_PlayerClass.m_iClass"); } catch(e2) {}
-    return 0;
-};
-
-::flagspawn.GetClassBonus <- function(player) {
-    local cls = ::flagspawn._GetPlayerClassNum(player);
-    switch (cls) {
-        case 6: return 5; // Heavy
-        case 2: return 3; // Sniper
-        case 3: return 2; // Soldier
-        default: return 1;
+    // If we have a flag but no player, treat as drop/return/cap and put meter back on flag.
+    if (flag) {
+        flagspawn._AttachMeterToFlag(flag)
+        flagspawn._Log("flag_event type=" + et + " drop-ish flag=" + flagname)
     }
-};
+}
 
-// ------------------------------------------------------------
-// Carry resolve
-// ------------------------------------------------------------
-::flagspawn._ResolveCarriedFlag <- function(player) {
-    if (!player) return null;
-    local f = null;
-    while ((f = Entities.FindByClassname(f, "item_teamflag")) != null) {
-        try {
-            local owner = NetProps.GetPropEntity(f, "m_hOwnerEntity");
-            if (owner == player) return f;
-        } catch(e) {}
+flagspawn._OnPlayerDeath <- function(ev) {
+    local userid = ("userid" in ev) ? ev.userid : 0
+    if (userid == 0) return
+    local ply = GetPlayerFromUserID(userid)
+    if (ply) flagspawn.State.GivenThisLife[ply.entindex()] <- false
+}
+
+flagspawn._OnPlayerSpawn <- function(ev) {
+    local userid = ("userid" in ev) ? ev.userid : 0
+    if (userid == 0) return
+    local ply = GetPlayerFromUserID(userid)
+    if (ply) flagspawn.State.GivenThisLife[ply.entindex()] <- false
+}
+
+//--------------------------------------------------------------
+// THINK: cleanup + optional resync (low frequency)
+//--------------------------------------------------------------
+flagspawn._Think <- function() {
+    // Poll carried points -> meter (works even when ListenToGameEvent isn't available).
+    local deadPids = []
+    foreach (pid, meter in flagspawn.State.PlayerMeters) {
+        local ply = EntIndexToHScript(pid)
+        if (!ply || !ply.IsValid()) { deadPids.append(pid); continue }
+        if (!meter || !meter.IsValid()) { deadPids.append(pid); continue }
+        local carry = flagspawn._GetPlayerCarriedPoints(ply)
+        if (carry >= 0) flagspawn._SetMeterValue(meter, carry)
     }
-    return null;
-};
+    foreach (pid in deadPids) delete flagspawn.State.PlayerMeters[pid]
 
-::flagspawn._FindNearestDroppedFlag <- function(player, radius) {
-    if (!player) return null;
-    local org = null;
-    try { org = player.GetAbsOrigin(); } catch(e) { org = null; }
-    if (!org) return null;
-
-    local best = null;
-    local bestDist = radius * radius;
-
-    foreach (ei, data in ::flagspawn.State.Flags) {
-        if (data.state != "dropped") continue;
-        local f = null;
-        try { f = EntIndexToHScript(ei); } catch(e2) { f = null; }
-        if (!f || !f.IsValid()) continue;
-        local pos = null;
-        try { pos = f.GetAbsOrigin(); } catch(e3) { pos = null; }
-        if (!pos) continue;
-        local dx = pos.x - org.x;
-        local dy = pos.y - org.y;
-        local dz = pos.z - org.z;
-        local d2 = dx*dx + dy*dy + dz*dz;
-        if (d2 < bestDist) {
-            best = f;
-            bestDist = d2;
+    // Clean invalid flags/meters from table
+    local toDelete = []
+    foreach (ei, data in flagspawn.State.Flags) {
+        // flag validity
+        local flag = EntIndexToHScript(ei)
+        if (!flag || !flag.IsValid()) {
+            if (data.meter && data.meter.IsValid()) {
+                EntFireByHandle(data.meter, "ClearParent", "", 0.0, null, null)
+                try { data.meter.SetAbsOrigin(flagspawn.CFG.POOL_STASH_ORIGIN) } catch(e) {}
+            }
+            if ("glow" in data && data.glow && data.glow.IsValid()) {
+                EntFireByHandle(data.glow, "Kill", "", 0.0, null, null)
+            }
+            toDelete.append(ei)
+            continue
         }
-    }
-    return best;
-};
 
-::flagspawn._GetPlayerCarryPoints <- function(player) {
-    if (!player) return -1;
-    local names = [ "m_nNumCarriedPoints", "m_nStrength", "m_nNumCarried", "m_nNumCarriedFlags" ];
-    foreach (n in names) {
-        try {
-            local v = NetProps.GetPropInt(player, n);
-            if (v >= 0) return v;
-        } catch(e) {}
-    }
-    return -1;
-};
+        // meter validity
+        if (!data.meter || !data.meter.IsValid()) {
+            data.meter = flagspawn._SpawnMeterProxy()
+            data.glow = null
+        }
 
-// ------------------------------------------------------------
-// Flag state transitions
-// ------------------------------------------------------------
-::flagspawn._SetFlagState <- function(flag, state, player) {
-    if (!flag) return;
-    local data = ::flagspawn._EnsureFlagData(flag);
-    if (!data) return;
-
-    data.state = state;
-
-    if (state == "carried" && player) {
-        data.carrier_eidx = ::flagspawn._EntIndex(player);
-        data.return_deadline = null;
-    } else if (state == "dropped") {
-        data.carrier_eidx = -1;
-        data.return_deadline = ::flagspawn._Now() + ::flagspawn.CFG.RETURN_DELAY;
-    } else if (state == "returned" || state == "captured" || state == "pooled") {
-        data.carrier_eidx = -1;
-        data.return_deadline = null;
-    }
-
-    ::flagspawn._WriteFlagScope(flag, data);
-};
-
-::flagspawn._ReturnFlag <- function(flag, reason) {
-    if (!flag) return;
-    ::flagspawn._SetFlagState(flag, reason);
-    ::flagspawn._HideFlag(flag, reason);
-};
-
-// ------------------------------------------------------------
-// Event handling
-// ------------------------------------------------------------
-::flagspawn._IsDuplicateEvent <- function(ps, eventType) {
-    if (!ps) return false;
-    local now = ::flagspawn._Now();
-    if (ps.last_event_type == eventType && (now - ps.last_event_time) < ::flagspawn.CFG.EVENT_DEBOUNCE) return true;
-    ps.last_event_type = eventType;
-    ps.last_event_time = now;
-    return false;
-};
-
-::flagspawn._HandlePickupEvent <- function(player, flag) {
-    if (!player) return;
-    local ps = ::flagspawn._PS(player);
-    if (!ps) return;
-    if (::flagspawn._IsDuplicateEvent(ps, 1)) return;
-
-    local prev = ps.carried_total;
-
-    // Resolve picked flag
-    local picked = flag;
-    if (!picked) picked = ::flagspawn._FindNearestDroppedFlag(player, ::flagspawn.CFG.SEARCH_RADIUS);
-    if (!picked && ps.last_spawn_flag > 0 && (::flagspawn._Now() - ps.last_spawn_time) < 0.5) {
-        try { picked = EntIndexToHScript(ps.last_spawn_flag); } catch(e0) { picked = null; }
-    }
-
-    local pickedValue = (picked ? ::flagspawn._GetFlagValue(picked) : 0);
-    local carryNow = ::flagspawn._GetPlayerCarryPoints(player);
-    if (carryNow < 0 && pickedValue > 0) carryNow = prev + pickedValue;
-    if (carryNow < 0) return;
-
-    if (carryNow <= prev && prev > 0) return;
-
-    local carriedFlag = ::flagspawn._ResolveCarriedFlag(player);
-    if (!carriedFlag && picked) carriedFlag = picked;
-
-    if (carriedFlag) {
-        ::flagspawn._SetFlagValue(carriedFlag, carryNow);
-        ::flagspawn._SetFlagState(carriedFlag, "carried", player);
-        ::flagspawn._AttachMeterToFlag(carriedFlag, ::flagspawn._EnsureFlagData(carriedFlag));
-    }
-
-    ps.carried_total = carryNow;
-    ps.last_flag_eidx = carriedFlag ? carriedFlag.entindex() : -1;
-
-    if (prev > 0 && picked && carriedFlag && picked.entindex() != carriedFlag.entindex()) {
-        ::flagspawn._ReturnFlag(picked, "pooled");
-    }
-
-    ::flagspawn.Log("PICKUP: player=" + ::flagspawn._SafeName(player) + " total=" + carryNow);
-};
-
-::flagspawn._HandleDropEvent <- function(player, flag) {
-    if (!player) return;
-    local ps = ::flagspawn._PS(player);
-    if (!ps) return;
-    if (::flagspawn._IsDuplicateEvent(ps, 4)) return;
-
-    local dropped = flag;
-    if (!dropped) dropped = ::flagspawn._ResolveCarriedFlag(player);
-    if (!dropped) dropped = ::flagspawn._FindNearestDroppedFlag(player, ::flagspawn.CFG.SEARCH_RADIUS);
-
-    if (dropped) {
-        if (ps.carried_total > 0) ::flagspawn._SetFlagValue(dropped, ps.carried_total);
-        ::flagspawn._SetFlagState(dropped, "dropped", null);
-        ::flagspawn._AttachMeterToFlag(dropped, ::flagspawn._EnsureFlagData(dropped));
-    }
-
-    ps.carried_total = 0;
-    ps.last_flag_eidx = -1;
-
-    ::flagspawn.Log("DROP: player=" + ::flagspawn._SafeName(player) + " flag=" + ::flagspawn._SafeName(dropped));
-};
-
-::flagspawn._HandleReturnEvent <- function(player, flag) {
-    local ret = flag;
-    if (!ret && player) ret = ::flagspawn._FindNearestDroppedFlag(player, ::flagspawn.CFG.SEARCH_RADIUS);
-    if (!ret) return;
-
-    local data = ::flagspawn._EnsureFlagData(ret);
-    if (data && data.no_return) return;
-
-    ::flagspawn._ReturnFlag(ret, "returned");
-    ::flagspawn.Log("RETURN: flag=" + ::flagspawn._SafeName(ret));
-};
-
-::flagspawn._HandleCaptureEvent <- function(player, flag) {
-    local cap = flag;
-    if (!cap && player) cap = ::flagspawn._ResolveCarriedFlag(player);
-    if (!cap) return;
-
-    ::flagspawn._ReturnFlag(cap, "captured");
-
-    if (player) {
-        local ps = ::flagspawn._PS(player);
-        if (ps) {
-            ps.carried_total = 0;
-            ps.last_flag_eidx = -1;
+        // Keep meter showing our cached value
+        if (data.meter) {
+            flagspawn._EnsureMeterGlow(data)
+            flagspawn._SetMeterValue(data.meter, data.value)
         }
     }
 
-    ::flagspawn.Log("CAPTURE: player=" + ::flagspawn._SafeName(player) + " flag=" + ::flagspawn._SafeName(cap));
-};
+    foreach (ei in toDelete) delete flagspawn.State.Flags[ei]
 
-::flagspawn._HandleTeamplayFlagEvent <- function(eventType, player, flag) {
-    if (eventType == 1) { ::flagspawn._HandlePickupEvent(player, flag); return; }
-    if (eventType == 4) { ::flagspawn._HandleDropEvent(player, flag); return; }
-    if (eventType == 5) { ::flagspawn._HandleReturnEvent(player, flag); return; }
-    if (eventType == 2) { ::flagspawn._HandleCaptureEvent(player, flag); return; }
-};
+    return 0.25
+}
 
-// ------------------------------------------------------------
-// VMF event listener entrypoint
-// ------------------------------------------------------------
-::flagspawn.OnFlagEventFromVMF <- function(eventtype = null, playerParam = null, flagParam = null) {
-    local et = ::flagspawn._ParseInt(eventtype, -1);
-    if (et < 0) {
-        ::flagspawn.Log("VMF event missing eventtype; update logic_eventlistener output to pass %eventtype%.");
-        return;
+//==============================================================
+// VMF / entity output entrypoints
+//==============================================================
+// Hammer outputs sometimes use RunScriptCode (which runs in the logic_script's
+// script-scope table) and sometimes CallScriptFunction. To avoid
+// "the index 'X' does not exist" errors, we provide plain (non-namespaced)
+// functions here.
+
+// If your VMF calls Init() directly.
+function Init() {
+    if (!flagspawn.State.Inited) flagspawn.Init();
+}
+
+// item_teamflag outputs: OnPickup1 -> (scripter) CallScriptFunction/RunScriptCode -> OnPoolFlagPickup
+// Expected: caller == flag, activator == player.
+function OnPoolFlagPickup() {
+    if (!flagspawn.State.Inited) flagspawn.Init();
+    local flag = caller;
+    local ply  = activator;
+    if (!flag || !flag.IsValid()) return;
+    if (!ply  || !ply.IsValid())  return;
+
+    // Make sure we have a tracked value + meter
+    local ei = flagspawn._EntIndex(flag);
+    if (!(ei in flagspawn.State.Flags)) {
+        local t = flagspawn.TEAM_NONE;
+        try { t = flag.GetTeam(); } catch (_e) { t = flagspawn.TEAM_NONE; }
+        flagspawn.State.Flags[ei] <- { value = flagspawn.CFG.DISPENSE_VALUE, meter = null, glow = null, carrier_userid = 0, team = t };
     }
 
-    local player = null;
-    if (playerParam != null) {
-        local num = ::flagspawn._ParseInt(playerParam, -1);
-        if (num > 0) {
-            try { player = GetPlayerFromUserID(num); } catch(e0) { player = null; }
-            if (!player) { try { player = EntIndexToHScript(num); } catch(e1) { player = null; } }
-        } else if (typeof playerParam == "instance") {
-            player = playerParam;
-        }
-    }
+    flagspawn._AttachMeterToPlayer(flag, ply);
+}
 
-    if (!player && ("activator" in getroottable())) {
-        if (::flagspawn._IsPlayer(activator)) player = activator;
-    }
+// item_teamflag outputs: OnDrop1 -> (scripter) CallScriptFunction/RunScriptCode -> OnPoolFlagDrop
+// Expected: caller == flag, activator == player.
+function OnPoolFlagDrop() {
+    if (!flagspawn.State.Inited) flagspawn.Init();
+    local flag = caller;
+    if (!flag || !flag.IsValid()) return;
+    flagspawn._AttachMeterToFlag(flag);
+}
 
-    local flag = null;
-    if (flagParam != null) {
-        if (typeof flagParam == "string") flag = Entities.FindByName(null, flagParam);
-        else if (typeof flagParam == "instance") flag = flagParam;
-        else {
-            local fn = ::flagspawn._ParseInt(flagParam, -1);
-            if (fn > 0) { try { flag = EntIndexToHScript(fn); } catch(e2) { flag = null; } }
-        }
-    }
+// Convenience aliases if you prefer namespaced calls from Hammer.
+flagspawn.OnPoolFlagPickup <- OnPoolFlagPickup;
+flagspawn.OnPoolFlagDrop   <- OnPoolFlagDrop;
+flagspawn.InitEntry        <- Init;
 
-    ::flagspawn._HandleTeamplayFlagEvent(et, player, flag);
-};
-
-// ------------------------------------------------------------
-// Item outputs (safe with or without args)
-// ------------------------------------------------------------
-::flagspawn.OnPoolFlagPickup <- function(flag = null, player = null) {
-    if (!flag && ("caller" in getroottable())) flag = caller;
-    if (!player && ("activator" in getroottable())) player = activator;
-    ::flagspawn._HandlePickupEvent(player, flag);
-};
-
-::flagspawn.OnPoolFlagDrop <- function(flag = null, player = null) {
-    if (!flag && ("caller" in getroottable())) flag = caller;
-    if (!player && ("activator" in getroottable())) player = activator;
-    ::flagspawn._HandleDropEvent(player, flag);
-};
-
-::flagspawn.OnPoolFlagReturn <- function(flag = null) {
-    if (!flag && ("caller" in getroottable())) flag = caller;
-    ::flagspawn._HandleReturnEvent(null, flag);
-};
-
-::flagspawn.OnPoolFlagCapture <- function(flag = null, player = null) {
-    if (!flag && ("caller" in getroottable())) flag = caller;
-    if (!player && ("activator" in getroottable())) player = activator;
-    ::flagspawn._HandleCaptureEvent(player, flag);
-};
-
-// ------------------------------------------------------------
-// Spawner touch
-// ------------------------------------------------------------
-::flagspawn.OnSpawnerTouch <- function(activator, teamParam) {
-    local player = activator;
-    if (!::flagspawn._IsPlayer(player)) return;
-
-    local requested = ::flagspawn._ParseInt(teamParam, 0);
-    if (requested != ::flagspawn.TEAM_RED && requested != ::flagspawn.TEAM_BLU) {
-        ::flagspawn.Log("OnSpawnerTouch DENY: bad teamParam");
-        return;
-    }
-
-    local now = ::flagspawn._Now();
-    local peidx = ::flagspawn._EntIndex(player);
-    if (peidx in ::flagspawn.State.NextDispenseAt && ::flagspawn.State.NextDispenseAt[peidx] > now) return;
-    ::flagspawn.State.NextDispenseAt[peidx] <- now + ::flagspawn.CFG.DISPENSE_COOLDOWN;
-
-    local spawnTeam = ::flagspawn._OppTeam(requested);
-    local flag = ::flagspawn._TakeNextFromPool(spawnTeam);
-    if (!flag) {
-        ::flagspawn.Log("OnSpawnerTouch DENY: pool empty for spawnTeam=" + spawnTeam);
-        return;
-    }
-
-    local data = ::flagspawn._EnsureFlagData(flag);
-    if (!data) return;
-
-    data.pool_team = spawnTeam;
-    data.beneficiary_team = player.GetTeam();
-    data.no_return = false;
-
-    // Reset and enable
-    EntFireByHandle(flag, "ClearParent", "", 0.0, null, null);
-    ::flagspawn._ClearFlagOwner(flag);
-    ::flagspawn._MakeFlagNeutral(flag);
-    EntFireByHandle(flag, "Enable", "", 0.0, null, null);
-
-    // PD setup
-    try { flag.__KeyValueFromInt("GameType", 6); } catch(e0) {}
-    try { flag.__KeyValueFromInt("gametype", 6); } catch(e1) {}
-    try { flag.__KeyValueFromInt("ReturnTime", ::flagspawn.CFG.RETURN_DELAY); } catch(e2) {}
-
-    local val = ::flagspawn.GetClassBonus(player);
-    ::flagspawn._SetFlagValue(flag, val);
-
-    // Place near player for touch pickup
-    local org = null;
-    try { org = player.GetAbsOrigin(); } catch(e3) { org = Vector(0,0,0); }
-    local fwd = null;
-    try { fwd = player.GetForwardVector(); } catch(e4) { fwd = Vector(1,0,0); }
-    local spawnPos = org + fwd * ::flagspawn.CFG.DISPENSE_FWD + Vector(0,0, ::flagspawn.CFG.DISPENSE_UP);
-
-    try { flag.SetAbsOrigin(spawnPos); } catch(e5) {}
-    try { EntFireByHandle(flag, "Teleport", "" + spawnPos.x + " " + spawnPos.y + " " + spawnPos.z, 0.0, null, null); } catch(e6) {}
-    try { EntFireByHandle(flag, "TouchTest", "", 0.0, player, player); } catch(e7) {}
-
-    data.state = "dropped";
-    data.return_deadline = ::flagspawn._Now() + ::flagspawn.CFG.RETURN_DELAY;
-    ::flagspawn._AttachMeterToFlag(flag, data);
-    ::flagspawn._WriteFlagScope(flag, data);
-
-    local ps = ::flagspawn._PS(player);
-    if (ps) {
-        ps.last_spawn_flag = flag.entindex();
-        ps.last_spawn_time = ::flagspawn._Now();
-    }
-
-    ::flagspawn.Log("DISPENSE: team=" + spawnTeam + " flag=" + ::flagspawn._SafeName(flag) + " PointsValue=" + val);
-};
-
-// ------------------------------------------------------------
-// Think: return timer + meter sanity
-// ------------------------------------------------------------
-::flagspawn._Think <- function() {
-    local now = ::flagspawn._Now();
-
-    foreach (ei, data in ::flagspawn.State.Flags) {
-        local flag = null;
-        try { flag = EntIndexToHScript(ei); } catch(e0) { flag = null; }
-        if (!flag || !flag.IsValid()) continue;
-
-        if (data.state == "dropped" && !data.no_return && data.return_deadline != null && now >= data.return_deadline) {
-            ::flagspawn._ReturnFlag(flag, "returned");
-        }
-
-        if (::flagspawn.CFG.ENABLE_METER) {
-            local meter = ::flagspawn._EnsureMeter(flag, data);
-            if (meter) ::flagspawn._SetBodygroupValue(meter, data.value);
-        }
-    }
-
-    return 0.25;
-};
-
-// ------------------------------------------------------------
-// Game event fallback (optional)
-// ------------------------------------------------------------
-::flagspawn.OnGameEvent_teamplay_flag_event <- function(params) {
-    local et = -1;
-    if ("eventtype" in params) et = ::flagspawn._ParseInt(params.eventtype, -1);
-    if (et < 0) return;
-
-    local player = null;
-    if ("player" in params) {
-        local id = ::flagspawn._ParseInt(params.player, -1);
-        if (id > 0) {
-            try { player = GetPlayerFromUserID(id); } catch(e0) { player = null; }
-            if (!player) { try { player = EntIndexToHScript(id); } catch(e1) { player = null; } }
-        }
-    }
-
-    local flag = null;
-    if ("flagname" in params) flag = Entities.FindByName(null, params.flagname);
-
-    ::flagspawn._HandleTeamplayFlagEvent(et, player, flag);
-};
-
-// ------------------------------------------------------------
-// Debug
-// ------------------------------------------------------------
-::flagspawn.DebugListFlags <- function() {
-    foreach (ei, data in ::flagspawn.State.Flags) {
-        local flag = null;
-        try { flag = EntIndexToHScript(ei); } catch(e0) { flag = null; }
-        ::flagspawn.Log("FLAG: " + ei + " state=" + data.state + " value=" + data.value + " flag=" + ::flagspawn._SafeName(flag));
-    }
-};
-
-// ------------------------------------------------------------
-// Init
-// ------------------------------------------------------------
-::flagspawn.RegisterEvents <- function() {
-    try { __CollectGameEventCallbacks(::flagspawn); ::flagspawn.Log("Registered game event callbacks."); }
-    catch(e) { ::flagspawn.Log("WARN: Could not register game event callbacks (" + e + ")."); }
-};
-
-::flagspawn.Init <- function() {
-    ::flagspawn.Log("LOADED PD core @ t=" + Time());
-    try { PrecacheModel(::flagspawn.CFG.METER_MODEL); } catch(e0) {}
-    ::flagspawn._InitPool();
-    ::flagspawn.RegisterEvents();
-    AddThinkToEnt(Entities.First(), "flagspawn._Think");
-    ::flagspawn.Log("READY. ReturnTime=" + ::flagspawn.CFG.RETURN_DELAY + "s");
-};
-
-::flagspawn.Init();
-
-// Hammer may call plain Init() in script scope
-Init <- function() { ::flagspawn.Init(); };
+//--------------------------------------------------------------
+// Autostart when script is executed (works for script_execute as well)
+//--------------------------------------------------------------
+flagspawn.Init()

@@ -4,14 +4,6 @@ Hybrid TF2 mode: the engine's Player Destruction (PD) system owns pickup/merge p
 
 This README documents the locked-in architecture and event model. Some implementation details may still be mid-migration in `flagspawn.nut`.
 
-## Mode Summary
-
-- Base system: Player Destruction (PD) carry/merge mechanics.
-- Economy: script-defined per-pickup value, carried totals, damage/death spill, banking rules.
-- Fuel: team-owned resource (typically clamped to `0..99`) used for spawners/flow control.
-- Win condition: first team to reach `100` captured points (exact end-round wiring is map-specific).
-- Return timer: normal dropped pickups may return after ~`60s` (map/script dependent).
-
 ## Core Rules (Non-Negotiable)
 
 1. PD owns merging.
@@ -24,13 +16,6 @@ This README documents the locked-in architecture and event model. Some implement
 4. Keep PD's carry system alive.
    - Set `tf_logic_player_destruction.PointsOnPlayerDeath = 1`.
    - Then remove the engine's death-dropped flags in script and replace with controlled "pinata" spill.
-
-## Terminology
-
-- Fuel: team-owned resource shown at spawners (often `0..99`).
-- Spawner: enemy-base trigger that dispenses a PD pickup.
-- Beneficiary team: team that gets Fuel/credit when a pickup returns/banks.
-- Carry clamp: maximum carry (often `99`); overflow can be auto-deposited to Fuel.
 
 ## Mental Model (One Sentence)
 
@@ -209,16 +194,6 @@ Output:
 
 - `PointsOnPlayerDeath = 1`
 
-## Visuals (Meter Proxy)
-
-- Hide the `item_teamflag` briefcase model (keep pickup active).
-- Parent a `prop_dynamic` meter proxy to either:
-  - the world flag (dropped view), or
-  - the player `flag` attachment (carried view)
-- Meter model: `models/props_custom/fs_meter/fs_meter_slab_grid.mdl`
-  - Bodygroup `0` should support values `0..100` (or whatever cap you choose).
-- Optional: `tf_glow` targeting the proxy for team-color glow.
-
 ## Debug Checklist (Console)
 
 - `script printl("flagspawn" in getroottable())`
@@ -228,16 +203,3 @@ Output:
 ## Notes on the Current Prototype
 
 Some older iterations used pooled `item_teamflag` entities (`fs_pool_red_*` / `fs_pool_blu_*`) to avoid dynamic spawn costs. The long-term architecture does not depend on pools; it depends on `teamplay_flag_event` + script-owned value accounting.
-
-## Implementation Checklist (Quick)
-
-- Every spawned pickup:
-  - is `item_teamflag`
-  - has `GameType = 6`
-  - has `fs_isFlagspawn = true` and `fs_value` set before it can be touched
-- Event listener:
-  - `flag_listener` has `Fetch Event Data = Yes`
-  - calls `FS_OnFlagEvent` on every `teamplay_flag_event`
-- Death interception:
-  - `PointsOnPlayerDeath = 1`
-  - script kills non-script-owned death-dropped flags within ~`0.05s`

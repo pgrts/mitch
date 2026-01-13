@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<!-- saved from url=(0068)https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction -->
+<html class="client-js" lang="en" dir="ltr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>tf_logic_player_destruction - Valve Developer Community</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":false,"wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgRequestId":"15162f5faa87ddd43b005207","wgCSPNonce":false,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Tf_logic_player_destruction","wgTitle":"Tf logic player destruction","wgCurRevisionId":454964,"wgRevisionId":454964,"wgArticleId":32064,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["English","CD CTFRobotDestructionLogic","Entities","Non-internal Team Fortress 2 entities","Point entities","Team Fortress 2 entities","Team Fortress 2 point entities"],"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgRelevantPageName":"Tf_logic_player_destruction","wgRelevantArticleId":32064,"wgIsProbablyEditable":false,"wgRelevantPageIsProbablyEditable":false,"wgRestrictionEdit":[],"wgRestrictionMove":[],"wgVector2022PreviewPages":[],"wgMediaViewerOnClick":true,"wgMediaViewerEnabledByDefault":true};
+RLSTATE={"site.styles":"ready","user.styles":"ready","user":"ready","user.options":"loading","skins.vector.styles.legacy":"ready","jquery.makeCollapsible.styles":"ready"};RLPAGEMODULES=["site","mediawiki.page.ready","jquery.makeCollapsible","mediawiki.toc","skins.vector.legacy.js","mmv.head","mmv.bootstrap.autostart"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});});});</script>
+<link rel="stylesheet" href="./tf_logic_player_destruction - Valve Developer Community_files/load.php">
+<script async="" src="./tf_logic_player_destruction - Valve Developer Community_files/load(1).php"></script>
+<style>
+.mw-ui-button{background-color:#f8f9fa;color:#202122;display:inline-block;box-sizing:border-box;margin:0;border:1px solid #a2a9b1;border-radius:2px;cursor:pointer;vertical-align:middle;font-family:inherit;font-size:1em;font-weight:bold;line-height:1.28571429em;text-align:center; -webkit-appearance:none}.mw-ui-button:not(.mw-ui-icon-element){min-height:32px;min-width:4em;max-width:28.75em;padding:5px 12px}.mw-ui-button:not(:disabled){transition-property:background-color,color,border-color,box-shadow;transition-duration:100ms}.mw-ui-button:not(:disabled):visited{color:#202122}.mw-ui-button:not(:disabled):hover{background-color:#fff;color:#404244;border-color:#a2a9b1}.mw-ui-button:not(:disabled):focus{color:#202122;border-color:#36c;box-shadow:inset 0 0 0 1px #36c,inset 0 0 0 2px #fff;outline-width:0}.mw-ui-button:not(:disabled):focus::-moz-focus-inner{border-color:transparent;padding:0}.mw-ui-button:not(:disabled):active,.mw-ui-button:not(:disabled).is-on{background-color:#c8ccd1;color:#000;border-color:#72777d;box-shadow:none}.mw-ui-button:disabled{background-color:#c8ccd1;color:#fff;border-color:#c8ccd1;cursor:default}.mw-ui-button.mw-ui-icon-element:not(.mw-ui-icon-with-label-desktop){color:transparent !important}.mw-ui-button.mw-ui-icon-element:not(.mw-ui-icon-with-label-desktop) span{display:block;position:absolute !important; clip:rect(1px,1px,1px,1px);width:1px;height:1px;margin:-1px;border:0;padding:0;overflow:hidden}@media all and (max-width:1000px){.mw-ui-button.mw-ui-icon-element.mw-ui-icon-with-label-desktop{color:transparent !important}.mw-ui-button.mw-ui-icon-element span{display:block;position:absolute !important; clip:rect(1px,1px,1px,1px);width:1px;height:1px;margin:-1px;border:0;padding:0;overflow:hidden}}.mw-ui-button.mw-ui-quiet,.mw-ui-button.mw-ui-quiet.mw-ui-progressive,.mw-ui-button.mw-ui-quiet.mw-ui-destructive{background-color:transparent;color:#202122;border-color:transparent;font-weight:bold}.mw-ui-button.mw-ui-quiet:not(.mw-ui-icon-element),.mw-ui-button.mw-ui-quiet.mw-ui-progressive:not(.mw-ui-icon-element),.mw-ui-button.mw-ui-quiet.mw-ui-destructive:not(.mw-ui-icon-element){min-height:32px}input[type='checkbox']:hover + .mw-ui-button.mw-ui-quiet,input[type='checkbox']:hover + .mw-ui-button.mw-ui-quiet.mw-ui-progressive,input[type='checkbox']:hover + .mw-ui-button.mw-ui-quiet.mw-ui-destructive,.mw-ui-button.mw-ui-quiet:hover,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:hover,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:hover{background-color:rgba(0,24,73,0.02745098);color:#202122;border-color:transparent}input[type='checkbox']:focus + .mw-ui-button.mw-ui-quiet,input[type='checkbox']:focus + .mw-ui-button.mw-ui-quiet.mw-ui-progressive,input[type='checkbox']:focus + .mw-ui-button.mw-ui-quiet.mw-ui-destructive,.mw-ui-button.mw-ui-quiet:focus,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:focus,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:focus{color:#202122;border-color:#36c;box-shadow:inset 0 0 0 1px #36c,inset 0 0 0 2px #fff}input[type='checkbox']:active + .mw-ui-button.mw-ui-quiet,input[type='checkbox']:active + .mw-ui-button.mw-ui-quiet.mw-ui-progressive,input[type='checkbox']:active + .mw-ui-button.mw-ui-quiet.mw-ui-destructive,.mw-ui-button.mw-ui-quiet:active,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:active,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:active{background-color:rgba(0,36,73,0.08235294);color:#000;border-color:#72777d;box-shadow:none}.mw-ui-button.mw-ui-quiet:disabled,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:disabled,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:disabled,.mw-ui-button.mw-ui-quiet:disabled:hover,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:disabled:hover,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:disabled:hover,.mw-ui-button.mw-ui-quiet:disabled:active,.mw-ui-button.mw-ui-quiet.mw-ui-progressive:disabled:active,.mw-ui-button.mw-ui-quiet.mw-ui-destructive:disabled:active{background-color:transparent;color:#72777d;border-color:transparent}.mw-ui-button.mw-ui-progressive:not(:disabled){background-color:#36c;color:#fff;border-color:#36c}.mw-ui-button.mw-ui-progressive:not(:disabled):hover{background-color:#447ff5;border-color:#447ff5}.mw-ui-button.mw-ui-progressive:not(:disabled):focus{box-shadow:inset 0 0 0 1px #36c,inset 0 0 0 2px #fff}.mw-ui-button.mw-ui-progressive:not(:disabled):active,.mw-ui-button.mw-ui-progressive:not(:disabled).is-on{background-color:#2a4b8d;border-color:#2a4b8d;box-shadow:none}.mw-ui-button.mw-ui-progressive:disabled{background-color:#c8ccd1;color:#fff;border-color:#c8ccd1}.mw-ui-button.mw-ui-progressive.mw-ui-quiet{color:#36c;background-color:transparent;border-color:transparent}input[type='checkbox']:hover + .mw-ui-button.mw-ui-progressive.mw-ui-quiet,.mw-ui-button.mw-ui-progressive.mw-ui-quiet:hover{background-color:rgba(52,123,255,0.2);border-color:transparent;color:#447ff5}input[type='checkbox']:focus + .mw-ui-button.mw-ui-progressive.mw-ui-quiet,.mw-ui-button.mw-ui-progressive.mw-ui-quiet:focus{color:#36c;border-color:#36c}input[type='checkbox']:active + .mw-ui-button.mw-ui-progressive.mw-ui-quiet,.mw-ui-button.mw-ui-progressive.mw-ui-quiet:active{color:#fff;background-color:#2a4b8d;border-color:#2a4b8d}.mw-ui-button.mw-ui-destructive:not(:disabled){background-color:#d33;color:#fff;border-color:#d33}.mw-ui-button.mw-ui-destructive:not(:disabled):hover{background-color:#ff4242;border-color:#ff4242}.mw-ui-button.mw-ui-destructive:not(:disabled):focus{box-shadow:inset 0 0 0 1px #d33,inset 0 0 0 2px #fff}.mw-ui-button.mw-ui-destructive:not(:disabled):active,.mw-ui-button.mw-ui-destructive:not(:disabled).is-on{background-color:#b32424;border-color:#b32424;box-shadow:none}.mw-ui-button.mw-ui-destructive:disabled{background-color:#c8ccd1;color:#fff;border-color:#c8ccd1}.mw-ui-button.mw-ui-destructive.mw-ui-quiet{color:#d33;background-color:transparent;border-color:transparent}input[type='checkbox']:hover + .mw-ui-button.mw-ui-destructive.mw-ui-quiet,.mw-ui-button.mw-ui-destructive.mw-ui-quiet:hover{background-color:rgba(209,29,19,0.2);border-color:transparent;color:#ff4242}input[type='checkbox']:focus + .mw-ui-button.mw-ui-destructive.mw-ui-quiet,.mw-ui-button.mw-ui-destructive.mw-ui-quiet:focus{color:#d33;border-color:#d33}input[type='checkbox']:active + .mw-ui-button.mw-ui-destructive.mw-ui-quiet,.mw-ui-button.mw-ui-destructive.mw-ui-quiet:active{color:#fff;background-color:#b32424;border-color:#b32424}.mw-ui-button.mw-ui-big{font-size:1.3em}.mw-ui-button.mw-ui-block{display:block;width:100%;margin-left:auto;margin-right:auto}a.mw-ui-button{text-decoration:none}a.mw-ui-button:hover,a.mw-ui-button:focus{text-decoration:none}.mw-ui-button-group > *{min-width:48px;border-radius:0;float:left}.mw-ui-button-group > *:first-child{border-top-left-radius:2px;border-bottom-left-radius:2px}.mw-ui-button-group > *:not(:first-child){border-left:0}.mw-ui-button-group > *:last-child{border-top-right-radius:2px;border-bottom-right-radius:2px}.mw-ui-button-group .is-on .button{cursor:default}
+.mw-ui-icon{ font-size:initial;position:relative;display:inline-block;box-sizing:content-box !important;width:1.25em;height:1.25em;min-width:1.25em;min-height:1.25em;flex-basis:1.25em;vertical-align:middle;line-height:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; -moz-appearance:none; -webkit-appearance:none;background-color:transparent;margin:0;padding:0}.mw-ui-icon:not(.mw-ui-button){border:0}.mw-ui-icon:before{content:'';display:block;width:100%;height:100%;min-width:1.25em;min-height:1.25em;background-repeat:no-repeat;background-size:1.25em 1.25em;background-position:center}.mw-ui-icon + span:not(:empty){margin-left:8px} .mw-ui-icon-flush-top{margin-top:-0.75em}.mw-ui-icon-flush-left{margin-left:-0.75em}.mw-ui-icon-flush-right{margin-right:-0.75em}.mw-ui-icon-element{border-radius:2px;padding:0.75em;transition:background-color 100ms;color:transparent}.mw-ui-icon-element:focus,.mw-ui-icon-element:active,.mw-ui-icon-element:visited{color:transparent}.mw-ui-icon-element:active{background-color:rgba(0,0,0,0.03)}@media (hover:hover){.mw-ui-icon-element:not(.disabled):hover{background-color:rgba(0,0,0,0.03)}}.mw-ui-icon-small{width:1em;height:1em;min-width:1em;min-height:1em;flex-basis:1em;line-height:1em}.mw-ui-icon-small:before{content:'';display:block;width:100%;height:100%;min-width:1em;min-height:1em;background-repeat:no-repeat;background-size:1em 1em;background-position:center}.mw-ui-icon-small.mw-ui-icon-element{padding:0.5625em}.mw-ui-icon-small.mw-ui-icon-flush-left{margin-left:-0.5625em}.mw-ui-icon-small.mw-ui-icon-flush-right{margin-right:-0.5625em}.mw-ui-icon-small.mw-ui-icon-before:before{min-width:1em;min-height:1em;margin-right:0.5625em}.mw-ui-icon-before{width:auto;max-width:100%}.mw-ui-icon-before:before{display:inline-block; font-size:initial;width:auto;min-width:1.25em;min-height:1.25em;margin-right:8px;vertical-align:middle}.mw-ui-icon-before span{vertical-align:middle}@media all and (min-width:1000px){.mw-ui-icon-with-label-desktop{color:#54595d !important;width:auto;line-height:inherit;flex-basis:auto;font-weight:500 !important}.mw-ui-icon-with-label-desktop:hover,.mw-ui-icon-with-label-desktop:focus,.mw-ui-icon-with-label-desktop:active,.mw-ui-icon-with-label-desktop:visited{color:#54595d;text-decoration:none}.mw-ui-icon-with-label-desktop:before{width:auto;display:inline-block;margin-right:8px;vertical-align:text-bottom}}
+.mw-collapsible-toggle{float:right;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none}.mw-collapsible-toggle-default:before{content:'['}.mw-collapsible-toggle-default:after{content:']'}.mw-customtoggle,.mw-collapsible-toggle{cursor:pointer} caption .mw-collapsible-toggle,.mw-content-ltr caption .mw-collapsible-toggle,.mw-content-rtl caption .mw-collapsible-toggle,.mw-content-rtl .mw-content-ltr caption .mw-collapsible-toggle,.mw-content-ltr .mw-content-rtl caption .mw-collapsible-toggle{float:none}
+@media screen {
+	.toctoggle{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none;font-size:94%}}</style><style>
+.mw-mmv-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background-color:#000}body.mw-mmv-lightbox-open{overflow-y:auto}body.mw-mmv-lightbox-open > *:not(.mw-notification-area-overlay){display:none}body.mw-mmv-lightbox-open > .mw-mmv-overlay,body.mw-mmv-lightbox-open > .mw-mmv-wrapper{display:block}.mw-mmv-filepage-buttons{margin-top:5px}.mw-mmv-filepage-buttons .mw-mmv-view-expanded,.mw-mmv-filepage-buttons .mw-mmv-view-config{display:block;line-height:inherit}.mw-mmv-filepage-buttons .mw-mmv-view-expanded .mw-ui-icon:before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1024 768%22%3E %3Cpath d=%22M851.2 71.6 690.7 232.1l-40.1-40.3-9.6 164.8 164.8-9.3-40.3-40.4L926 146.4l58.5 58.5L997.6 0 792.7 13.1%22/%3E %3Cpath d=%22M769.6 89.3H611.9l70.9 70.8 7.9 7.5m-47.1 234.6-51.2 3 3-51.2 9.4-164.4 5.8-100.3H26.4V768h883.1V387l-100.9 5.8-165 9.4zM813.9 678H113.6l207.2-270.2 31.5-12.9L548 599.8l105.9-63.2 159.8 140.8.2.6zm95.6-291.9V228l-79.1 78.9 7.8 7.9%22/%3E %3C/svg%3E")}.mw-mmv-filepage-buttons .mw-mmv-view-config .mw-ui-icon:before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1024 768%22%3E %3Cpath d=%22M897 454.6V313.4L810.4 299c-6.4-23.3-16-45.7-27.3-65.8l50.5-71.4-99.4-100.2-71.4 50.5c-20.9-11.2-42.5-20.9-65.8-27.3L582.6-1H441.4L427 85.6c-23.3 6.4-45.7 16-65.8 27.3l-71.4-50.5-100.3 99.5 50.5 71.4c-11.2 20.9-20.9 42.5-27.3 66.6L127 313.4v141.2l85.8 14.4c6.4 23.3 16 45.7 27.3 66.6L189.6 607l99.5 99.5 71.4-50.5c20.9 11.2 42.5 20.9 66.6 27.3l14.4 85.8h141.2l14.4-86.6c23.3-6.4 45.7-16 65.8-27.3l71.4 50.5 99.5-99.5-50.5-71.4c11.2-20.9 20.9-42.5 27.3-66.6l86.4-13.6zm-385 77c-81.8 0-147.6-66.6-147.6-147.6 0-81.8 66.6-147.6 147.6-147.6S659.6 302.2 659.6 384 593.8 531.6 512 531.6z%22/%3E %3C/svg%3E");margin-right:0;opacity:0.75}.mw-mmv-filepage-buttons .mw-mmv-view-config .mw-ui-icon:before:hover{opacity:1}.mw-mmv-filepage-buttons .mw-mmv-view-config .mw-ui-icon span{display:none}.mw-mmv-button{background-color:transparent;min-width:0;border:0;padding:0;overflow-x:hidden;text-indent:-9999em}</style><meta name="ResourceLoaderDynamicStyles" content="">
+<link rel="stylesheet" href="./tf_logic_player_destruction - Valve Developer Community_files/load(2).php">
+<meta name="generator" content="MediaWiki 1.39.12">
+<meta name="format-detection" content="telephone=no">
+<meta name="viewport" content="width=1000">
+<link rel="icon" href="https://developer.valvesoftware.com/favicon.ico">
+<link rel="search" type="application/opensearchdescription+xml" href="https://developer.valvesoftware.com/w/opensearch_desc.php" title="Valve Developer Community (en)">
+<link rel="EditURI" type="application/rsd+xml" href="https://developer.valvesoftware.com/w/api.php?action=rsd">
+<link rel="alternate" type="application/atom+xml" title="Valve Developer Community Atom feed" href="https://developer.valvesoftware.com/w/index.php?title=Special:RecentChanges&amp;feed=atom">
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-underline-never mw-hide-empty-elt ns-0 ns-subject page-Tf_logic_player_destruction rootpage-Tf_logic_player_destruction skin-vector action-view skin-vector-legacy vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-language-alert-in-sidebar-disabled vector-feature-sticky-header-disabled vector-feature-sticky-header-edit-disabled vector-feature-table-of-contents-disabled vector-feature-visual-enhancement-next-disabled"><div id="mw-page-base" class="noprint"></div>
+<div id="mw-head-base" class="noprint"></div>
+<div id="content" class="mw-body" role="main">
+	<a id="top"></a>
+	<div id="siteNotice"></div>
+	<div class="mw-indicators">
+	</div>
+	<h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="monospaced" style="font-family:monospace, monospace">tf_logic_player_destruction</span></h1>
+	<div id="bodyContent" class="vector-body">
+		<div id="siteSub" class="noprint">From Valve Developer Community</div>
+		<div id="contentSub"></div>
+		<div id="contentSub2"></div>
+		
+		<div id="jump-to-nav"></div>
+		<a class="mw-jump-link" href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#mw-head">Jump to navigation</a>
+		<a class="mw-jump-link" href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#searchInput">Jump to search</a>
+		<div id="mw-content-text" class="mw-body-content mw-content-ltr" lang="en" dir="ltr"><div class="mw-parser-output"><div style="direction:; display:flex; gap:4px; width:calc(100% + 4px); user-select:none; pointer-events:none; position:absolute; z-index:100; top:calc(-17px - 18px); left:-4px"><div style="height:19px; background-color:#262626; border:1px solid #65635F; border-bottom:0;border-radius:3px 3px 0 0; pointer-events:all; margin-left:auto"><span style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.3); border-radius:2px; padding:0 1px; margin:1px"><span style="user-select:none; position:relative; top:-1px"><img alt="English (en)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-en.png" decoding="async" title="English (en)" width="16" height="11" data-file-width="16" data-file-height="11"></span></span><span class="mw-customtoggle-UntranslatedFlags mw-customtoggle" style="margin:1px; border:1px solid transparent" aria-expanded="true" tabindex="0"><span style="pointer-events:none;user-select:none; position:relative; top:-1px"><img alt="Translate (Translate)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-Translate.png" decoding="async" title="Translate (Translate)" width="16" height="11" data-file-width="16" data-file-height="11"></span></span>
+<div class="mw-collapsible mw-collapsed mw-made-collapsible" id="mw-customcollapsible-UntranslatedFlags" style="display:none; position:absolute; right:0px; top:20px; z-index:1001; width:max-content; height:20px; background-color:#262626; border:1px solid #65635F; border-top:0px; border-radius:0 0 3px 3px; pointer-events:all;"><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=De/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Deutsch&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Deutsch (de)" rel="nofollow"><img alt="Deutsch (de)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-de.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Eo/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Esperanto&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Esperanto (eo)" rel="nofollow"><img alt="Esperanto (eo)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-eo.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Es/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=espa%C3%B1ol&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Español (es)" rel="nofollow"><img alt="Español (es)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-es.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Fr/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=fran%C3%A7ais&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Français (fr)" rel="nofollow"><img alt="Français (fr)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-fr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Fi/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=suomi&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Suomi (fi)" rel="nofollow"><img alt="Suomi (fi)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-fi.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Hr/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=hrvatski&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Hrvatski (hr)" rel="nofollow"><img alt="Hrvatski (hr)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-hr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Hu/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=magyar&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Magyar (hu)" rel="nofollow"><img alt="Magyar (hu)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-hu.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=It/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=italiano&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Italiano (it)" rel="nofollow"><img alt="Italiano (it)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-it.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ja/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E6%97%A5%E6%9C%AC%E8%AA%9E&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="日本語 (ja)" rel="nofollow"><img alt="日本語 (ja)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-ja.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ko/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%ED%95%9C%EA%B5%AD%EC%96%B4&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="한국어 (ko)" rel="nofollow"><img alt="한국어 (ko)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-ko.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Nl/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Nederlands&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Nederlands (nl)" rel="nofollow"><img alt="Nederlands (nl)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-nl.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pl/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=polski&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Polski (pl)" rel="nofollow"><img alt="Polski (pl)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-pl.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pt/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=portugu%C3%AAs&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Português (pt)" rel="nofollow"><img alt="Português (pt)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-pt.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Pt-br/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=portugu%C3%AAs+do+Brasil&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Português do Brasil (pt-br)" rel="nofollow"><img alt="Português do Brasil (pt-br)" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Flag-pt-br.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/2/29/Flag-pt-br.png/24px-Flag-pt-br.png 1.5x, /w/images/thumb/2/29/Flag-pt-br.png/32px-Flag-pt-br.png 2x" data-file-width="128" data-file-height="88"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Ru/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%D1%80%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Русский (ru)" rel="nofollow"><img alt="Русский (ru)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-ru.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Sk/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=sloven%C4%8Dina&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Slovenčina (sk)" rel="nofollow"><img alt="Slovenčina (sk)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-sk.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Sv/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=svenska&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Svenska (sv)" rel="nofollow"><img alt="Svenska (sv)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-sv.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Tr/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=T%C3%BCrk%C3%A7e&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Türkçe (tr)" rel="nofollow"><img alt="Türkçe (tr)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-tr.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Uk/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%D1%83%D0%BA%D1%80%D0%B0%D1%97%D0%BD%D1%81%D1%8C%D0%BA%D0%B0&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Українська (uk)" rel="nofollow"><img alt="Українська (uk)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-uk.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Vi/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=Ti%E1%BA%BFng+Vi%E1%BB%87t&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Tiếng Việt (vi)" rel="nofollow"><img alt="Tiếng Việt (vi)" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Flag-vi.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/4/47/Flag-vi.png/24px-Flag-vi.png 1.5x, /w/images/thumb/4/47/Flag-vi.png/32px-Flag-vi.png 2x" data-file-width="128" data-file-height="88"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Zh/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E4%B8%AD%E6%96%87&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="中文 (zh)" rel="nofollow"><img alt="中文 (zh)" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Flag-zh.png" decoding="async" width="16" height="11" srcset="/w/images/thumb/e/e9/Flag-zh.png/24px-Flag-zh.png 1.5x, /w/images/thumb/e/e9/Flag-zh.png/32px-Flag-zh.png 2x" data-file-width="128" data-file-height="88"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Zh-tw/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:LanguageBar/preload&amp;preloadparams%5B%5D=%E4%B8%AD%E6%96%87%EF%BC%88%E8%87%BA%E7%81%A3%EF%BC%89&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="中文（臺灣） (zh-tw)" rel="nofollow"><img alt="中文（臺灣） (zh-tw)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-zh-tw.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/w/index.php?title=Template:TranslationMark/Tf_logic_player_destruction&amp;action=edit&amp;preload=Template:TranslationMark/preload&amp;preloadparams%5B%5D=&amp;preloadparams%5B%5D=Tf+logic+player+destruction" title="Translationmark (TranslationMark)" rel="nofollow"><img alt="Translationmark (TranslationMark)" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-TranslationMark.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span><span style="margin:1px; border:1px solid transparent"><span style="user-select:none; position:relative; top:-1px"><a href="https://developer.valvesoftware.com/wiki/Valve_Developer_Community:Alternative_Languages" title="Valve Developer Community:Alternative Languages"><img alt="Flag-white-i.png" src="./tf_logic_player_destruction - Valve Developer Community_files/Flag-white-i.png" decoding="async" width="16" height="11" data-file-width="16" data-file-height="11"></a></span></span>
+</div></div></div>
+<table class="wikitable" align="right" style="clear:right; margin-left:2em">
+
+<tbody><tr>
+<th><span style="user-select:none; position:relative; bottom:.1em"><a href="https://developer.valvesoftware.com/wiki/CPP" title="C++"><img alt="C++" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032"></a></span> <a href="https://developer.valvesoftware.com/wiki/Class_hierarchy" title="Class hierarchy">Class hierarchy</a>
+</th></tr>
+<tr>
+<td><a href="https://developer.valvesoftware.com/w/index.php?title=CTFPlayerDestructionLogic&amp;action=edit&amp;redlink=1" class="new" title="CTFPlayerDestructionLogic (page does not exist)">CTFPlayerDestructionLogic </a>
+<dl><dd><a href="https://developer.valvesoftware.com/wiki/Category:CD_CTFRobotDestructionLogic" title="Category:CD CTFRobotDestructionLogic">↳</a><a href="https://developer.valvesoftware.com/w/index.php?title=CTFRobotDestructionLogic&amp;action=edit&amp;redlink=1" class="new" title="CTFRobotDestructionLogic (page does not exist)">CTFRobotDestructionLogic</a>
+<dl><dd><a href="https://developer.valvesoftware.com/wiki/Category:CD_CBaseEntity" title="Category:CD CBaseEntity">↳</a><a href="https://developer.valvesoftware.com/wiki/CBaseEntity" title="CBaseEntity">CBaseEntity</a></dd></dl></dd></dl>
+</td></tr>
+<tr>
+<th><small><span style="user-select:none; position:relative; bottom:.1em"><a href="https://developer.valvesoftware.com/wiki/CPP" title="C++"><img alt="C++" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Icon-cpp.png" decoding="async" width="16" height="18" srcset="/w/images/thumb/7/7a/Icon-cpp.png/24px-Icon-cpp.png 1.5x, /w/images/thumb/7/7a/Icon-cpp.png/32px-Icon-cpp.png 2x" data-file-width="918" data-file-height="1032"></a></span> <kbd><i>tf_logic_player_destruction.cpp</i></kbd></small>
+</th></tr></tbody></table>
+<p><code>tf_logic_player_destruction</code>  is a   <a href="https://developer.valvesoftware.com/wiki/Point_entity" title="Point entity">point entity</a>  <a href="https://developer.valvesoftware.com/wiki/Entity_availability_overview" title="Entity availability overview">available</a> in <span style="white-space:nowrap; background:rgb(0,0,0,.16); font-weight:bold; padding:2px; border-radius:4px"><span style="user-select:none; position:relative; bottom:.1em"><a href="https://developer.valvesoftware.com/wiki/Team_Fortress_2" title="Team Fortress 2"><img alt="Team Fortress 2" src="./tf_logic_player_destruction - Valve Developer Community_files/16px-Tf2-16px.png" decoding="async" width="16" height="16" srcset="/w/images/thumb/8/84/Tf2-16px.png/24px-Tf2-16px.png 1.5x, /w/images/thumb/8/84/Tf2-16px.png/32px-Tf2-16px.png 2x" data-file-width="256" data-file-height="256"></a></span> <a href="https://developer.valvesoftware.com/wiki/Team_Fortress_2" title="Team Fortress 2"><span title="Team Fortress 2" style="color:#CF7336;">Team Fortress 2</span></a></span>. 
+It is the master control entity for the <a href="https://developer.valvesoftware.com/wiki/Team_Fortress_2/Player_Destruction" title="Team Fortress 2/Player Destruction">Player Destruction</a> gamemode.
+</p>
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none"><div class="toctitle" lang="en" dir="ltr"><h2 id="mw-toc-heading">Contents</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#Keyvalues"><span class="tocnumber">1</span> <span class="toctext">Keyvalues</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#Inputs"><span class="tocnumber">2</span> <span class="toctext">Inputs</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#Outputs"><span class="tocnumber">3</span> <span class="toctext">Outputs</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#See_also"><span class="tocnumber">4</span> <span class="toctext">See also</span></a></li>
+<li class="toclevel-1 tocsection-5"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction#External_links"><span class="tocnumber">5</span> <span class="toctext">External links</span></a></li>
+</ul>
+</div>
+
+<h2><span class="mw-headline" id="Keyvalues">Keyvalues</span></h2>
+<dl><dt><a href="https://developer.valvesoftware.com/wiki/Targetname" title="Targetname">Name</a> <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(targetname)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Targetname" title="Targetname">string</a>&gt;</kbd></dt>
+<dd>The name that other entities refer to this entity by, via <a href="https://developer.valvesoftware.com/wiki/Inputs_and_Outputs" title="Inputs and Outputs">Inputs/Outputs</a> or other <a href="https://developer.valvesoftware.com/wiki/Keyvalue" title="Keyvalue">keyvalues</a> (e.g. <code><a href="https://developer.valvesoftware.com/wiki/Entity_Hierarchy_(parenting)#Parentname" title="Entity Hierarchy (parenting)">parentname</a></code> or <code>target</code>).<br>Also displayed in Hammer's 2D views and <a href="https://developer.valvesoftware.com/wiki/Hammer_Entity_Report_Dialog" title="Hammer Entity Report Dialog">Entity Report</a>.</dd>
+<dd><i><div><span style="color:#bbb; display:table-cell; font-weight:0; padding-left:1.6em; white-space:nowrap;">See also:&nbsp;</span><span style="display:table-cell; padding:0.2em;"><a href="https://developer.valvesoftware.com/wiki/Generic_Keyvalues,_Inputs_and_Outputs" title="Generic Keyvalues, Inputs and Outputs">Generic Keyvalues, Inputs and Outputs</a> available to all entities</span></div></i></dd></dl>
+<dl><dt>Prop Model Name <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(prop_model_name)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Model" class="mw-redirect" title="Model">model path</a>&gt;</kbd></dt>
+<dd>Model of prop that drops from player on death</dd></dl>
+<dl><dt>Prop Drop Sound <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(prop_drop_sound)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Sound" class="mw-redirect" title="Sound">sound</a>&gt;</kbd></dt>
+<dd>Sound when player drops prop</dd></dl>
+<dl><dt>Prop Pickup Sound <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(prop_pickup_sound)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Sound" class="mw-redirect" title="Sound">sound</a>&gt;</kbd></dt>
+<dd>Sound when player picks up prop</dd></dl>
+<dl><dt>Blue Respawn Time <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(blue_respawn_time)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>The base respawn time for BLU team</dd></dl>
+<dl><dt>Red Respawn Time <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(red_respawn_time)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>The base respawn time for RED team</dd></dl>
+<dl><dt>Min Points <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(min_points)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>The minimum points to win</dd></dl>
+<dl><dt>Points Per Player <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(points_per_player)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>How many points to increase the max points by per player</dd></dl>
+<dl><dt>Finale Length <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(finale_length)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Float" title="Float">float</a>&gt;</kbd></dt>
+<dd>The amount of time from after max score is reached a team will win</dd></dl>
+<dl><dt>HUD Res File <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(res_file)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/String" title="String">string</a>&gt;</kbd></dt>
+<dd>What res file to use for the HUD</dd></dl>
+<dl><dt>Flag Reset Delay (in seconds) <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(flag_reset_delay)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>Length of time (in seconds) before a dropped flag resets</dd></dl>
+<dl><dt>Heal Distance <kbd><span style="border-bottom:1px none; font-weight:normal" title="The internal name for this keyvalue; this is what the engine knows this keyvalue as. These display in Hammer for keyvalues when SmartEdit is disabled, or for keyvalues not in the FGD.">(heal_distance)</span></kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a>&gt;</kbd></dt>
+<dd>The distance for the team leader's ability to heal teammates</dd></dl>
+<h2><span class="mw-headline" id="Inputs">Inputs</span></h2>
+<dl><dt><kbd>ScoreRedPoints</kbd></dt>
+<dd>Score points for red.</dd></dl>
+<dl><dt><kbd>ScoreBluePoints</kbd></dt>
+<dd>Score points for blue.</dd></dl>
+<dl><dt><kbd>EnableMaxScoreUpdating</kbd></dt>
+<dd>Allow the max score to update based on player count.</dd></dl>
+<dl><dt><kbd>DisableMaxScoreUpdating</kbd></dt>
+<dd>Disallow the max score from updating based on player count.</dd></dl>
+<dl><dt><kbd>SetCountdownTimer</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectInput/integer" title="RedirectInput/integer">RedirectInput/integer</a></span>&gt;</kbd></dt>
+<dd>Set the countdown time and start the timer.</dd></dl>
+<dl><dt><kbd>SetCountdownImage</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/String" title="String">string</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectInput/string" class="mw-redirect" title="RedirectInput/string">RedirectInput/string</a></span>&gt;</kbd></dt>
+<dd>Set the countdown image.</dd></dl>
+<dl><dt><kbd>SetFlagResetDelay</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectInput/integer" title="RedirectInput/integer">RedirectInput/integer</a></span>&gt;</kbd></dt>
+<dd>Set the length of time (in seconds) before a dropped flag resets.</dd></dl>
+<dl><dt><kbd>SetPointsOnPlayerDeath</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Integer" title="Integer">integer</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectInput/integer" title="RedirectInput/integer">RedirectInput/integer</a></span>&gt;</kbd></dt>
+<dd>Set number of points per flag dropped upon player death.</dd></dl>
+<h2><span class="mw-headline" id="Outputs">Outputs</span></h2>
+<dl><dt><kbd>OnBlueHitMaxPoints</kbd></dt>
+<dd>Sent when Blue hits the max points.</dd></dl>
+<dl><dt><kbd>OnRedHitMaxPoints</kbd></dt>
+<dd>Sent when Red hits the max points.</dd></dl>
+<dl><dt><kbd>OnBlueLeaveMaxPoints</kbd></dt>
+<dd>Sent when blue goes from max points to fewer.</dd></dl>
+<dl><dt><kbd>OnRedLeaveMaxPoints</kbd></dt>
+<dd>Sent when red goes from max points to fewer.</dd></dl>
+<dl><dt><kbd>OnBlueHitZeroPoints</kbd></dt>
+<dd>Sent when Blue hits 0 points.</dd></dl>
+<dl><dt><kbd>OnRedHitZeroPoints</kbd></dt>
+<dd>Sent when Red hits 0 points</dd></dl>
+<dl><dt><kbd>OnBlueHasPoints</kbd></dt>
+<dd>Sent when Blue goes from 0 to any points</dd></dl>
+<dl><dt><kbd>OnRedHasPoints</kbd></dt>
+<dd>Sent when Red goes from 0 to any points</dd></dl>
+<dl><dt><kbd>OnRedFinalePeriodEnd</kbd></dt>
+<dd>Sent when the red finale period ends.</dd></dl>
+<dl><dt><kbd>OnBlueFinalePeriodEnd</kbd></dt>
+<dd>Sent when the blue finale period ends.</dd></dl>
+<dl><dt><kbd>OnRedFirstFlagStolen</kbd></dt>
+<dd>Sent when red's first flag gets stolen.</dd></dl>
+<dl><dt><kbd>OnRedFlagStolen</kbd></dt>
+<dd>Sent when a flag gets stolen from red.</dd></dl>
+<dl><dt><kbd>OnRedLastFlagReturned</kbd></dt>
+<dd>Sent when red's last stolen flag gets returned.</dd></dl>
+<dl><dt><kbd>OnBlueFirstFlagStolen</kbd></dt>
+<dd>Sent when blue's first flag gets stolen.</dd></dl>
+<dl><dt><kbd>OnBlueFlagStolen</kbd></dt>
+<dd>Sent when a flag gets stolen from blue.</dd></dl>
+<dl><dt><kbd>OnBlueLastFlagReturned</kbd></dt>
+<dd>Sent when blue's last stolen flag gets returned.</dd></dl>
+<dl><dt><kbd>OnRedScoreChanged</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Float" title="Float">float</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectOutput/float" class="mw-redirect" title="RedirectOutput/float">RedirectOutput/float</a></span>&gt;</kbd></dt>
+<dd>Sent when score changes. Is a value representing total progress from 0–1.</dd></dl>
+<dl><dt><kbd>OnBlueScoreChanged</kbd>  <kbd>&lt;<a href="https://developer.valvesoftware.com/wiki/Float" title="Float">float</a><span style="display:none"><a href="https://developer.valvesoftware.com/wiki/RedirectOutput/float" class="mw-redirect" title="RedirectOutput/float">RedirectOutput/float</a></span>&gt;</kbd></dt>
+<dd>Sent when score changes. Is a value representing total progress from 0–1.</dd></dl>
+<dl><dt><kbd>OnCountdownTimerExpired</kbd></dt>
+<dd>Sent when the countdown timer expires.</dd></dl>
+<h2><span class="mw-headline" id="See_also">See also</span></h2>
+<ul><li><a href="https://developer.valvesoftware.com/wiki/Team_Fortress_2/Player_Destruction" title="Team Fortress 2/Player Destruction">Player Destruction Guide</a></li></ul>
+<h2><span class="mw-headline" id="External_links">External links</span></h2>
+<ul><li><a rel="nofollow" class="external text" href="https://tf2maps.net/posts/344922/">Player Destruction Guide - TF2Maps.net</a></li></ul>
+<!-- 
+NewPP limit report
+Cached time: 20260112195611
+Cache expiry: 86400
+Reduced expiry: false
+Complications: [show‐toc]
+CPU time usage: 0.336 seconds
+Real time usage: 0.352 seconds
+Preprocessor visited node count: 20848/1000000
+Post‐expand include size: 148905/2097152 bytes
+Template argument size: 69988/2097152 bytes
+Highest expansion depth: 48/100
+Expensive parser function count: 23/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  303.327      1 -total
+ 46.86%  142.135      1 Template:This_is_a
+ 41.20%  124.974      3 Template:Str_right
+ 40.92%  124.126      3 Template:Str_sub_long
+ 40.77%  123.673      5 Template:This_is_a/strings
+ 37.38%  113.377     85 Template:Str_left
+ 35.33%  107.151      1 Template:A_or_an
+ 34.68%  105.185      1 Template:Delink
+ 34.36%  104.210      1 Template:Delink/phase_1_a
+ 25.69%   77.912      1 Template:Delink/phase_1_b
+-->
+
+<!-- Saved in parser cache with key developerwiki-mw_:pcache:idhash:32064-0!canonical and timestamp 20260112195610 and revision id 454964.
+ -->
+</div>
+<div class="printfooter" data-nosnippet="">Retrieved from "<a dir="ltr" href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;oldid=454964">https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;oldid=454964</a>"</div></div>
+		<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="https://developer.valvesoftware.com/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="https://developer.valvesoftware.com/wiki/Category:Point_entities" title="Category:Point entities">Point entities</a></li><li><a href="https://developer.valvesoftware.com/wiki/Category:Team_Fortress_2_entities" title="Category:Team Fortress 2 entities">Team Fortress 2 entities</a></li><li><a href="https://developer.valvesoftware.com/wiki/Category:Team_Fortress_2_point_entities" title="Category:Team Fortress 2 point entities">Team Fortress 2 point entities</a></li></ul></div><div id="mw-hidden-catlinks" class="mw-hidden-catlinks mw-hidden-cats-hidden">Hidden categories: <ul><li><a href="https://developer.valvesoftware.com/wiki/Category:English" title="Category:English">English</a></li><li><a href="https://developer.valvesoftware.com/wiki/Category:CD_CTFRobotDestructionLogic" title="Category:CD CTFRobotDestructionLogic">CD CTFRobotDestructionLogic</a></li><li><a href="https://developer.valvesoftware.com/wiki/Category:Entities" title="Category:Entities">Entities</a></li><li><a href="https://developer.valvesoftware.com/wiki/Category:Non-internal_Team_Fortress_2_entities" title="Category:Non-internal Team Fortress 2 entities">Non-internal Team Fortress 2 entities</a></li></ul></div></div>
+	</div>
+</div>
+
+<div id="mw-navigation">
+	<h2>Navigation menu</h2>
+	<div id="mw-head">
+		
+
+<nav id="p-personal" class="vector-menu mw-portlet mw-portlet-personal vector-user-menu-legacy" aria-labelledby="p-personal-label" role="navigation">
+	<h3 id="p-personal-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Personal tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="pt-createaccount" class="mw-list-item"><a href="https://developer.valvesoftware.com/w/index.php?title=Special:CreateAccount&amp;returnto=Tf+logic+player+destruction" title="You are encouraged to create an account and log in; however, it is not mandatory"><span>Create account</span></a></li><li id="pt-login" class="mw-list-item"><a href="https://developer.valvesoftware.com/w/index.php?title=Special:UserLogin&amp;returnto=Tf+logic+player+destruction" title="You are encouraged to log in; however, it is not mandatory [ctrl-option-o]" accesskey="o"><span>Log in</span></a></li></ul>
+		
+	</div>
+</nav>
+
+		<div id="left-navigation">
+			
+
+<nav id="p-namespaces" class="vector-menu mw-portlet mw-portlet-namespaces vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-namespaces-label" role="navigation">
+	<h3 id="p-namespaces-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Namespaces</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-nstab-main" class="selected mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction" title="View the content page [ctrl-option-c]" accesskey="c"><span>Page</span></a></li><li id="ca-talk" class="new mw-list-item"><a href="https://developer.valvesoftware.com/w/index.php?title=Talk:Tf_logic_player_destruction&amp;action=edit&amp;redlink=1" rel="discussion" title="Discussion about the content page (page does not exist) [ctrl-option-t]" accesskey="t"><span>Discussion</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-variants" class="vector-menu mw-portlet mw-portlet-variants emptyPortlet vector-menu-dropdown" aria-labelledby="p-variants-label" role="navigation">
+	<input type="checkbox" id="p-variants-checkbox" role="button" aria-haspopup="true" data-event-name="ui.dropdown-p-variants" class="vector-menu-checkbox" aria-labelledby="p-variants-label">
+	<label id="p-variants-label" aria-label="Change language variant" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">English</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+		</div>
+		<div id="right-navigation">
+			
+
+<nav id="p-views" class="vector-menu mw-portlet mw-portlet-views vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-views-label" role="navigation">
+	<h3 id="p-views-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Views</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-view" class="selected mw-list-item collapsible"><a href="https://developer.valvesoftware.com/wiki/Tf_logic_player_destruction"><span>Read</span></a></li><li id="ca-viewsource" class="mw-list-item collapsible"><a href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;action=edit" title="This page is protected.
+You can view its source [ctrl-option-e]" accesskey="e"><span>View source</span></a></li><li id="ca-history" class="mw-list-item collapsible"><a href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;action=history" title="Past revisions of this page [ctrl-option-h]" accesskey="h"><span>View history</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-cactions" class="vector-menu mw-portlet mw-portlet-cactions vector-menu-dropdown" aria-labelledby="p-cactions-label" role="navigation" title="More options">
+	<input type="checkbox" id="p-cactions-checkbox" role="button" aria-haspopup="true" data-event-name="ui.dropdown-p-cactions" class="vector-menu-checkbox" aria-labelledby="p-cactions-label">
+	<label id="p-cactions-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">More</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li class="mw-list-item mw-list-item-js" id="ca-purge"><a href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;action=purge" title="Purge the server cache of this page [ctrl-option-*]" accesskey="*"><span>Purge</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+<div id="p-search" role="search" class="vector-search-box-vue  vector-search-box-show-thumbnail vector-search-box-auto-expand-width vector-search-box">
+	<div>
+			<h3>
+				<label for="searchInput">Search</label>
+			</h3>
+		<form action="https://developer.valvesoftware.com/w/index.php" id="searchform" class="vector-search-box-form">
+			<div id="simpleSearch" class="vector-search-box-inner" data-search-loc="header-navigation">
+				<input class="vector-search-box-input" type="search" name="search" placeholder="Search Valve Developer Community" aria-label="Search Valve Developer Community" autocapitalize="sentences" title="Search Valve Developer Community [ctrl-option-f]" accesskey="f" id="searchInput">
+				<input type="hidden" name="title" value="Special:Search">
+				<input id="mw-searchButton" class="searchButton mw-fallbackSearchButton" type="submit" name="fulltext" title="Search the pages for this text" value="Search">
+				<input id="searchButton" class="searchButton" type="submit" name="go" title="Go to a page with this exact name if it exists" value="Go">
+			</div>
+		</form>
+	</div>
+</div>
+
+		</div>
+	</div>
+	
+
+<div id="mw-panel">
+	<div id="p-logo" role="banner">
+		<a class="mw-wiki-logo" href="https://developer.valvesoftware.com/wiki/Main_Page" title="Visit the main page"></a>
+	</div>
+	
+
+<nav id="p-navigation" class="vector-menu mw-portlet mw-portlet-navigation vector-menu-portal portal" aria-labelledby="p-navigation-label" role="navigation">
+	<h3 id="p-navigation-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Navigation</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-mainpage" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Main_Page" title="Visit the main page [ctrl-option-z]" accesskey="z"><span>Main Page</span></a></li><li id="n-index" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/SDK_Docs"><span>Source SDK index</span></a></li><li id="n-recentchanges" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-option-r]" accesskey="r"><span>Recent changes</span></a></li><li id="n-randompage" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Special:RandomRootpage" title="Load a random page [ctrl-option-x]" accesskey="x"><span>Random page</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+
+<nav id="p-workshop" class="vector-menu mw-portlet mw-portlet-workshop vector-menu-portal portal" aria-labelledby="p-workshop-label" role="navigation">
+	<h3 id="p-workshop-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Workshop</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-hlsdk" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Half-Life_SDK"><span>Half-Life SDK</span></a></li><li id="n-hlatools" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Half-Life:_Alyx_Workshop_Tools"><span>Half-Life: Alyx Tools</span></a></li><li id="n-dota2tools" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Dota_2_Workshop_Tools"><span>Dota 2 Tools</span></a></li><li id="n-vrtools" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/SteamVR/Environments"><span>SteamVR Tools</span></a></li><li id="n-cs2tools" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools"><span>Counter-Strike 2 Tools</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-support" class="vector-menu mw-portlet mw-portlet-support vector-menu-portal portal" aria-labelledby="p-support-label" role="navigation">
+	<h3 id="p-support-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Support</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-communityportal" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Valve_Developer_Community:Community_portal"><span>Community portal</span></a></li><li id="n-gettinghelp" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Help:Contents"><span>Getting help</span></a></li><li id="n-sdkfaq" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Category:Source_SDK_FAQ"><span>Source SDK FAQ</span></a></li><li id="n-ldfaq" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Category:Level_Design_FAQ"><span>Level Design FAQ</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-steamcommunity" class="vector-menu mw-portlet mw-portlet-steamcommunity vector-menu-portal portal" aria-labelledby="p-steamcommunity-label" role="navigation">
+	<h3 id="p-steamcommunity-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Steam Community</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-sdkhub" class="mw-list-item"><a href="http://steamcommunity.com/app/211" rel="nofollow"><span>Source SDK Hub</span></a></li><li id="n-sdkdiscuss" class="mw-list-item"><a href="https://steamcommunity.com/app/211/discussions" rel="nofollow"><span>Source SDK Discussion</span></a></li><li id="n-steam" class="mw-list-item"><a href="http://www.steampowered.com/" rel="nofollow"><span>Steam</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-tb" class="vector-menu mw-portlet mw-portlet-tb vector-menu-portal portal" aria-labelledby="p-tb-label" role="navigation">
+	<h3 id="p-tb-label" class="vector-menu-heading ">
+		<span class="vector-menu-heading-label">Tools</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="t-whatlinkshere" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Special:WhatLinksHere/Tf_logic_player_destruction" title="A list of all wiki pages that link here [ctrl-option-j]" accesskey="j"><span>What links here</span></a></li><li id="t-recentchangeslinked" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Special:RecentChangesLinked/Tf_logic_player_destruction" rel="nofollow" title="Recent changes in pages linked from this page [ctrl-option-k]" accesskey="k"><span>Related changes</span></a></li><li id="t-specialpages" class="mw-list-item"><a href="https://developer.valvesoftware.com/wiki/Special:SpecialPages" title="A list of all special pages [ctrl-option-q]" accesskey="q"><span>Special pages</span></a></li><li id="t-print" class="mw-list-item"><a href="javascript:print();" rel="alternate" title="Printable version of this page [ctrl-option-p]" accesskey="p"><span>Printable version</span></a></li><li id="t-permalink" class="mw-list-item"><a href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;oldid=454964" title="Permanent link to this revision of this page"><span>Permanent link</span></a></li><li id="t-info" class="mw-list-item"><a href="https://developer.valvesoftware.com/w/index.php?title=Tf_logic_player_destruction&amp;action=info" title="More information about this page"><span>Page information</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+</div>
+
+</div>
+
+<footer id="footer" class="mw-footer" role="contentinfo">
+	<ul id="footer-info">
+	<li id="footer-info-lastmod"> This page was last edited on 25 September 2024, at 15:29.</li>
+</ul>
+
+	<ul id="footer-places">
+	<li id="footer-places-about"><a href="https://developer.valvesoftware.com/wiki/Valve_Developer_Community:About">About Valve Developer Community</a></li>
+	<li id="footer-places-disclaimer"><a href="https://developer.valvesoftware.com/wiki/Valve_Developer_Community:Terms_of_use">Terms of Use</a></li>
+	<li id="footer-places-legalnotices"><a href="https://developer.valvesoftware.com/wiki/Valve%20Developer%20Community:Third%20Party%20Legal%20Notices">Third Party Legal Notices</a></li>
+</ul>
+
+	<ul id="footer-icons" class="noprint">
+	<li id="footer-poweredbyico"><a href="https://www.mediawiki.org/"><img src="./tf_logic_player_destruction - Valve Developer Community_files/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/w/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /w/resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31" loading="lazy"></a></li>
+</ul>
+
+</footer>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.336","walltime":"0.352","ppvisitednodes":{"value":20848,"limit":1000000},"postexpandincludesize":{"value":148905,"limit":2097152},"templateargumentsize":{"value":69988,"limit":2097152},"expansiondepth":{"value":48,"limit":100},"expensivefunctioncount":{"value":23,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":0,"limit":5000000},"timingprofile":["100.00%  303.327      1 -total"," 46.86%  142.135      1 Template:This_is_a"," 41.20%  124.974      3 Template:Str_right"," 40.92%  124.126      3 Template:Str_sub_long"," 40.77%  123.673      5 Template:This_is_a/strings"," 37.38%  113.377     85 Template:Str_left"," 35.33%  107.151      1 Template:A_or_an"," 34.68%  105.185      1 Template:Delink"," 34.36%  104.210      1 Template:Delink/phase_1_a"," 25.69%   77.912      1 Template:Delink/phase_1_b"]},"cachereport":{"timestamp":"20260112195611","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":74});});</script>
+
+</body></html>
