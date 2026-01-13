@@ -1,0 +1,240 @@
+$modelname "props_custom/fs_meter/fs_meter.mdl"
+
+// NOTE: Ensure your VMTs are here
+$cdmaterials "models/props_custom/fs_meter/"
+
+// ------------------------------------------------------------
+// 1. THE BOUNDS HELPER (Always visible, adds 3D thickness)
+// ------------------------------------------------------------
+$body "bounds" "smd/fs_meter_bounds.smd"
+
+// ------------------------------------------------------------
+// 2. THE DIGIT BODYGROUPS (Your actual content)
+// ------------------------------------------------------------
+
+
+$bodygroup "fill"
+
+{
+
+    studio "smd/grid_000.smd"
+
+    studio "smd/grid_001.smd"
+
+    studio "smd/grid_002.smd"
+
+    studio "smd/grid_003.smd"
+
+    studio "smd/grid_004.smd"
+
+    studio "smd/grid_005.smd"
+
+    studio "smd/grid_006.smd"
+
+    studio "smd/grid_007.smd"
+
+    studio "smd/grid_008.smd"
+
+    studio "smd/grid_009.smd"
+
+    studio "smd/grid_010.smd"
+
+    studio "smd/grid_011.smd"
+
+    studio "smd/grid_012.smd"
+
+    studio "smd/grid_013.smd"
+
+    studio "smd/grid_014.smd"
+
+    studio "smd/grid_015.smd"
+
+    studio "smd/grid_016.smd"
+
+    studio "smd/grid_017.smd"
+
+    studio "smd/grid_018.smd"
+
+    studio "smd/grid_019.smd"
+
+    studio "smd/grid_020.smd"
+
+    studio "smd/grid_021.smd"
+
+    studio "smd/grid_022.smd"
+
+    studio "smd/grid_023.smd"
+
+    studio "smd/grid_024.smd"
+
+    studio "smd/grid_025.smd"
+
+    studio "smd/grid_026.smd"
+
+    studio "smd/grid_027.smd"
+
+    studio "smd/grid_028.smd"
+
+    studio "smd/grid_029.smd"
+
+    studio "smd/grid_030.smd"
+
+    studio "smd/grid_031.smd"
+
+    studio "smd/grid_032.smd"
+
+    studio "smd/grid_033.smd"
+
+    studio "smd/grid_034.smd"
+
+    studio "smd/grid_035.smd"
+
+    studio "smd/grid_036.smd"
+
+    studio "smd/grid_037.smd"
+
+    studio "smd/grid_038.smd"
+
+    studio "smd/grid_039.smd"
+
+    studio "smd/grid_040.smd"
+
+    studio "smd/grid_041.smd"
+
+    studio "smd/grid_042.smd"
+
+    studio "smd/grid_043.smd"
+
+    studio "smd/grid_044.smd"
+
+    studio "smd/grid_045.smd"
+
+    studio "smd/grid_046.smd"
+
+    studio "smd/grid_047.smd"
+
+    studio "smd/grid_048.smd"
+
+    studio "smd/grid_049.smd"
+
+    studio "smd/grid_050.smd"
+
+    studio "smd/grid_051.smd"
+
+    studio "smd/grid_052.smd"
+
+    studio "smd/grid_053.smd"
+
+    studio "smd/grid_054.smd"
+
+    studio "smd/grid_055.smd"
+
+    studio "smd/grid_056.smd"
+
+    studio "smd/grid_057.smd"
+
+    studio "smd/grid_058.smd"
+
+    studio "smd/grid_059.smd"
+
+    studio "smd/grid_060.smd"
+
+    studio "smd/grid_061.smd"
+
+    studio "smd/grid_062.smd"
+
+    studio "smd/grid_063.smd"
+
+    studio "smd/grid_064.smd"
+
+    studio "smd/grid_065.smd"
+
+    studio "smd/grid_066.smd"
+
+    studio "smd/grid_067.smd"
+
+    studio "smd/grid_068.smd"
+
+    studio "smd/grid_069.smd"
+
+    studio "smd/grid_070.smd"
+
+    studio "smd/grid_071.smd"
+
+    studio "smd/grid_072.smd"
+
+    studio "smd/grid_073.smd"
+
+    studio "smd/grid_074.smd"
+
+    studio "smd/grid_075.smd"
+
+    studio "smd/grid_076.smd"
+
+    studio "smd/grid_077.smd"
+
+    studio "smd/grid_078.smd"
+
+    studio "smd/grid_079.smd"
+
+    studio "smd/grid_080.smd"
+
+    studio "smd/grid_081.smd"
+
+    studio "smd/grid_082.smd"
+
+    studio "smd/grid_083.smd"
+
+    studio "smd/grid_084.smd"
+
+    studio "smd/grid_085.smd"
+
+    studio "smd/grid_086.smd"
+
+    studio "smd/grid_087.smd"
+
+    studio "smd/grid_088.smd"
+
+    studio "smd/grid_089.smd"
+
+    studio "smd/grid_090.smd"
+
+    studio "smd/grid_091.smd"
+
+    studio "smd/grid_092.smd"
+
+    studio "smd/grid_093.smd"
+
+    studio "smd/grid_094.smd"
+
+    studio "smd/grid_095.smd"
+
+    studio "smd/grid_096.smd"
+
+    studio "smd/grid_097.smd"
+
+    studio "smd/grid_098.smd"
+
+    studio "smd/grid_099.smd"
+
+    studio "smd/grid_100.smd"
+	
+    studio "smd/fs_meter_bounds.smd"
+
+}
+
+
+// ------------------------------------------------------------
+// 3. PROPERTIES
+// ------------------------------------------------------------
+$staticprop
+$surfaceprop "metal"
+$contents "solid"
+
+// Force a valid bounding box just in case (optional, but good safety)
+$bbox -16 -16 -16 16 16 16
+
+$sequence "idle" {
+"smd/fs_meter_bounds.smd" // Use bounds as ref for idle
+fps 30
+}
