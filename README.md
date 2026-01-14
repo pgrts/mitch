@@ -1,243 +1,115 @@
-# Flagspawn (PD Fuel)
+# Flagspawn (PD Team-Locked Pickups)
 
-Hybrid TF2 mode: the engine's Player Destruction (PD) system owns pickup/merge physics; this VScript owns value accounting, damage/death spill, banking, and visuals.
+This repo uses TF2's built-in Player Destruction (PD) pickup + merge system, but adds a map/template pattern (see `fs1_test.vmf`) that makes pickups effectively team-locked even though PD wants neutral flags.
 
-This README documents the locked-in architecture and event model. Some implementation details may still be mid-migration in `flagspawn.nut`.
+## How It Works (fs1_test pattern)
 
-## Mode Summary
+- Each pickup is an `item_teamflag` configured for PD (`GameType=6`, `TeamNum=0`, `NeutralType=1`), so PD merging works normally.
+- Each pickup is packaged with an enemy-only `trigger_multiple` that acts like a "deny pad":
+  - On enemy touch, the flag is `Disable`d (blocking pickup), and the enemy gets launched forward + slightly upward (a speed-pad feel).
+  - Because the pad launches the enemy out of the trigger, the disable window is naturally brief and can't be held indefinitely by just standing there.
+  - Optional: give the speed pad taker (player - `!activator`) a brief `tf_glow` outline when the pad triggers (readability).
+  - With `VisibleWhenDisabled=0`, the flag disappears completely while disabled (good enough as a gameplay rule + avoids illegal "team flags" in PD).
+- `env_entity_maker` + `point_template` spawns the flag + denier trigger together as a unit.
+- `teamplay_flag_event` is the authoritative signal for PD pickup + merge (a merge is just another pickup while already carrying).
 
-- Base system: Player Destruction (PD) carry/merge mechanics.
-- Economy: script-defined per-pickup value, carried totals, damage/death spill, banking rules.
-- Fuel: team-owned resource (typically clamped to `0..99`) used for spawners/flow control.
-- Win condition: first team to reach `100` captured points (exact end-round wiring is map-specific).
-- Return timer: normal dropped pickups may return after ~`60s` (map/script dependent).
+## Map Setup (Recommended Naming)
 
-## Core Rules (Non-Negotiable)
-
-1. PD owns merging.
-   - Script does not try to "force merge" with teleport/delete hacks.
-2. Script owns VALUE.
-   - The authoritative carried total is tracked in script state, not in PD internals.
-3. Event-driven, not pulse-driven.
-   - `teamplay_flag_event` is the authoritative signal for pickups and PD merges.
-   - `item_teamflag` outputs (`OnPickup*`) are unreliable in PD merges (they often do not fire when already carrying).
-4. Keep PD's carry system alive.
-   - Set `tf_logic_player_destruction.PointsOnPlayerDeath = 1`.
-   - Then remove the engine's death-dropped flags in script and replace with controlled "pinata" spill.
-
-## Terminology
-
-- Fuel: team-owned resource shown at spawners (often `0..99`).
-- Spawner: enemy-base trigger that dispenses a PD pickup.
-- Beneficiary team: team that gets Fuel/credit when a pickup returns/banks.
-- Carry clamp: maximum carry (often `99`); overflow can be auto-deposited to Fuel.
-
-## Mental Model (One Sentence)
-
-PD decides how pickups attach/merge onto players; the script decides how much they are worth and what gets spawned/removed on damage/death/capture.
-
-## Required Events
-
-### `teamplay_flag_event` (authoritative)
-
-- Use this for pickup AND merge detection.
-- `eventtype == 1` behaves like "pickup semantics" (including PD merges while already carrying).
-- `eventtype == 4` is "dropped" (and other values exist; treat unknowns carefully).
-
-Why: PD merges are not a separate event; a merge is simply a pickup while already carrying.
-
-### `player_hurt`
-
-Drives the damage-to-spill system (see "Damage -> Flag Chunking").
-
-### `player_death`
-
-Used to:
-
-- flush pending damage once (so damage still counts)
-- kill engine-spawned PD death drops (ASAP)
-- spawn controlled death spill (script-owned pickups)
-
-## Authoritative Data Model
-
-Per player (script truth):
-
-- `CarryValue[player]` (integer)
-
-Per spawned pickup (script-owned; set in script scope):
-
-- `fs_isFlagspawn = true`
-- `fs_value = <int>`
-- `fs_beneficiaryTeam = <2|3|0>`
-- optional: `fs_no_return = true` for special chunks
-
-Entity state (conceptual):
-
-- WORLD -> CARRIED (by PD) -> CONSUMED (PD may delete the world entity on merge)
-
-Important: PD may delete the world `item_teamflag` when it merges; treat the entity as disposable and do not rely on it existing after pickup.
-
-## Damage -> Flag Chunking (Final Agreed Plan)
-
-### Goal
-
-- All damage "counts" (burst, DoT, minigun).
-- No 1-damage spam (avoid constant tiny entities).
-- Responsive: chunks happen during damage.
-- One chunk at a time: readable visuals, sane entity counts.
-
-### 1) Windowed accumulation with a fixed tick
-
-- Accumulate `pendingDamage` per carrier.
-- Spawn at most one spill chunk every `0.5s` per carrier while damage continues.
-- If damage stops, the system goes idle naturally.
-
-Per carrier state:
-
-- `pendingDamage` (float)
-- `lastDamageAt` (time)
-- `nextTickAt` (time)
-
-Timer logic:
-
-- On first damage: `nextTickAt = now + 0.5`
-- On tick fire: resolve once, clear `pendingDamage`, reschedule if damage continues
-- If no damage for ~`0.6s`: stop ticking and clear state
-
-### 2) Damage ladder -> points (no zero-point chunks)
-
-Compute:
-
-```
-frac = pendingDamage / maxHP
-```
-
-Then apply:
-
-```
-if frac < 0.125:
-    pts = 1
-else:
-    pts = 2 + floor((frac - 0.125) / 0.08)
-```
-
-Clamp:
-
-```
-pts = min(pts, carry - 1)  // carrier never drops below 1
-```
-
-Rules:
-
-- If any damage happened, there is never a 0-point chunk.
-- 12% -> 1 point; 13% -> 2 points.
-
-### 3) Spawn behavior
-
-- Spawn exactly 1 pickup per tick with value = `pts`.
-- Launch backward (catapult/trajectory system).
-- Subtract from `CarryValue[player]` immediately (script truth).
-
-## Death & Interrupt Rules
-
-### Flush immediately (damage still counts)
-
-- On `player_death`: spawn one final chunk using current `pendingDamage`, then clear damage state.
-  - Only do this if death spill is not already handled elsewhere (pick one owner).
-
-### Clear without flushing
-
-Use when carrying legitimately ends (no payout):
-
-- capture/deposit
-- round end/restart
-- script reload/init
-- carry value <= 1
-- disconnect / team change / class change
-- carrier loses flag via script/system
-
-## Death Drop Interception (Keep Merges, Kill Vanilla Drops)
-
-We do NOT want the engine's PD death vomit, but we DO want PD merging to remain intact.
-
-1. Map setting:
-   - `tf_logic_player_destruction.PointsOnPlayerDeath = 1` (keeps PD carry system active)
-2. Script action:
-   - On `player_death`, wait a tiny delay (`0.0` to `0.05s`) so the engine spawns its drops.
-   - Find nearby `item_teamflag` entities and kill/stash any that are NOT script-owned:
-     - not in pool
-     - no `fs_isFlagspawn` marker in script scope
-   - Then spawn controlled death spill pickups (script-owned) using the economy rules.
-
-Result:
-
-- PD merging remains intact
-- vanilla death drops are removed ASAP
-- only script-owned spill remains (and those merge normally)
-
-## Mergeable Spawn Requirements (For Every Spawned Pickup)
-
-To reliably merge in PD, every spawned pickup must be:
-
-- classname: `item_teamflag`
-- `GameType = 6` (PD)
-- neutral/team setup consistent with your rules
-- spawned slightly offset so touch triggers immediately
-- fully configured (value + script markers) before it can be touched
-
-## Map Wiring (Recommended)
-
-### Logic script
+### Script
 
 - `logic_script` targetname: `scripter`
-- script file: `flagspawn.nut`
+- `vscripts`: `flagspawn.nut`
 
-### Flag event listener (required for merges)
+### Merge Tracking (Required)
 
-`logic_eventlistener` (targetname: `flag_listener`):
+Add a `logic_eventlistener`:
 
+- targetname: `flag_listener`
 - `EventName`: `teamplay_flag_event`
-- `Fetch Event Data`: `Yes`
+- `FetchEventData`: `1`
+- Connections:
+  - `OnEventFired` -> `scripter` : `CallScriptFunction` : `FS_OnFlagEvent`
 
-Output:
+### Team Filters
 
-- `OnEventFired -> scripter -> CallScriptFunction -> FS_OnFlagEvent`
+Add two `filter_activator_tfteam`:
 
-### PD logic
+- `fs_filter_red` with `TeamNum=2`
+- `fs_filter_blu` with `TeamNum=3`
 
-`tf_logic_player_destruction` (targetname: `fs_pd_logic`):
+### Prototypes (Template Sources)
 
-- `PointsOnPlayerDeath = 1`
+Create prototype entities somewhere out of play (or in a sealed box) to be used by `point_template`:
 
-## Visuals (Meter Proxy)
+- `item_teamflag` prototypes:
+  - `fs_flag_proto_red`
+  - `fs_flag_proto_blu`
+  - Keyvalues (minimum):
+    - `GameType=6`
+    - `TeamNum=0`
+    - `NeutralType=1`
+    - `VisibleWhenDisabled=0`
+    - `ReturnTime=60` (or whatever you want)
+- Enemy-denier triggers:
+  - `trigger_multiple` `fs_lock_proto_deny_red`
+    - `filtername=fs_filter_red`
+    - `OnStartTouch` -> `fs_flag_proto_blu` : `Disable`
+    - `OnEndTouchAll` -> `fs_flag_proto_blu` : `Enable`
+    - Optional speed pad: `OnStartTouch` -> `scripter` : `CallScriptFunction` : `FS_OnLockPadTouch`
+    - Optional SFX/VFX (copy from `jumppad_128a.vmf`):
+      - `ambient_generic` sound: `message=hl1/ambience/steamburst1.wav` (`jumpsfx_*`)
+      - `info_particle_system`: `effect_name=fx_jumppad_a_cloudburst` (`jumpfx_*`)
+      - `OnStartTouch` -> `jumpsfx_*` : `PlaySound`
+      - `OnStartTouch` -> `jumpfx_*` : `Start`
+      - `OnStartTouch` -> `jumpfx_*` : `Stop` (delay ~1.0s)
+  - `trigger_multiple` `fs_lock_proto_deny_blu`
+    - `filtername=fs_filter_blu`
+    - `OnStartTouch` -> `fs_flag_proto_red` : `Disable`
+    - `OnEndTouchAll` -> `fs_flag_proto_red` : `Enable`
+    - Optional speed pad: `OnStartTouch` -> `scripter` : `CallScriptFunction` : `FS_OnLockPadTouch`
+    - Optional SFX/VFX (copy from `jumppad_128a.vmf`):
+      - `ambient_generic` sound: `message=hl1/ambience/steamburst1.wav` (`jumpsfx_*`)
+      - `info_particle_system`: `effect_name=fx_jumppad_a_cloudburst` (`jumpfx_*`)
+      - `OnStartTouch` -> `jumpsfx_*` : `PlaySound`
+      - `OnStartTouch` -> `jumpfx_*` : `Start`
+      - `OnStartTouch` -> `jumpfx_*` : `Stop` (delay ~1.0s)
 
-- Hide the `item_teamflag` briefcase model (keep pickup active).
-- Parent a `prop_dynamic` meter proxy to either:
-  - the world flag (dropped view), or
-  - the player `flag` attachment (carried view)
-- Meter model: `models/props_custom/fs_meter/fs_meter_slab_grid.mdl`
-  - Bodygroup `0` should support values `0..100` (or whatever cap you choose).
-- Optional: `tf_glow` targeting the proxy for team-color glow.
+The important detail is that the denier trigger is included in the same template as the flag, so the I/O fixup targets the spawned clone (not the prototype).
 
-## Debug Checklist (Console)
+### Templates + Makers (2 variants)
 
-- `script printl("flagspawn" in getroottable())`
-- `script printl("ListenToGameEvent" in getroottable())`
-- `script local l=Entities.FindByName(null,"flag_listener"); if(l&&l.ValidateScriptScope()){ local sc=l.GetScriptScope(); printl("event_data" in sc); }`
+Create two `point_template` + `env_entity_maker` pairs so each spawned pickup denies the enemy team:
 
-## Notes on the Current Prototype
+- `point_template` `fs_flag_template_red`
+  - `Template01=fs_flag_proto_red`
+  - `Template02=fs_lock_proto_deny_blu`
+- `env_entity_maker` `fs_flag_maker_red`
+  - `EntityTemplate=fs_flag_template_red`
+- `point_template` `fs_flag_template_blu`
+  - `Template01=fs_flag_proto_blu`
+  - `Template02=fs_lock_proto_deny_red`
+- `env_entity_maker` `fs_flag_maker_blu`
+  - `EntityTemplate=fs_flag_template_blu`
 
-Some older iterations used pooled `item_teamflag` entities (`fs_pool_red_*` / `fs_pool_blu_*`) to avoid dynamic spawn costs. The long-term architecture does not depend on pools; it depends on `teamplay_flag_event` + script-owned value accounting.
+Optional: on the makers, use `PostSpawnDirection`/`PostSpawnSpeed` for a tiny pop so the spawned pickup immediately touches the player.
 
-## Implementation Checklist (Quick)
+### Team Spawners (Dispense Zones)
 
-- Every spawned pickup:
-  - is `item_teamflag`
-  - has `GameType = 6`
-  - has `fs_isFlagspawn = true` and `fs_value` set before it can be touched
-- Event listener:
-  - `flag_listener` has `Fetch Event Data = Yes`
-  - calls `FS_OnFlagEvent` on every `teamplay_flag_event`
-- Death interception:
-  - `PointsOnPlayerDeath = 1`
-  - script kills non-script-owned death-dropped flags within ~`0.05s`
+Create `trigger_multiple` zones where players get a pickup "teleported onto them":
+
+- Red spawner triggers:
+  - set `filtername=fs_filter_red`
+  - `OnStartTouch` -> `scripter` : `CallScriptFunction` : `FS_OnSpawnerTouchRed`
+- Blu spawner triggers:
+  - set `filtername=fs_filter_blu`
+  - `OnStartTouch` -> `scripter` : `CallScriptFunction` : `FS_OnSpawnerTouchBlu`
+
+The script calls `ForceSpawnAtEntityOrigin` on the matching maker, using the player as the spawn origin, so PD consumes the pickup immediately.
+
+## Script Notes
+
+- Cooldown: `flagspawn.CFG.DISPENSE_COOLDOWN`
+- Lock pad (deny pad) tuning: `flagspawn.CFG.LOCKPAD_*`
+- Debug: `script flagspawn.DumpCarriers()`
+- Meter (optional, off by default): `flagspawn.CFG.ENABLE_PLAYER_METER`
+  - Uses `SetBodyGroup` on `flagspawn.CFG.METER_MODEL` to reflect current carried points (driven by `teamplay_flag_event`).

@@ -1536,7 +1536,7 @@ entity
 	"ReturnTime" "60"
 	"ScoringType" "0"
 	"ShotClockMode" "0"
-	"targetname" "fs_flag_proto"
+	"targetname" "fs_flag_proto_red"
 	"TeamNum" "0"
 	"trail_effect" "1"
 	"VisibleWhenDisabled" "0"
@@ -1547,6 +1547,35 @@ entity
 		"visgroupshown" "1"
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 3000]"
+	}
+}
+entity
+{
+	"id" "20010"
+	"classname" "item_teamflag"
+	"angles" "0 0 0"
+	"flag_icon" "../hud/objectives_flagpanel_carried"
+	"flag_model" "models/flag/briefcase.mdl"
+	"flag_paper" "player_intel_papertrail"
+	"flag_trail" "flagtrail"
+	"GameType" "6"
+	"NeutralType" "1"
+	"PointValue" "1"
+	"ReturnBetweenWaves" "1"
+	"ReturnTime" "60"
+	"ScoringType" "0"
+	"ShotClockMode" "0"
+	"targetname" "fs_flag_proto_blu"
+	"TeamNum" "0"
+	"trail_effect" "1"
+	"VisibleWhenDisabled" "0"
+	"origin" "-448 704 64"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 3100]"
 	}
 }
 entity
@@ -1853,10 +1882,9 @@ entity
 	"id" "314"
 	"classname" "point_template"
 	"spawnflags" "3"
-	"targetname" "fs_flag_template"
-	"Template01" "fs_flag_proto"
-	"Template02" "fs_proto_lock"
-	"Template03" "fs_proto_lock_counter"
+	"targetname" "fs_flag_template_red"
+	"Template01" "fs_flag_proto_red"
+	"Template02" "fs_lock_proto_deny_blu"
 	"origin" "-100 1148 64"
 	editor
 	{
@@ -1868,16 +1896,33 @@ entity
 }
 entity
 {
+	"id" "20011"
+	"classname" "point_template"
+	"spawnflags" "3"
+	"targetname" "fs_flag_template_blu"
+	"Template01" "fs_flag_proto_blu"
+	"Template02" "fs_lock_proto_deny_red"
+	"origin" "-100 1120 64"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 3050]"
+	}
+}
+entity
+{
 	"id" "320"
 	"classname" "env_entity_maker"
 	"angles" "0 0 0"
-	"EntityTemplate" "fs_flag_template"
+	"EntityTemplate" "fs_flag_template_red"
 	"PostSpawnDirection" "0 0 1"
 	"PostSpawnDirectionVariance" "0.15"
 	"PostSpawnInheritAngles" "0"
 	"PostSpawnSpeed" "50"
 	"spawnflags" "0"
-	"targetname" "fs_flag_maker"
+	"targetname" "fs_flag_maker_red"
 	"origin" "-196 640 80"
 	editor
 	{
@@ -1889,16 +1934,38 @@ entity
 }
 entity
 {
+	"id" "20012"
+	"classname" "env_entity_maker"
+	"angles" "0 0 0"
+	"EntityTemplate" "fs_flag_template_blu"
+	"PostSpawnDirection" "0 0 1"
+	"PostSpawnDirectionVariance" "0.15"
+	"PostSpawnInheritAngles" "0"
+	"PostSpawnSpeed" "50"
+	"spawnflags" "0"
+	"targetname" "fs_flag_maker_blu"
+	"origin" "-156 640 80"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 3050]"
+	}
+}
+entity
+{
 	"id" "349"
 	"classname" "trigger_multiple"
+	"filtername" "fs_filter_blu"
 	"origin" "384 1008 92"
 	"spawnflags" "1"
 	"StartDisabled" "0"
+	"targetname" "fs_spawner_blu"
 	"wait" "1"
 	connections
 	{
-		"OnStartTouch" "fs_flag_makerForceSpawnAtEntityOrigin!activator0-1"
-		"OnStartTouch" "fs_flag_protoSetTeam30-1"
+		"OnStartTouch" "scripterCallScriptFunctionFS_OnSpawnerTouchBlu0-1"
 	}
 	solid
 	{
@@ -2030,14 +2097,15 @@ entity
 {
 	"id" "390"
 	"classname" "trigger_multiple"
+	"filtername" "fs_filter_red"
 	"origin" "64 1456 92"
 	"spawnflags" "1"
 	"StartDisabled" "0"
+	"targetname" "fs_spawner_red"
 	"wait" "1"
 	connections
 	{
-		"OnStartTouch" "fs_flag_makerForceSpawn0-1"
-		"OnStartTouch" "fs_flag_protoSetTeam21-1"
+		"OnStartTouch" "scripterCallScriptFunctionFS_OnSpawnerTouchRed0-1"
 	}
 	solid
 	{
@@ -2186,16 +2254,17 @@ entity
 {
 	"id" "490"
 	"classname" "trigger_multiple"
-	"filtername" "find_red"
+	"filtername" "fs_filter_red"
 	"origin" "-448 768 80"
 	"spawnflags" "1"
 	"StartDisabled" "0"
-	"targetname" "fs_proto_lock"
+	"targetname" "fs_lock_proto_deny_red"
 	"wait" "1"
 	connections
 	{
-		"OnStartTouch" "fs_flag_protoDisable0-1"
-		"OnEndTouchAll" "fs_flag_protoEnable0-1"
+		"OnStartTouch" "fs_flag_proto_bluDisable0-1"
+		"OnStartTouch" "scripterCallScriptFunctionFS_OnLockPadTouch0-1"
+		"OnEndTouchAll" "fs_flag_proto_bluEnable0-1"
 	}
 	solid
 	{
@@ -2328,7 +2397,7 @@ entity
 	"id" "497"
 	"classname" "filter_activator_tfteam"
 	"Negated" "Allow entities that match criteria"
-	"targetname" "find_red"
+	"targetname" "fs_filter_red"
 	"TeamNum" "2"
 	"origin" "-384 600 80"
 	editor
@@ -2343,16 +2412,17 @@ entity
 {
 	"id" "801"
 	"classname" "trigger_multiple"
-	"filtername" "find_blu"
+	"filtername" "fs_filter_blu"
 	"origin" "-448 768 88"
 	"spawnflags" "1"
 	"StartDisabled" "0"
-	"targetname" "fs_proto_lock_counter"
+	"targetname" "fs_lock_proto_deny_blu"
 	"wait" "1"
 	connections
 	{
-		"OnStartTouch" "fs_flag_protoEnable0-1"
-		"OnEndTouchAll" "fs_flag_protoDisable0-1"
+		"OnStartTouch" "fs_flag_proto_redDisable0-1"
+		"OnStartTouch" "scripterCallScriptFunctionFS_OnLockPadTouch0-1"
+		"OnEndTouchAll" "fs_flag_proto_redEnable0-1"
 	}
 	solid
 	{
@@ -2485,8 +2555,8 @@ entity
 	"id" "856"
 	"classname" "filter_activator_tfteam"
 	"Negated" "Allow entities that match criteria"
-	"targetname" "find_blu"
-	"TeamNum" "2"
+	"targetname" "fs_filter_blu"
+	"TeamNum" "3"
 	"origin" "-336 592 80"
 	editor
 	{
@@ -2494,6 +2564,21 @@ entity
 		"visgroupshown" "1"
 		"visgroupautoshown" "1"
 		"logicalpos" "[0 8000]"
+	}
+}
+entity
+{
+	"id" "20000"
+	"classname" "logic_script"
+	"targetname" "scripter"
+	"vscripts" "flagspawn.nut"
+	"origin" "-1040 600 65"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 50]"
 	}
 }
 cameras
