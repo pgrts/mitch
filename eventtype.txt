@@ -1,0 +1,6 @@
+we need to add a psuedo 5th eventtype to this via pulse effect-> MERGE -> kill trigger, remove flag from table (entire row) so same as returned and captured. 3 for 1. did we do that? ref: In the logic_eventlistener for Team Fortress 2, the eventtype value for a flag being dropped in a teamplay_flag_event is actually 3.
+The standard integer mapping for the eventtype parameter in this event is:
+1: Picked up <- add flag carrier to flags row, log in table
+2: Captured <- kill trigger, remove flag from table (entire row)
+3: Dropped <- log in table, remove flag carrier from the flag's row
+4: Returned <-  kill trgger, remove flag from table (entire row)
