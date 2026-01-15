@@ -1,5 +1,12 @@
-// flagspawn.nut — Parent extras to flag + StartDisabled + Enable-on-drop
+// flagspawn.nut — Pulse PointValue -> SetBodyGroup (LOUD DEBUG)
 // Drop-in for scripts/vscripts/flagspawn.nut
+//
+// What this does:
+// - Discovers templated flags spawned by env_entity_maker + point_template name fixup (suffix like &0001)
+// - Finds helper entities by suffix (deny trigger, friendly pad, tf_glow, sfx relay)
+// - Enables helpers only when the flag is DROPPED (optional)
+// - EVERY THINK TICK: reads flag PointValue and slams SetBodyGroup to match it
+// - Prints a TON of console logs about bodygroup attempts + observed m_nBody changes
 
 // ------------------------------------------------------------
 // Root-table anchor
@@ -8,110 +15,95 @@ local _rt = getroottable()
 if (!("flagspawn" in _rt) || typeof _rt.flagspawn != "table") _rt.flagspawn <- {}
 local flagspawn = _rt.flagspawn
 
+// ------------------------------------------------------------
+// Team constants (TF2)
+// ------------------------------------------------------------
+flagspawn.TEAM_RED <- 2
+flagspawn.TEAM_BLU <- 3
+
+// ------------------------------------------------------------
+// CONFIG
+// ------------------------------------------------------------
 flagspawn.CFG <- {
     DEBUG = true,
+
     THINK_DT = 0.20,
 
-    // 1. MATCH VMF FLAG NAMES (No suffixes)
-    // The script will automatically add the &0008 suffix found on the spawned flag
-    FLAG_baseName_BLU = "bluflag",
-    FLAG_baseName_RED = "redflag",
+    // Your templated flag prototype names (NO suffix)
+    FLAG_baseName_BLU = "fs_flag_proto_blu",
+    FLAG_baseName_RED = "fs_flag_proto_red",
 
-    // 2. MATCH VMF CHILD NAMES (No suffixes)
-    // The script uses these base names + the suffix to find the triggers
-    
-    // MAPPING LOGIC:
-    // If Flag is BLU ("bluflag"):
-    //   - Script looks for DENY_baseName_RED -> VMF: "red_lock_bluflag"
-    //   - Script looks for PAD_baseName_BLU  -> VMF: "red_pushoff_bluflag"
-    
-    // If Flag is RED ("redflag"):
-    //   - Script looks for DENY_baseName_BLU -> VMF: "blu_lock_redflag"
-    //   - Script looks for PAD_baseName_RED  -> VMF: "blu_pushoff_redflag"
+    // Helper prototypes (NO suffix) — names inside the template
+    // Deny trigger naming: "deny RED" should live in BLU template, etc.
+    DENY_baseName_RED = "fs_lock_proto_deny_red",
+    DENY_baseName_BLU = "fs_lock_proto_deny_blu",
+    PAD_baseName_BLU  = "fs_proto_blu_friendly_pad",
+    PAD_baseName_RED  = "fs_proto_red_friendly_pad",
+    GLOW_baseName_BLU = "fs_glow_flag_proto_blu",
+    GLOW_baseName_RED = "fs_glow_flag_proto_red",
+    SFX_baseName      = "fs_sfx_proto",
 
-    DENY_baseName_RED = "red_lock_bluflag",
-    PAD_baseName_BLU  = "red_pushoff_bluflag",
+    // Enable helpers only when dropped
+    ENABLE_EXTRAS_ONLY_WHEN_DROPPED = true,
 
-    DENY_baseName_BLU = "blu_lock_redflag",
-    PAD_baseName_RED  = "blu_pushoff_redflag",
+    // ------------------------------------------------------------
+    // Meter / bodygroup debug syncing (for fs_meter models)
+    // ------------------------------------------------------------
+    BODYGROUP_SYNC_ENABLE = true,
+    BODYGROUP_GROUP_INDEX = 0,      // usually 0 for a single "fill" bodygroup
+    BODYGROUP_MIN = 0,
+    BODYGROUP_MAX = 100,
 
-    // Glow and SFX names
-    GLOW_baseName_BLU = "bluflag_glow",
-    GLOW_baseName_RED = "redflag_glow",
-    SFX_baseName      = "fs_lockpad_sfx_proto",
-
-    // 3. BEHAVIOR
-    // This setting ensures triggers are ENABLED when dropped, and DISABLED when carried/home
-    ENABLE_EXTRAS_ONLY_WHEN_DROPPED = true, 
-
-    // (These settings are less relevant now that you use VMF I/O, but keep them for safety)
-    DENYPAD_ENABLE = true,
-    DENYPAD_DISABLE_SEC = 0.70,
-    DENYPAD_FLAG_COOLDOWN = 1.00,
-    DENYPAD_PRESERVE_RETURNTIMER = true,
-    PAD_MOVE_DIR_SPEED = 300.0,
-    PAD_MOVE_DIR_LIFT  = 260.0,
-    PAD_MIN_2D_SPEED   = 20.0
+    // "pulse" behavior
+    BODYGROUP_ALWAYS_SLAM = true,   // true = fire SetBodyGroup every think tick
+    BODYGROUP_LOG_EVERY_TICK = true // true = print debug every tick per flag
 }
 
 // ------------------------------------------------------------
 // STATE
 // ------------------------------------------------------------
-if (!("State" in flagspawn) || typeof flagspawn.State != "table") flagspawn.State <- {}
-flagspawn.State.Pkgs <- {}              // key: suffixDigits ("0011") -> pkg
-flagspawn.State.DenyLastAt <- {}        // key: flagName -> time
-flagspawn.State.DenyDisableUntil <- {}  // key: flagName -> time
+flagspawn.State <- {
+    Started = false,
+    Pkgs = {} // suffix -> pkg
+}
 
 // ------------------------------------------------------------
 // Logging helpers
 // ------------------------------------------------------------
-flagspawn._Dbg <- function(msg) {
-    if (flagspawn.CFG.DEBUG) printl("[FLAGSPAWN] " + msg)
+flagspawn._Dbg <- function(msg) { if (flagspawn.CFG.DEBUG) printl("[FLAGSPAWN] " + msg) }
+flagspawn._Now <- function() { try { return Time() } catch (_e0) { return 0.0 } }
+
+// ------------------------------------------------------------
+// Safe utilities (NO GetAbsOrigin on players)
+// ------------------------------------------------------------
+flagspawn._IsValid <- function(e) {
+    if (e == null) return false
+    try { return e.IsValid() } catch (_e0) { return false }
+}
+flagspawn._GetNameSafe <- function(e) {
+    if (!flagspawn._IsValid(e)) return ""
+    try { return e.GetName() } catch (_e0) { return "" }
+}
+flagspawn._IsPlayer <- function(e) {
+    if (!flagspawn._IsValid(e)) return false
+    try { return e.IsPlayer() } catch (_e0) { return false }
+}
+flagspawn._GetOrigin <- function(ent) {
+    if (!flagspawn._IsValid(ent)) return Vector(0,0,0)
+    // TF2 safe path: prefer GetOrigin; do NOT call GetAbsOrigin on players.
+    try { return ent.GetOrigin() } catch (_e0) {}
+    // Fallback for some entities (not players typically)
+    try { return ent.GetAbsOrigin() } catch (_e1) {}
+    return Vector(0,0,0)
+}
+flagspawn._ClampInt <- function(v, lo, hi) {
+    if (v < lo) return lo
+    if (v > hi) return hi
+    return v
 }
 
 // ------------------------------------------------------------
-// Safe utility
-// ------------------------------------------------------------
-flagspawn._Now <- function() { try { return Time() } catch (_e) { return 0.0 } }
-
-flagspawn._IsValid <- function(ent) {
-    if (!ent) return false
-    try { if ("IsValid" in ent && !ent.IsValid()) return false } catch (_e) {}
-    return true
-}
-
-flagspawn._IsPlayer <- function(ent) {
-    if (!flagspawn._IsValid(ent)) return false
-    local cn = ""
-    try { cn = ent.GetClassname() } catch (_e) { cn = "" }
-    return (cn == "player")
-}
-
-flagspawn._GetNameSafe <- function(ent) {
-    if (!flagspawn._IsValid(ent)) return ""
-    local n = ""
-    try { n = ent.GetName() } catch (_e) { n = "" }
-    return n
-}
-
-// canonical suffix digits: "fs_flag_proto_blu&0011" -> "0011"
-flagspawn._ExtractSuffixDigits <- function(name) {
-    if (name == null) return null
-    local amp = null
-    try { amp = name.find("&") } catch (_e0) { amp = null }
-    if (amp != null) {
-        local s = name.slice(amp + 1)
-        if (s.len() > 0) return s
-    }
-    return null
-}
-
-flagspawn._WithSuffix <- function(baseName, sufDigits) {
-    return baseName + "&" + sufDigits
-}
-
-// ------------------------------------------------------------
-// Carried vs dropped (authoritative)
+// Flag carried detection
 // ------------------------------------------------------------
 flagspawn._IsCarried <- function(flag) {
     if (!flagspawn._IsValid(flag)) return false
@@ -121,92 +113,184 @@ flagspawn._IsCarried <- function(flag) {
     try { mp = flag.GetMoveParent() } catch (_e0) { mp = null }
     if (flagspawn._IsPlayer(mp)) return true
 
-    // 2) NetProps owner check (more reliable when available)
+    // 2) Owner entity check (when available)
     if (!("NetProps" in _rt)) return false
     local owner = null
     try { owner = NetProps.GetPropEntity(flag, "m_hOwnerEntity") } catch (_e1) { owner = null }
     if (flagspawn._IsPlayer(owner)) return true
 
-    // (optional) other props could be tried, but keep it safe/simple
     return false
 }
 
 // ------------------------------------------------------------
-// Return timer preservation (Disable/Enable resets it)
+// Enable/disable helpers safely
 // ------------------------------------------------------------
-flagspawn._GetResetAbs <- function(flag) {
-    if (!flagspawn._IsValid(flag) || !("NetProps" in _rt)) return null
-    try { return NetProps.GetPropFloat(flag, "m_flResetTime") } catch (_e0) {}
-    try { return NetProps.GetPropFloat(flag, "m_flReturnTime") } catch (_e1) {}
+flagspawn._SetHelperEnabled <- function(ent, enabled) {
+    if (!flagspawn._IsValid(ent)) return
+
+    // Triggers generally use Enable/Disable
+    try {
+        EntFireByHandle(ent, enabled ? "Enable" : "Disable", "", 0.0, null, null)
+        return
+    } catch (_e0) {}
+
+    // Some props use TurnOn/TurnOff
+    try {
+        EntFireByHandle(ent, enabled ? "TurnOn" : "TurnOff", "", 0.0, null, null)
+    } catch (_e1) {}
+}
+
+// ------------------------------------------------------------
+// tf_glow binding (keeps glow on the flag)
+// ------------------------------------------------------------
+flagspawn._BindGlowTarget <- function(glow, targetEnt) {
+    if (!flagspawn._IsValid(glow) || !flagspawn._IsValid(targetEnt)) return
+    // tf_glow has "SetTarget" input that takes targetname, but we can also just keep it parented.
+    // Parenting is typically robust if the template already parents it.
+    // Still, in case it's not parented, attempt to SetParent.
+    try { glow.SetParent(targetEnt, "") } catch (_e0) {}
+}
+
+// ------------------------------------------------------------
+// Name suffix helpers
+// ------------------------------------------------------------
+flagspawn._ExtractSuffix <- function(nameStr) {
+    // expects "...&####"
+    if (nameStr == null) return null
+    local i = nameStr.find("&")
+    if (i == null) return null
+    if (i < 0) return null
+    return nameStr.slice(i + 1)
+}
+flagspawn._WithSuffix <- function(baseName, sufDigits) {
+    return baseName + "&" + sufDigits
+}
+
+// ------------------------------------------------------------
+// Bodygroup / meter sync (PointValue -> SetBodyGroup)
+// ------------------------------------------------------------
+flagspawn._GetPointValueSafe <- function(flag) {
+    if (!flagspawn._IsValid(flag)) return 0
+    if (!("NetProps" in getroottable())) return 0
+
+    local v = 0
+    // TF2 sometimes uses m_nPointValue; try a couple
+    try { v = NetProps.GetPropInt(flag, "m_nPointValue"); return v } catch (_e0) {}
+    try { v = NetProps.GetPropInt(flag, "m_iPointValue"); return v } catch (_e1) {}
+    return 0
+}
+flagspawn._GetBodySafe <- function(ent) {
+    if (!flagspawn._IsValid(ent)) return null
+    if (!("NetProps" in getroottable())) return null
+    try { return NetProps.GetPropInt(ent, "m_nBody") } catch (_e0) {}
     return null
 }
 
-flagspawn._SetResetAbsByName <- function(flagName, tAbs) {
-    if (flagName == null || flagName == "" || tAbs == null) return
-    if (!("NetProps" in _rt)) return
-    local f = null
-    try { f = Entities.FindByName(null, flagName) } catch (_e0) { f = null }
-    if (!flagspawn._IsValid(f)) return
-    try { NetProps.SetPropFloat(f, "m_flResetTime", tAbs) } catch (_e1) {}
-    try { NetProps.SetPropFloat(f, "m_flReturnTime", tAbs) } catch (_e2) {}
+// Fire SetBodyGroup and try to OBSERVE m_nBody changing immediately
+flagspawn._TrySetBodyGroup <- function(flag, desired, paramStr) {
+    local before = flagspawn._GetBodySafe(flag)
+
+    // Fire the input (no return value)
+    try { EntFireByHandle(flag, "SetBodyGroup", paramStr, 0.0, null, null) } catch (_e0) {}
+
+    local after = flagspawn._GetBodySafe(flag)
+
+    if (flagspawn.CFG.DEBUG) {
+        printl("[FLAGSPAWN][BG] try param='" + paramStr + "' body " +
+               (before == null ? "null" : before) + " -> " +
+               (after == null ? "null" : after) + " (want " + desired + ")")
+    }
+
+    return (after != null && after == desired)
 }
 
-// ------------------------------------------------------------
-// Enable/disable helpers
-// ------------------------------------------------------------
-flagspawn._EntCmd <- function(ent, cmd) {
-    if (!flagspawn._IsValid(ent)) return
-    try { EntFireByHandle(ent, cmd, "", 0.0, null, null) } catch (_e) {}
-}
+flagspawn._PulseBodygroup <- function(pkg) {
+    if (!flagspawn.CFG.BODYGROUP_SYNC_ENABLE) return
 
-flagspawn._SetHelperEnabled <- function(ent, enabled) {
-    flagspawn._EntCmd(ent, enabled ? "Enable" : "Disable")
-}
-
-// ------------------------------------------------------------
-// tf_glow binding (real fix)
-// ------------------------------------------------------------
-flagspawn._BindGlowTarget <- function(glow, flag) {
-    if (!flagspawn._IsValid(glow) || !flagspawn._IsValid(flag)) return false
-    if (!("NetProps" in _rt)) return false
-
-    try {
-        NetProps.SetPropEntity(glow, "m_hTarget", flag)
-        return true
-    } catch (_e0) {}
-    return false
-}
-
-// ------------------------------------------------------------
-// Package registration (suffix used only for discovery + helper lookup)
-// ------------------------------------------------------------
-flagspawn._RegisterFlag <- function(flag) {
+    local flag = pkg.flagHandle
     if (!flagspawn._IsValid(flag)) return
 
-    local nm = flagspawn._GetNameSafe(flag)
-    local suf = flagspawn._ExtractSuffixDigits(nm)
-    if (suf == null) return
+    local pv = flagspawn._GetPointValueSafe(flag)
+    local desired = flagspawn._ClampInt(pv, flagspawn.CFG.BODYGROUP_MIN, flagspawn.CFG.BODYGROUP_MAX)
+    local bodyNow = flagspawn._GetBodySafe(flag)
+
+    if (flagspawn.CFG.DEBUG && flagspawn.CFG.BODYGROUP_LOG_EVERY_TICK) {
+        printl("[FLAGSPAWN][BG] pulse name=" + pkg.flagName +
+               " pv=" + pv +
+               " desired=" + desired +
+               " bodyNow=" + (bodyNow == null ? "null" : bodyNow))
+    }
+
+    // Confirm delayed success if we were waiting
+    if (("bgExpect" in pkg)) {
+        if (bodyNow != null && bodyNow == pkg.bgExpect) {
+            printl("[FLAGSPAWN][BG] CONFIRMED LATE name=" + pkg.flagName + " body=" + bodyNow)
+            delete pkg.bgExpect
+            delete pkg.bgExpectAt
+        } else {
+            local dt = flagspawn._Now() - pkg.bgExpectAt
+            if (dt > 1.0) {
+                printl("[FLAGSPAWN][BG] STILL NOT SET after " + dt + "s name=" + pkg.flagName +
+                       " bodyNow=" + (bodyNow == null ? "null" : bodyNow) +
+                       " expect=" + pkg.bgExpect)
+                // refresh timer so it doesn’t scream every tick forever
+                pkg.bgExpectAt <- flagspawn._Now()
+            }
+        }
+    }
+
+    // Decide whether to slam
+    local shouldSlam = flagspawn.CFG.BODYGROUP_ALWAYS_SLAM
+    if (!shouldSlam) {
+        if (!("lastPV" in pkg) || pkg.lastPV != pv) shouldSlam = true
+        else if (bodyNow == null || bodyNow != desired) shouldSlam = true
+    }
+    pkg.lastPV <- pv
+    if (!shouldSlam) return
+
+    // Try multiple parameter formats (TF2 is inconsistent across classes/builds)
+    local ok = false
+    ok = flagspawn._TrySetBodyGroup(flag, desired, "" + flagspawn.CFG.BODYGROUP_GROUP_INDEX + " " + desired)
+    if (!ok) ok = flagspawn._TrySetBodyGroup(flag, desired, "" + desired)
+    if (!ok) ok = flagspawn._TrySetBodyGroup(flag, desired, "" + flagspawn.CFG.BODYGROUP_GROUP_INDEX + "," + desired)
+
+    if (!ok) {
+        // It might apply next frame; mark expectation for later confirmation
+        pkg.bgExpect <- desired
+        pkg.bgExpectAt <- flagspawn._Now()
+        printl("[FLAGSPAWN][BG] fired but not observed yet name=" + pkg.flagName +
+               " desired=" + desired +
+               " bodyNow=" + (bodyNow == null ? "null" : bodyNow))
+    }
+}
+
+// ------------------------------------------------------------
+// Package registration (discover flags + suffix)
+// ------------------------------------------------------------
+flagspawn._RegisterFlagByName <- function(flagName) {
+    if (flagName == null || flagName == "") return
+    local flag = null
+    try { flag = Entities.FindByName(null, flagName) } catch (_e0) { flag = null }
+    if (!flagspawn._IsValid(flag)) return
+
+    local suf = flagspawn._ExtractSuffix(flagName)
+    if (suf == null || suf == "") return
     if (suf in flagspawn.State.Pkgs) return
 
-    local isBlu = (nm.find(flagspawn.CFG.FLAG_baseName_BLU) == 0)
-    local isRed = (nm.find(flagspawn.CFG.FLAG_baseName_RED) == 0)
-    if (!isBlu && !isRed) return
+    // Determine team by base name prefix (cheap)
+    local isBlu = (flagName.find(flagspawn.CFG.FLAG_baseName_BLU) == 0)
 
     local pkg = {
         suffix = suf,
         flagHandle = flag,
-        flagName = nm,
-
-        // handles (may be null if your template differs)
+        flagName = flagName,
         deny = null,
-        pad  = null,
+        pad = null,
         glow = null,
-        sfx  = null
+        sfx = null,
+        lastState = null
     }
 
-    // IMPORTANT:
-    // - BLU flag template should include DENY_RED (red players deny blu flag)
-    // - RED flag template should include DENY_BLU
     local denyName = isBlu ? flagspawn._WithSuffix(flagspawn.CFG.DENY_baseName_RED, suf)
                            : flagspawn._WithSuffix(flagspawn.CFG.DENY_baseName_BLU, suf)
     local padName  = isBlu ? flagspawn._WithSuffix(flagspawn.CFG.PAD_baseName_BLU,  suf)
@@ -223,44 +307,50 @@ flagspawn._RegisterFlag <- function(flag) {
     flagspawn.State.Pkgs[suf] <- pkg
 
     flagspawn._Dbg("REGISTER suf=" + suf +
-        " flag=" + nm +
-        " deny=" + flagspawn._GetNameSafe(pkg.deny) +
-        " pad="  + flagspawn._GetNameSafe(pkg.pad) +
-        " glow=" + flagspawn._GetNameSafe(pkg.glow) +
-        " sfx="  + flagspawn._GetNameSafe(pkg.sfx))
-
-    // Bind glow immediately
-    if (flagspawn._IsValid(pkg.glow)) {
-        local ok = flagspawn._BindGlowTarget(pkg.glow, flag)
-        if (!ok) flagspawn._Dbg("GLOW bind FAILED for " + flagspawn._GetNameSafe(pkg.glow))
-    }
-
-    // Enforce “start disabled” safety in case Hammer missed one.
-    // (We will re-enable on drop via Think.)
-    flagspawn._SetHelperEnabled(pkg.deny, false)
-    flagspawn._SetHelperEnabled(pkg.pad,  false)
-    flagspawn._SetHelperEnabled(pkg.glow, false)
+                   " flag=" + flagName +
+                   " deny=" + (pkg.deny ? flagspawn._GetNameSafe(pkg.deny) : "null") +
+                   " pad="  + (pkg.pad  ? flagspawn._GetNameSafe(pkg.pad)  : "null") +
+                   " glow=" + (pkg.glow ? flagspawn._GetNameSafe(pkg.glow) : "null"))
 }
 
-// Scan all flags by classname; register any new templated ones
 flagspawn._ScanAndRegisterAllFlags <- function() {
-    local e = null
-    while ((e = Entities.FindByClassname(e, "item_teamflag")) != null) {
-        flagspawn._RegisterFlag(e)
+    // Find all flags that match our base names. This is a brute scan (safe, simple).
+    local ent = null
+
+    // BLU flags
+    ent = null
+    while (true) {
+        try { ent = Entities.FindByName(ent, flagspawn.CFG.FLAG_baseName_BLU + "*") } catch (_e0) { ent = null }
+        if (!flagspawn._IsValid(ent)) break
+        local name = flagspawn._GetNameSafe(ent)
+        if (name != "") flagspawn._RegisterFlagByName(name)
+    }
+
+    // RED flags
+    ent = null
+    while (true) {
+        try { ent = Entities.FindByName(ent, flagspawn.CFG.FLAG_baseName_RED + "*") } catch (_e1) { ent = null }
+        if (!flagspawn._IsValid(ent)) break
+        local name2 = flagspawn._GetNameSafe(ent)
+        if (name2 != "") flagspawn._RegisterFlagByName(name2)
     }
 }
 
-// Cull pkgs whose flag got deleted (merge/return/cap)
 flagspawn._CullDeadPkgs <- function() {
+    // remove pkgs whose flag no longer exists
+    local dead = []
     foreach (suf, pkg in flagspawn.State.Pkgs) {
-        if (!flagspawn._IsValid(pkg.flagHandle)) {
-            flagspawn._Dbg("CULL suf=" + suf + " (flag invalid; engine deleted it)")
-            delete flagspawn.State.Pkgs[suf]
-        }
+        if (!flagspawn._IsValid(pkg.flagHandle)) dead.append(suf)
+    }
+    foreach (suf2 in dead) {
+        flagspawn._Dbg("CULL suf=" + suf2)
+        delete flagspawn.State.Pkgs[suf2]
     }
 }
 
-// Apply state each tick (anti-spam)
+// ------------------------------------------------------------
+// Apply state each tick (anti-spam for helper toggles)
+// ------------------------------------------------------------
 flagspawn._ApplyPkgState <- function(pkg) {
     local flag = pkg.flagHandle
     if (!flagspawn._IsValid(flag)) return
@@ -282,8 +372,6 @@ flagspawn._ApplyPkgState <- function(pkg) {
 
     // Only fire inputs when state changes
     if (!("lastState" in pkg) || pkg.lastState != desired) {
-
-        // Toggle once
         flagspawn._SetHelperEnabled(pkg.deny, desired)
         flagspawn._SetHelperEnabled(pkg.pad,  desired)
         flagspawn._SetHelperEnabled(pkg.glow, desired)
@@ -296,8 +384,11 @@ flagspawn._ApplyPkgState <- function(pkg) {
 
         pkg.lastState <- desired
     }
-}
 
+    // --- THE THING YOU CARE ABOUT ---
+    // Pulse-set bodygroup from PointValue and log like crazy
+    flagspawn._PulseBodygroup(pkg)
+}
 
 // ------------------------------------------------------------
 // THINK (authoritative)
@@ -313,180 +404,20 @@ flagspawn._Think <- function() {
     return flagspawn.CFG.THINK_DT
 }
 
-// AddThinkToEnt requires a function name that exists in the host’s script scope.
-// We expose a global thunk so it works regardless of where you call it from.
-::flagspawn_think <- function() {
+// ------------------------------------------------------------
+// Public entrypoint
+// ------------------------------------------------------------
+flagspawn.Start <- function() {
+    if (flagspawn.State.Started) return
+    flagspawn.State.Started = true
+    flagspawn._Dbg("Start()")
+    // schedule think
+    try { AddThinkToEnt(self, "Think") } catch (_e0) {
+        // If we are not running inside an entity context, just do nothing.
+        // You can call flagspawn.Think() manually via logic_script if needed.
+    }
+}
+
+flagspawn.Think <- function() {
     return flagspawn._Think()
 }
-
-flagspawn._StartThink <- function() {
-    local host = null
-    try { host = self } catch (_e0) { host = null }
-    if (!flagspawn._IsValid(host)) {
-        try { host = Entities.FindByName(null, "scripter") } catch (_e1) { host = null }
-    }
-    if (!flagspawn._IsValid(host)) {
-        printl("[FLAGSPAWN] ERROR: no valid host (self invalid, 'scripter' not found)")
-        return
-    }
-    try {
-        AddThinkToEnt(host, "flagspawn_think")
-        flagspawn._Dbg("Think started on " + flagspawn._GetNameSafe(host))
-    } catch (_e2) {
-        printl("[FLAGSPAWN] ERROR: AddThinkToEnt failed (host scope issue?)")
-    }
-}
-
-// ------------------------------------------------------------
-// DENY PAD TOUCH (Pure Disabler)
-// ------------------------------------------------------------
-::FS_OnDenyPadTouch <- function() {
-    if (!flagspawn.CFG.DENYPAD_ENABLE) return
-    local trig = caller
-    // 1. FILTER CHECK: Double-check team in script just in case
-    // (Optional safety if Hammer filters fail)
-    local ply = activator
-    if (flagspawn._IsPlayer(ply)) {
-        local plyTeam = ply.GetTeam()
-        local trigName = flagspawn._GetNameSafe(trig)
-        // If Red Trigger is touched by Blue Player, ABORT.
-        if (trigName.find("deny_red") != null && plyTeam == flagspawn.TEAM_BLU) return
-        if (trigName.find("deny_blu") != null && plyTeam == flagspawn.TEAM_RED) return
-    }
-
-    // 2. Find Flag (Parenting is preferred!)
-    local flag = null
-    try { flag = trig.GetMoveParent() } catch (_e0) { flag = null }
-
-    // Fallback: Suffix lookup
-    if (!flagspawn._IsValid(flag)) {
-        local tn = flagspawn._GetNameSafe(trig)
-        local suf = flagspawn._ExtractSuffixDigits(tn)
-        if (suf != null && (suf in flagspawn.State.Pkgs)) {
-            flag = flagspawn.State.Pkgs[suf].flagHandle
-        }
-    }
-
-    if (!flagspawn._IsValid(flag)) return
-
-    // 3. DISABLE FLAG (DENY)
-    // We disable it immediately so it cannot be picked up.
-    EntFireByHandle(flag, "Disable", "", 0.0, null, null)
-    
-    // 4. Play Sound
-    local pkg = flagspawn.State.Pkgs[flagspawn._ExtractSuffixDigits(flagspawn._GetNameSafe(flag))]
-    if (pkg && pkg.sfx) EntFireByHandle(pkg.sfx, "PlaySound", "", 0.0, null, null)
-
-    // 5. Cooldown / Re-Enable Logic
-    // (Set the flag to re-enable after X seconds)
-    EntFireByHandle(flag, "Enable", "", flagspawn.CFG.DENYPAD_DISABLE_SEC, null, null)
-
-    // NOTE: We do NOT call FS_OnLockPadTouch() here anymore.
-}
-
-// ------------------------------------------------------------
-// FRIENDLY PAD TOUCH
-// OnStartTouch -> scripter CallScriptFunction FS_OnLockPadTouch
-// ------------------------------------------------------------
-::FS_OnLockPadTouch <- function() {
-    local ply = activator
-    if (!flagspawn._IsPlayer(ply)) return
-
-    // Prefer AbsVelocity (suppresses your spam warnings)
-    local vel = Vector(0,0,0)
-    local ok = false
-    try { vel = ply.GetAbsVelocity(); ok = true } catch (_e0) { ok = false }
-    if (!ok) { try { vel = ply.GetVelocity() } catch (_e1) { vel = Vector(0,0,0) } }
-
-    local dir = Vector(vel.x, vel.y, 0)
-    local d2 = dir.x*dir.x + dir.y*dir.y
-
-    if (d2 < (flagspawn.CFG.PAD_MIN_2D_SPEED * flagspawn.CFG.PAD_MIN_2D_SPEED)) {
-        // fallback to view forward
-        local ang = null
-        try { ang = ply.EyeAngles() } catch (_e2) { ang = null }
-        if (ang != null) {
-            local f = Vector(1,0,0)
-            try { f = ang.Forward() } catch (_e3) { f = Vector(1,0,0) }
-            dir = Vector(f.x, f.y, 0)
-            d2 = dir.x*dir.x + dir.y*dir.y
-        }
-    }
-
-    if (d2 <= 0.0001) return
-    local inv = 1.0 / sqrt(d2)
-    dir = Vector(dir.x*inv, dir.y*inv, 0)
-
-    local add = Vector(
-        dir.x * flagspawn.CFG.PAD_MOVE_DIR_SPEED,
-        dir.y * flagspawn.CFG.PAD_MOVE_DIR_SPEED,
-        flagspawn.CFG.PAD_MOVE_DIR_LIFT
-    )
-
-    local outv = Vector(vel.x + add.x, vel.y + add.y, vel.z + add.z)
-
-    // Prefer SetAbsVelocity
-    local setOk = false
-    try { ply.SetAbsVelocity(outv); setOk = true } catch (_e4) { setOk = false }
-    if (!setOk) { try { ply.SetVelocity(outv) } catch (_e5) {} }
-}
-
-// ------------------------------------------------------------
-// OPTIONAL: teamplay_flag_event hook
-// You can keep this wired for extra logging / faster toggles,
-// but Think loop is authoritative.
-// ------------------------------------------------------------
-::FS_OnFlagEvent <- function() {
-    local scope = null
-    try { if (caller && caller.GetScriptScope()) scope = caller.GetScriptScope() } catch (_e0) { scope = null }
-    if (scope == null) { try { if (self && self.GetScriptScope()) scope = self.GetScriptScope() } catch (_e1) { scope = null } }
-    if (scope == null || !("event_data" in scope)) return
-
-    local ev = scope.event_data
-    local type = ("eventtype" in ev) ? ev.eventtype : -1
-    local flagName = ("flagname" in ev) ? ev.flagname : ""
-
-    if (flagspawn.CFG.DEBUG) flagspawn._Dbg("EVENT type=" + type + " flag=" + flagName)
-
-    // No hard logic needed here. Think loop will enforce state.
-}
-
-// ------------------------------------------------------------
-// Spawner touches (unchanged)
-// ------------------------------------------------------------
-flagspawn.State.SpawnerCooldown <- {}
-flagspawn._SpawnerCooldownOK <- function(ply, tag, cd) {
-    local now = flagspawn._Now()
-    local uid = 0
-    try { if ("GetPlayerUserId" in _rt) uid = GetPlayerUserId(ply) } catch (_e) { uid = 0 }
-    local k = "" + tag + ":" + uid
-    if (k in flagspawn.State.SpawnerCooldown && (now - flagspawn.State.SpawnerCooldown[k]) < cd) return false
-    flagspawn.State.SpawnerCooldown[k] <- now
-    return true
-}
-flagspawn._ForceSpawnMaker <- function(makerName) {
-    local maker = null
-    try { maker = Entities.FindByName(null, makerName) } catch (_e0) { maker = null }
-    if (!flagspawn._IsValid(maker)) { printl("[SPAWNER] missing maker: " + makerName); return false }
-    try { EntFireByHandle(maker, "ForceSpawn", "", 0.0, null, null) } catch (_e1) {}
-    return true
-}
-::FS_OnSpawnerTouchBlu <- function() {
-    local ply = activator
-    if (!flagspawn._IsPlayer(ply)) return
-    if (!flagspawn._SpawnerCooldownOK(ply, "BLU", 0.25)) return
-    printl("[SPAWNER] BLU touch")
-    flagspawn._ForceSpawnMaker("fs_flag_maker_blu")
-}
-::FS_OnSpawnerTouchRed <- function() {
-    local ply = activator
-    if (!flagspawn._IsPlayer(ply)) return
-    if (!flagspawn._SpawnerCooldownOK(ply, "RED", 0.25)) return
-    printl("[SPAWNER] RED touch")
-    flagspawn._ForceSpawnMaker("fs_flag_maker_red")
-}
-
-// ------------------------------------------------------------
-// INIT
-// ------------------------------------------------------------
-flagspawn._StartThink()
