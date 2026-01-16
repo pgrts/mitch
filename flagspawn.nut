@@ -8,7 +8,7 @@
 //  - SIMPLIFIED: Removed complex timestamp overrides. Physical checks are definitive.
 // -----------------------------------------------------------------------------
 
-printl("[FS] Script Loading (merge-verify glowfix v44)...");
+printl("[FS] Script Loading (merge-verify glowfix v45 (budget merge))...");
 
 // -----------------------------------------------------------------------------
 // 1) ROOT SETUP
@@ -77,7 +77,34 @@ flagspawn.CFG <- {
     
     // Cleanup
     CLEANUP_ENABLE = true,
-    CLEANUP_DELAY  = 0.05
+    CLEANUP_DELAY  = 0.05,
+
+    // -----------------------------------------------------------------
+    // Spawn Budget (per-player, class-based)
+    // -----------------------------------------------------------------
+    BUDGET_ENABLE      = true,
+    BUDGET_RESET_SECS  = 90.0,
+    BUDGET_COST        = 1,
+    BUDGET_TOUCH_CD    = 0.35,   // per-player spam guard
+    // TF2 class indexes: 1 Scout, 2 Sniper, 3 Soldier, 4 Demo, 5 Medic, 6 Heavy, 7 Pyro, 8 Spy, 9 Engi
+    // Edit these to your economy.
+    BUDGET_CLASS_MAX = {
+        [1] = 2,   // Scout
+        [2] = 8,   // Sniper
+        [3] = 4,   // Soldier
+        [4] = 3,   // Demoman
+        [5] = 7,   // Medic
+        [6] = 10,  // Heavy
+        [7] = 5,   // Pyro
+        [8] = 1,   // Spy
+        [9] = 6    // Engineer
+    },
+    BUDGET_DEFAULT_MAX = 1,
+    // If true, spawner prop bodygroup is set to (remaining budget) of last toucher.
+    // If false, v44's existing BluPropCounter logic is used.
+    BUDGET_PROP_OVERRIDE = false,
+    BUDGET_PROP_BG_INDEX = 1
+
 };
 
 // -----------------------------------------------------------------------------
@@ -90,6 +117,10 @@ if (!("SpawnerLockUntil" in flagspawn.State) || typeof flagspawn.State.SpawnerLo
 if (!("BluPropCounter" in flagspawn.State)) flagspawn.State.BluPropCounter <- 100;
 if (!("LastHeartbeat" in flagspawn.State)) flagspawn.State.LastHeartbeat <- 0.0;
 
+// Spawn-budget per-player state
+if (!("Budgets" in flagspawn.State) || typeof flagspawn.State.Budgets != "table") flagspawn.State.Budgets <- {};
+
+
 // -----------------------------------------------------------------------------
 // 4) UTILITIES
 // -----------------------------------------------------------------------------
@@ -97,6 +128,16 @@ function FS_Log(msg) { if (flagspawn.CFG.DEBUG) printl("[FS] " + msg); }
 function FS_Now() { try { return Time(); } catch (_e) { return 0.0; } }
 function FS_Clamp99(v) { if (v == null || v < 0) return 0; if (v > 99) return 99; return v; }
 function FS_IsValid(ent) { try { return ent != null && ent.IsValid(); } catch (_e) { return false; } }
+
+function FS_SetBodyGroup(ent, groupIdx, value) {
+    if (!ent) return;
+    value = FS_Clamp99(value);
+    // Try method forms
+    try { ent.SetBodygroup(groupIdx, value); return; } catch (_e) {}
+    try { ent.SetBodyGroup(groupIdx, value); return; } catch (_e2) {}
+    // Fallback to input (works on prop_dynamic, etc.)
+    try { EntFireByHandle(ent, "SetBodyGroup", groupIdx.tostring() + " " + value.tostring(), 0.0, null, null); } catch (_e3) {}
+}
 
 function FS_ExtractSuffix(nm) {
     if (nm == null) return null;
@@ -109,10 +150,16 @@ function FS_WithSuffix(baseName, suf) { return baseName + "&" + suf; }
 
 function FS_GetOrigin(ent) {
     if (!ent) return null;
+    // HARD SAFETY: never call GetAbsOrigin() on players (TF2 can hard-crash)
     try { return ent.GetOrigin(); } catch (_e) {}
-    try { return ent.GetAbsOrigin(); } catch (_e2) {}
+    try {
+        if (!(ent.IsPlayer && ent.IsPlayer())) {
+            return ent.GetAbsOrigin();
+        }
+    } catch (_e2) {}
     return null;
 }
+
 
 function FS_Dist(a, b) {
     if (a == null || b == null) return 1e9;
@@ -166,11 +213,346 @@ function FS_FindCarrier(flag) {
     return null;
 }
 
+
+// -----------------------------------------------------------------------------
+// 4B) SPAWN BUDGET (per-player)
+// -----------------------------------------------------------------------------
+function FS_EntIndex(ent) {
+    if (!ent) return 0;
+    try { return ent.entindex(); } catch (_e) {}
+    try { return ent.EntIndex(); } catch (_e2) {}
+    return 0;
+}
+
+function FS_IsPlayer(ent) {
+    if (!ent) return false;
+    try { return ent.IsPlayer(); } catch (_e) {}
+    return false;
+}
+
+function FS_GetPropFloat(ent, prop) {
+    try { return NetProps.GetPropFloat(ent, prop); } catch (_e) {}
+    return 0.0;
+}
+
+function FS_GetPropInt(ent, prop) {
+    try { return NetProps.GetPropInt(ent, prop); } catch (_e) {}
+    return 0;
+}
+
+function FS_GetPlayerClassIndex(ply) {
+    if (!ply) return 0;
+    // method first
+    try {
+        if ("GetPlayerClass" in ply) {
+            local c = ply.GetPlayerClass();
+            if (c != null) return c;
+        }
+    } catch (_e) {}
+    // netprops
+    local c2 = FS_GetPropInt(ply, "m_PlayerClass.m_iClass");
+    if (c2 > 0) return c2;
+    local c3 = FS_GetPropInt(ply, "m_iClass");
+    if (c3 > 0) return c3;
+    return 0;
+}
+
+function FS_BudgetKey(ply) { return "p" + FS_EntIndex(ply); }
+
+function FS_BudgetForClass(c) {
+    // Coerce class index to an integer key (TF2 can hand us ints/floats/strings depending on source).
+    local ci = 0;
+    try {
+        local tc = typeof c;
+        if (tc == "integer") ci = c;
+        else if (tc == "float") ci = c.tointeger();
+        else ci = c.tointeger();
+    } catch (_e) {
+        ci = 0;
+    }
+
+    if (ci <= 0) return flagspawn.CFG.BUDGET_DEFAULT_MAX;
+
+    // Prefer rawin over 'in' to avoid any older-squirrel edge cases.
+    try {
+        if (flagspawn.CFG.BUDGET_CLASS_MAX.rawin(ci)) return flagspawn.CFG.BUDGET_CLASS_MAX[ci];
+        local ks = "" + ci;
+        if (flagspawn.CFG.BUDGET_CLASS_MAX.rawin(ks)) return flagspawn.CFG.BUDGET_CLASS_MAX[ks];
+    } catch (_e2) {}
+
+    return flagspawn.CFG.BUDGET_DEFAULT_MAX;
+}
+
+function FS_PlayerFromUserID(userid) {
+    if (userid == null) return null;
+    local p = null;
+    try { p = GetPlayerFromUserID(userid); } catch (_e) { p = null; }
+    if (p != null) return p;
+
+    // Fallback: iterate players and match by user id (best-effort)
+    local it = null;
+    while ((it = Entities.FindByClassname(it, "player")) != null) {
+        try {
+            if ("GetPlayerUserId" in it) {
+                if (it.GetPlayerUserId() == userid) return it;
+            }
+        } catch (_e2) {}
+        try {
+            if (NetProps.GetPropInt(it, "m_iUserID") == userid) return it;
+        } catch (_e3) {}
+        try {
+            if (NetProps.GetPropInt(it, "m_iUserId") == userid) return it;
+        } catch (_e4) {}
+    }
+    return null;
+}
+
+
+function FS_BudgetEnsure(ply) {
+    local key = FS_BudgetKey(ply);
+    local B = flagspawn.State.Budgets;
+    if (!(key in B)) {
+        B[key] <- {
+            max = 0,
+            used = 0,
+            resetAt = 0.0,
+            lastSpawnTime = 0.0,
+            lastLifeState = -999,
+            lastClass = 0,
+            lastTouch = 0.0
+        };
+    }
+    return B[key];
+}
+
+function FS_BudgetReset(ply, reason, classOverride = null) {
+    if (!flagspawn.CFG.BUDGET_ENABLE) return;
+    if (!FS_IsPlayer(ply)) return;
+
+    local st = FS_BudgetEnsure(ply);
+
+    // Determine class (optionally from event_data for more reliable immediate post-spawn values)
+    local c = 0;
+    if (classOverride != null) {
+        try {
+            local tc = typeof classOverride;
+            if (tc == "integer") c = classOverride;
+            else if (tc == "float") c = classOverride.tointeger();
+            else c = classOverride.tointeger();
+        } catch (_e0) {
+            c = 0;
+        }
+    }
+    if (c <= 0) c = FS_GetPlayerClassIndex(ply);
+
+    st.lastClass = c;
+    st.max = FS_BudgetForClass(c);
+
+    // IMPORTANT: spawning/capture always refreshes to a clean 0/max budget.
+    st.used = 0;
+
+    st.resetAt = FS_Now() + flagspawn.CFG.BUDGET_RESET_SECS;
+    st.lastSpawnTime = FS_GetPropFloat(ply, "m_flSpawnTime");
+    st.lastLifeState = FS_GetPropInt(ply, "m_lifeState");
+
+    if (flagspawn.CFG.DEBUG) {
+        FS_Log("RESET " + FS_EntIndex(ply) + " class=" + c + " max=" + st.max + " (" + reason + ")");
+    }
+}
+
+function FS_BudgetCanTouch(ply) {
+    local st = FS_BudgetEnsure(ply);
+    local now = FS_Now();
+    if ((now - st.lastTouch) < flagspawn.CFG.BUDGET_TOUCH_CD) return false;
+    st.lastTouch = now;
+    return true;
+}
+
+function FS_BudgetUpdateClass(ply, st) {
+    local c = FS_GetPlayerClassIndex(ply);
+    if (c != 0 && c != st.lastClass) {
+        st.lastClass = c;
+        st.max = FS_BudgetForClass(c);
+        if (st.used > st.max) st.used = st.max;
+    }
+}
+
+// Export budget helpers to root so they are callable from console/debug context.
+// (TF2 console 'script' runs in the root table, not an entity script scope.)
+try {
+    ::FS_BudgetEnsure <- FS_BudgetEnsure;
+    ::FS_BudgetReset <- FS_BudgetReset;
+    ::FS_BudgetUpdateClass <- FS_BudgetUpdateClass;
+    ::FS_GetPlayerClassIndex <- FS_GetPlayerClassIndex;
+    ::FS_PlayerFromUserID <- FS_PlayerFromUserID;
+    ::FS_IsPlayer <- FS_IsPlayer;
+} catch (_e) {}
+
+function FS_BudgetTrySpend(ply, cost) {
+    if (!flagspawn.CFG.BUDGET_ENABLE) return true;
+    if (!FS_IsPlayer(ply)) return false;
+
+    local st = FS_BudgetEnsure(ply);
+
+    // timed reset
+    if (st.resetAt != 0.0 && FS_Now() >= st.resetAt) {
+        FS_BudgetReset(ply, "timeout");
+        st = FS_BudgetEnsure(ply);
+    }
+
+    // adjust if class changed
+    FS_BudgetUpdateClass(ply, st);
+
+    // init if needed
+    if (st.max <= 0) {
+        FS_BudgetReset(ply, "init");
+        st = FS_BudgetEnsure(ply);
+    }
+
+    if ((st.used + cost) > st.max) return false;
+    st.used += cost;
+    return true;
+}
+
+function FS_BudgetRemaining(ply) {
+    local st = FS_BudgetEnsure(ply);
+    local rem = st.max - st.used;
+    if (rem < 0) rem = 0;
+    return rem;
+}
+
+function FS_BudgetTick(now) {
+    if (!flagspawn.CFG.BUDGET_ENABLE) return;
+
+    local p = null;
+    while ((p = Entities.FindByClassname(p, "player")) != null) {
+        local st = FS_BudgetEnsure(p);
+
+        // ---- Spawn detection (robust) ----
+        // A) m_lifeState transition into alive (0) catches respawns even if m_flSpawnTime is flaky.
+        local ls = FS_GetPropInt(p, "m_lifeState");
+        if (st.lastLifeState == -999) {
+            st.lastLifeState = ls;
+        } else {
+            if (ls == 0 && st.lastLifeState != 0) {
+                st.lastLifeState = ls;
+                FS_BudgetReset(p, "spawn_life");
+                st = FS_BudgetEnsure(p);
+            } else {
+                st.lastLifeState = ls;
+            }
+        }
+
+        // B) respawn detection by m_flSpawnTime netprop (still useful)
+        local sp = FS_GetPropFloat(p, "m_flSpawnTime");
+        if (sp != 0.0 && sp != st.lastSpawnTime) {
+            st.lastSpawnTime = sp;
+            FS_BudgetReset(p, "spawn_poll");
+            st = FS_BudgetEnsure(p);
+        }
+
+        // ---- Timeout reset ----
+        if (st.resetAt != 0.0 && now >= st.resetAt) {
+            FS_BudgetReset(p, "timeout");
+            st = FS_BudgetEnsure(p);
+        }
+
+        // Keep max synced with class even without touching spawner
+        FS_BudgetUpdateClass(p, st);
+    }
+}
+
+// Console debug: script FS_DumpBudgets()
+::FS_DumpBudgets <- function() {
+    printl("[FS] ---- budgets ----");
+
+    local rt = getroottable();
+    if (!("flagspawn" in rt) || typeof rt.flagspawn != "table") {
+        printl("[FS] (no flagspawn table in root)");
+        return;
+    }
+    local fs = rt.flagspawn;
+    if (!("State" in fs) || typeof fs.State != "table" || !("Budgets" in fs.State) || typeof fs.State.Budgets != "table") {
+        printl("[FS] (no budgets state)");
+        return;
+    }
+
+    local B = fs.State.Budgets;
+    local now = 0.0;
+    try { now = Time(); } catch (_e) { now = 0.0; }
+
+    local p = null;
+    while ((p = Entities.FindByClassname(p, "player")) != null) {
+        // entindex() is safe; avoid relying on script-scope helpers when called from console.
+        local idx = 0;
+        try { idx = p.entindex(); } catch (_e2) { idx = 0; }
+        local key = "p" + idx;
+        if (!(key in B)) {
+            printl("[FS] p" + idx + " (no entry)");
+            continue;
+        }
+        local st = B[key];
+        local rin = 0.0;
+        try { rin = st.resetAt - now; } catch (_e3) { rin = 0.0; }
+        printl("[FS] p" + idx + " used=" + st.used + "/" + st.max + " resetIn=" + rin);
+    }
+};
+
+// Optional: player_spawn listener can call this (CallScriptFunction recommended)
+::FS_OnPlayerSpawn_Event <- function() {
+    // If logic_eventlistener has Fetch Event Data enabled, event_data is available.
+    local ed = null;
+    try { ed = event_data; } catch (_e) { ed = null; }
+
+    if (ed != null && typeof ed == "table") {
+        local p = null;
+        local uid = null;
+        local cls = null;
+
+        try { if (ed.rawin("userid")) uid = ed.userid; } catch (_e1) { uid = null; }
+        try {
+            if (ed.rawin("class")) cls = ed["class"];
+            else if (ed.rawin("playerclass")) cls = ed["playerclass"];
+        } catch (_e2) { cls = null; }
+
+        if (uid != null) {
+            try { p = FS_PlayerFromUserID(uid); } catch (_e3) { p = null; }
+        }
+
+        if (p != null && FS_IsPlayer(p)) {
+            if (cls != null) {
+                local ci = null;
+                try {
+                    local tc = typeof cls;
+                    if (tc == "integer") ci = cls;
+                    else if (tc == "float") ci = cls.tointeger();
+                    else ci = cls.tointeger();
+                } catch (_e4) { ci = null; }
+                if (ci != null) FS_BudgetReset(p, "player_spawn_event", ci);
+                else FS_BudgetReset(p, "player_spawn_event");
+            } else {
+                FS_BudgetReset(p, "player_spawn_event");
+            }
+            return;
+        }
+    }
+
+    // Fallback: if activator is the player (depends on your wiring)
+    try {
+        if (FS_IsPlayer(activator)) {
+            FS_BudgetReset(activator, "player_spawn_activator");
+        }
+    } catch (_e5) {}
+};
+
 // -----------------------------------------------------------------------------
 // 5) CORE LOGIC: THINK LOOP
 // -----------------------------------------------------------------------------
 flagspawn.Think <- function() {
     local now = FS_Now();
+
+    // budget housekeeping (spawn polling + timeout resets + class sync)
+    FS_BudgetTick(now);
 
     if (flagspawn.CFG.DEBUG && (now - flagspawn.State.LastHeartbeat > 5.0)) {
         FS_Log("Heartbeat... (Tracking " + flagspawn.State.Pkgs.len() + " flags)");
@@ -390,7 +772,31 @@ flagspawn.Think <- function() {
     }
 };
 
-::FS_OnFlagEvent <- function() {};
+::FS_OnFlagEvent <- function() {
+    // Handles teamplay_flag_event when called from a logic_eventlistener
+    // (Fetch Event Data must be enabled). We use it to reset budget on capture.
+    if (!flagspawn.CFG.BUDGET_ENABLE) return;
+
+    local ed = null;
+    try { ed = event_data; } catch (_e) { ed = null; }
+    if (ed == null || typeof ed != "table") return;
+
+    local et = 0;
+    try { if (ed.rawin("eventtype")) et = ed.eventtype; } catch (_e2) {}
+    // 2 = Captured
+    if (et != 2) return;
+
+    local idx = 0;
+    try { if (ed.rawin("player")) idx = ed.player; } catch (_e3) {}
+    if (idx <= 0) return;
+
+    local p = null;
+    try { p = PlayerInstanceFromIndex(idx); } catch (_e4) { p = null; }
+    if (p == null) { try { p = EntIndexToHScript(idx); } catch (_e5) { p = null; } }
+    if (p != null && FS_IsPlayer(p)) {
+        FS_BudgetReset(p, "capture");
+    }
+};
 
 // -----------------------------------------------------------------------------
 // 8) TOUCH HANDLERS
@@ -431,6 +837,17 @@ function FS_ConsumePlayerGate(player) {
     if (flagspawn.CFG.ONE_ACTIVE_PER_TEAM && FS_TeamHasActiveFlag(2)) return; 
     if (!FS_CheckPlayerGate(activator)) return;
 
+
+    // Budget gate (per-player)
+    if (flagspawn.CFG.BUDGET_ENABLE) {
+        if (!FS_BudgetCanTouch(activator)) return;
+        if (!FS_BudgetTrySpend(activator, flagspawn.CFG.BUDGET_COST)) {
+            local st = FS_BudgetEnsure(activator);
+            FS_Log("DENY BLU spawn: " + st.used + "/" + st.max + " for player " + FS_EntIndex(activator));
+            return;
+        }
+    }
+
     flagspawn.State.NextSpawnAt.blu = now + flagspawn.CFG.SPAWN_COOLDOWN;
     flagspawn.State.SpawnerLockUntil.blu = now + flagspawn.CFG.SPAWNER_TOUCH_LOCK;
     FS_ConsumePlayerGate(activator); 
@@ -442,9 +859,16 @@ function FS_ConsumePlayerGate(player) {
     
     local prop = Entities.FindByName(null, flagspawn.CFG.PROP_BLU_SPAWNER);
     if (prop) {
-        flagspawn.State.BluPropCounter--;
-        if (flagspawn.State.BluPropCounter < 0) flagspawn.State.BluPropCounter = 0;
-        try { prop.SetBodygroup(flagspawn.CFG.PROP_BG_INDEX, flagspawn.State.BluPropCounter); } catch(_e){}
+        if (flagspawn.CFG.BUDGET_ENABLE && flagspawn.CFG.BUDGET_PROP_OVERRIDE) {
+            local rem = FS_BudgetRemaining(activator);
+            if (rem > 99) rem = 99;
+            try { FS_SetBodyGroup(prop, flagspawn.CFG.BUDGET_PROP_BG_INDEX, rem); } catch(_e){}
+        } else {
+            flagspawn.State.BluPropCounter--;
+            if (flagspawn.State.BluPropCounter < 0) flagspawn.State.BluPropCounter = 0;
+            if (flagspawn.State.BluPropCounter > 99) flagspawn.State.BluPropCounter = 99;
+            try { FS_SetBodyGroup(prop, flagspawn.CFG.PROP_BG_INDEX, flagspawn.State.BluPropCounter); } catch(_e){}
+        }
     }
 };
 
@@ -456,14 +880,34 @@ function FS_ConsumePlayerGate(player) {
     if (flagspawn.CFG.ONE_ACTIVE_PER_TEAM && FS_TeamHasActiveFlag(3)) return;
     if (!FS_CheckPlayerGate(activator)) return;
 
+    // Budget gate (per-player)
+    if (flagspawn.CFG.BUDGET_ENABLE) {
+        if (!FS_BudgetCanTouch(activator)) return;
+        if (!FS_BudgetTrySpend(activator, flagspawn.CFG.BUDGET_COST)) {
+            local st = FS_BudgetEnsure(activator);
+            FS_Log("DENY RED spawn: " + st.used + "/" + st.max + " for player " + FS_EntIndex(activator));
+            return;
+        }
+    }
+
     flagspawn.State.NextSpawnAt.red = now + flagspawn.CFG.SPAWN_COOLDOWN;
     flagspawn.State.SpawnerLockUntil.red = now + flagspawn.CFG.SPAWNER_TOUCH_LOCK;
     FS_ConsumePlayerGate(activator);
 
     EntFire(flagspawn.CFG.MAKER_RED, "ForceSpawn", "", 0, activator);
-    
+
     EntFire(flagspawn.CFG.GLOW_RED, "Enable", "", 0.1, activator);
     EntFire(flagspawn.CFG.GLOW_RED, "Enable", "", 0.5, activator);
+
+    // Optional: show remaining budget on red spawner prop
+    if (flagspawn.CFG.BUDGET_ENABLE && flagspawn.CFG.BUDGET_PROP_OVERRIDE) {
+        local prop = Entities.FindByName(null, flagspawn.CFG.PROP_RED_SPAWNER);
+        if (prop) {
+            local rem = FS_BudgetRemaining(activator);
+            if (rem > 99) rem = 99;
+            try { FS_SetBodyGroup(prop, flagspawn.CFG.BUDGET_PROP_BG_INDEX, rem); } catch(_e){}
+        }
+    }
 };
 
 // -----------------------------------------------------------------------------

@@ -2,7 +2,7 @@ versioninfo
 {
 	"editorversion" "400"
 	"editorbuild" "8869"
-	"mapversion" "161"
+	"mapversion" "186"
 	"formatversion" "100"
 	"prefab" "0"
 }
@@ -89,7 +89,7 @@ bgimages_plus
 world
 {
 	"id" "1"
-	"mapversion" "161"
+	"mapversion" "186"
 	"classname" "worldspawn"
 	"detailmaterial" "detail/detailsprites"
 	"detailvbsp" "detail.vbsp"
@@ -1047,10 +1047,10 @@ world
 	}
 	solid
 	{
-		"id" "35197"
+		"id" "36206"
 		side
 		{
-			"id" "9060"
+			"id" "10932"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1068,7 +1068,7 @@ world
 		}
 		side
 		{
-			"id" "9059"
+			"id" "10931"
 			"plane" "(-1472 3968 704) (3712 3968 704) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1086,7 +1086,7 @@ world
 		}
 		side
 		{
-			"id" "9058"
+			"id" "10930"
 			"plane" "(-1472 -208 0) (3712 -208 0) (3712 3968 0)"
 			vertices_plus
 			{
@@ -1104,7 +1104,7 @@ world
 		}
 		side
 		{
-			"id" "9057"
+			"id" "10929"
 			"plane" "(-1472 3968 704) (-1472 -208 704) (-1472 -208 0)"
 			vertices_plus
 			{
@@ -1122,7 +1122,7 @@ world
 		}
 		side
 		{
-			"id" "9056"
+			"id" "10928"
 			"plane" "(3712 3968 0) (3712 -208 0) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1140,7 +1140,7 @@ world
 		}
 		side
 		{
-			"id" "9055"
+			"id" "10927"
 			"plane" "(-1472 -208 704) (-1472 -208 0) (3712 -208 0)"
 			vertices_plus
 			{
@@ -1158,7 +1158,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1166,10 +1166,10 @@ world
 	}
 	solid
 	{
-		"id" "35195"
+		"id" "36204"
 		side
 		{
-			"id" "9066"
+			"id" "10938"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1187,7 +1187,7 @@ world
 		}
 		side
 		{
-			"id" "9065"
+			"id" "10937"
 			"plane" "(-1472 3968 704) (3712 3968 704) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1205,7 +1205,7 @@ world
 		}
 		side
 		{
-			"id" "9064"
+			"id" "10936"
 			"plane" "(-1472 -208 0) (3712 -208 0) (3712 3968 0)"
 			vertices_plus
 			{
@@ -1223,7 +1223,7 @@ world
 		}
 		side
 		{
-			"id" "9063"
+			"id" "10935"
 			"plane" "(-1472 3968 704) (-1472 -208 704) (-1472 -208 0)"
 			vertices_plus
 			{
@@ -1241,7 +1241,7 @@ world
 		}
 		side
 		{
-			"id" "9062"
+			"id" "10934"
 			"plane" "(3712 3968 0) (3712 -208 0) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1259,7 +1259,7 @@ world
 		}
 		side
 		{
-			"id" "9061"
+			"id" "10933"
 			"plane" "(-1472 3968 0) (-1472 3968 704) (3712 3968 704)"
 			vertices_plus
 			{
@@ -1277,7 +1277,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1285,10 +1285,10 @@ world
 	}
 	solid
 	{
-		"id" "35193"
+		"id" "36202"
 		side
 		{
-			"id" "9072"
+			"id" "10944"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1306,7 +1306,7 @@ world
 		}
 		side
 		{
-			"id" "9071"
+			"id" "10943"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1324,7 +1324,7 @@ world
 		}
 		side
 		{
-			"id" "9070"
+			"id" "10942"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1342,7 +1342,7 @@ world
 		}
 		side
 		{
-			"id" "9069"
+			"id" "10941"
 			"plane" "(-1472 3968 704) (3712 3968 704) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1360,7 +1360,7 @@ world
 		}
 		side
 		{
-			"id" "9068"
+			"id" "10940"
 			"plane" "(-1472 -208 0) (3712 -208 0) (3712 3968 0)"
 			vertices_plus
 			{
@@ -1378,7 +1378,7 @@ world
 		}
 		side
 		{
-			"id" "9067"
+			"id" "10939"
 			"plane" "(3712 -208 704) (3712 -208 0) (3712 3968 0)"
 			vertices_plus
 			{
@@ -1396,7 +1396,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1404,10 +1404,10 @@ world
 	}
 	solid
 	{
-		"id" "35191"
+		"id" "36200"
 		side
 		{
-			"id" "9078"
+			"id" "10950"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1425,7 +1425,7 @@ world
 		}
 		side
 		{
-			"id" "9077"
+			"id" "10949"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1443,7 +1443,7 @@ world
 		}
 		side
 		{
-			"id" "9076"
+			"id" "10948"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1461,7 +1461,7 @@ world
 		}
 		side
 		{
-			"id" "9075"
+			"id" "10947"
 			"plane" "(-1472 3968 704) (3712 3968 704) (3712 -208 704)"
 			vertices_plus
 			{
@@ -1479,7 +1479,7 @@ world
 		}
 		side
 		{
-			"id" "9074"
+			"id" "10946"
 			"plane" "(-1472 -208 0) (3712 -208 0) (3712 3968 0)"
 			vertices_plus
 			{
@@ -1497,7 +1497,7 @@ world
 		}
 		side
 		{
-			"id" "9073"
+			"id" "10945"
 			"plane" "(-1472 -208 0) (-1472 -208 704) (-1472 3968 704)"
 			vertices_plus
 			{
@@ -1515,7 +1515,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1523,10 +1523,10 @@ world
 	}
 	solid
 	{
-		"id" "35189"
+		"id" "36198"
 		side
 		{
-			"id" "9084"
+			"id" "10956"
 			"plane" "(-16376 -16376 -16376) (16376 -16376 -16376) (16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1544,7 +1544,7 @@ world
 		}
 		side
 		{
-			"id" "9083"
+			"id" "10955"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1562,7 +1562,7 @@ world
 		}
 		side
 		{
-			"id" "9082"
+			"id" "10954"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1580,7 +1580,7 @@ world
 		}
 		side
 		{
-			"id" "9081"
+			"id" "10953"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1598,7 +1598,7 @@ world
 		}
 		side
 		{
-			"id" "9080"
+			"id" "10952"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1616,7 +1616,7 @@ world
 		}
 		side
 		{
-			"id" "9079"
+			"id" "10951"
 			"plane" "(3712 3968 0) (3712 -208 0) (-1472 -208 0)"
 			vertices_plus
 			{
@@ -1634,7 +1634,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -1642,10 +1642,10 @@ world
 	}
 	solid
 	{
-		"id" "35187"
+		"id" "36196"
 		side
 		{
-			"id" "9090"
+			"id" "10962"
 			"plane" "(-16376 16376 16376) (16376 16376 16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1663,7 +1663,7 @@ world
 		}
 		side
 		{
-			"id" "9089"
+			"id" "10961"
 			"plane" "(-16376 16376 16376) (-16376 -16376 16376) (-16376 -16376 -16376)"
 			vertices_plus
 			{
@@ -1681,7 +1681,7 @@ world
 		}
 		side
 		{
-			"id" "9088"
+			"id" "10960"
 			"plane" "(16376 16376 -16376) (16376 -16376 -16376) (16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1699,7 +1699,7 @@ world
 		}
 		side
 		{
-			"id" "9087"
+			"id" "10959"
 			"plane" "(16376 16376 16376) (-16376 16376 16376) (-16376 16376 -16376)"
 			vertices_plus
 			{
@@ -1717,7 +1717,7 @@ world
 		}
 		side
 		{
-			"id" "9086"
+			"id" "10958"
 			"plane" "(16376 -16376 -16376) (-16376 -16376 -16376) (-16376 -16376 16376)"
 			vertices_plus
 			{
@@ -1735,7 +1735,7 @@ world
 		}
 		side
 		{
-			"id" "9085"
+			"id" "10957"
 			"plane" "(3712 -208 704) (3712 3968 704) (-1472 3968 704)"
 			vertices_plus
 			{
@@ -1753,7 +1753,7 @@ world
 		}
 		editor
 		{
-			"color" "0 170 127"
+			"color" "0 239 252"
 			"visgroupshown" "1"
 			"visgroupautoshown" "1"
 			"cordonsolid" "1"
@@ -2890,22 +2890,25 @@ entity
 		"logicalpos" "[0 3050]"
 	}
 }
-entity
+hidden
 {
-	"id" "33336"
-	"classname" "tf_glow"
-	"GlowColor" "255 0 0 255"
-	"Mode" "2"
-	"StartDisabled" "1"
-	"target" "redflag"
-	"targetname" "redflag_glow"
-	"origin" "-324 656 80"
-	editor
+	entity
 	{
-		"color" "220 30 220"
-		"visgroupshown" "1"
-		"visgroupautoshown" "1"
-		"logicalpos" "[0 3000]"
+		"id" "33336"
+		"classname" "tf_glow"
+		"GlowColor" "255 0 0 255"
+		"Mode" "2"
+		"StartDisabled" "1"
+		"target" "redflag"
+		"targetname" "redflag_glow"
+		"origin" "-324 656 80"
+		editor
+		{
+			"color" "220 30 220"
+			"visgroupshown" "1"
+			"visgroupautoshown" "1"
+			"logicalpos" "[0 3000]"
+		}
 	}
 }
 entity
@@ -2977,7 +2980,7 @@ entity
 	"wait" "1"
 	connections
 	{
-		"OnStartTouch" "scripterCallScriptFunctionFS_OnSpawnerTouchBlu0-1"
+		"OnStartTouch" "scripterRunScriptCodeFS_OnSpawnerTouchBlu()0-1"
 		"OnStartTouch" "!selfDisable0-1"
 		"OnStartTouch" "!selfEnable0.5-1"
 	}
@@ -3107,6 +3110,87 @@ entity
 		"logicalpos" "[0 6500]"
 	}
 }
+entity
+{
+	"id" "35222"
+	"classname" "point_worldtext"
+	"color" "80 80 255 255"
+	"font" "1"
+	"message" "100"
+	"orientation" "1"
+	"targetname" "blu_pool_text"
+	"textsize" "24"
+	"origin" "376 1008 128"
+	editor
+	{
+		"color" "220 220 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 -6268]"
+	}
+}
+entity
+{
+	"id" "35220"
+	"classname" "point_worldtext"
+	"color" "255 80 80 255"
+	"font" "1"
+	"message" "99"
+	"orientation" "1"
+	"targetname" "fs_stock_red"
+	"textsize" "24"
+	"origin" "464 880 120"
+	editor
+	{
+		"color" "220 220 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 -6768]"
+	}
+}
+entity
+{
+	"id" "35570"
+	"classname" "logic_eventlistener"
+	"EventName" "player_spawn"
+	"FetchEventDate" "1"
+	"IsEnabled" "1"
+	"targetname" "player_spawn_listener"
+	"TeamNum" "-1"
+	"vscripts" "flagspawn.nut"
+	connections
+	{
+		"OnEventFired" "scripterCallScriptFunctionFS_OnPlayerSpawn_Event()0-1"
+	}
+	"origin" "-608 320 65"
+	editor
+	{
+		"color" "220 30 220"
+		"visgroupshown" "1"
+		"visgroupautoshown" "1"
+		"logicalpos" "[0 16000]"
+	}
+}
+hidden
+{
+	entity
+	{
+		"id" "35582"
+		"classname" "game_player_manager"
+		connections
+		{
+			"" "0-1"
+		}
+		"origin" "-592 360 65"
+		editor
+		{
+			"color" "220 30 220"
+			"visgroupshown" "1"
+			"visgroupautoshown" "1"
+			"logicalpos" "[0 16000]"
+		}
+	}
+}
 cameras
 {
 	"activecamera" "-1"
@@ -3124,4 +3208,8 @@ cordons
 			"maxs" "(3712 3968 704)"
 		}
 	}
+}
+quickhide
+{
+	"count" "4"
 }
