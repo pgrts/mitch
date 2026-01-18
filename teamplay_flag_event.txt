@@ -6,3 +6,11 @@ short	carrier	the carrier if needed
 short	eventtype	pick up, capture, defend, dropped
 byte	home	whether or not the flag was home (only set for TF_FLAGEVENT_PICKEDUP)
 byte	team	which team the flag belongs to
+
+
+Standard Flag Event IDs
+1 – Picked Up: A player has successfully touched the flag and is now the carrier.
+2 – Captured: The carrier has reached their own team's capture zone with the enemy flag.
+3 – Returned: A defender touched their own dropped flag, or it reached its "return timer," sending it back to base.
+4 – Dropped: The carrier was killed or manually dropped the flag, leaving it on the ground.
+5 – Defended: A specific defensive action occurred, such as killing the enemy carrier near your base or preventing a capture.
