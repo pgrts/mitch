@@ -101,9 +101,25 @@ Optional visual add-ons (v6 supports them *if present*):
   - `FetchEventData = 1`
   - **OnEventFired** → `scripter` **CallScriptFunction** `FS_OnFlagEvent()`
 
+**Structure (no flag identifier):**
+- `short player` — player this event involves
+- `short carrier` — the carrier if needed
+- `short eventtype` — see IDs below
+- `byte home` — only set for PICKUP
+- `byte team` — which team the flag belongs to
+
+**Standard `eventtype` IDs (TF2):**
+- `1` Picked Up
+- `2` Captured
+- `3` Defended
+- `4` Dropped
+- `5` Returned
+
+Important: `teamplay_flag_event` does **not** include a flag entindex/name, so you can’t reliably know *which* specific flag instance was returned/captured when multiple flags exist.
+
 This powers:
-- Return/Capture refunds
-- Pickup/Drop triggers (plus direct pickup/drop outputs if you add them)
+- Generic event-driven retries/FX/logging.
+- Pickup/Drop catchups (plus direct pickup/drop outputs if you add them).
 
 ### Player events
 You want **separate** listeners:
@@ -131,6 +147,8 @@ Even with `teamplay_flag_event`, the engine can be a frame late (merges, fast pi
 
 - `item_teamflag` output **OnPickup** → `scripter` CallScriptFunction `FS_Direct_Pickup()`
 - `item_teamflag` output **OnDrop** → `scripter` CallScriptFunction `FS_Direct_Drop()`
+- `item_teamflag` output **OnReturn** → `scripter` CallScriptFunction `FS_Direct_Refund()`
+- `item_teamflag` output **OnCapture** → `scripter` CallScriptFunction `FS_Direct_Refund()`
 
 v6 will then do a few retry ticks for that specific flag to make sure the cosmetic state “sticks”.
 

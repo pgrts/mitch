@@ -16,4 +16,82 @@ Confirmation: teamplay_flag_event Enum & StructureYou are correct on both counts
     "home"      "byte"      // 1 if the flag was at home, 0 otherwise (only for PICKUP)
     "team"      "byte"      // Team index the flag belongs to
 }
-3. Recommended Fix for flagspawn.nutSince event_data.index will return null or throw an error, you cannot rely on this event alone to identify which specific flag instance was interacted with if you have multiple flags.You must drive the logic via the item_teamflag entity outputs, as they execute within the scope of the specific flag entity:OnReturn: Fire a VScript hook (e.g., self.GetScriptScope().MyReturnFunction()).OnCapture: Similarly, hook into the capture output.OnPickup: Can pass the activator (the player) to your script to link the player to the specific flag instance.
+3. Recommended Fix for flagspawn.nutSince event_data.index will return null or throw an error, you cannot rely on this event alone to identify which specific flag instance was interacted with if you have multiple flags.You must drive the logic via the item_teamflag entity outputs, as they execute within the scope of the specific flag entity:OnReturn: Fire a VScript hook (e.g., self.GetScriptScope().MyReturnFunction()).OnCapture: Similarly, hook into the capture output.OnPickup: Can pass the activator (the player) to your script to link the player to the specific flag instance.	
+
+
+You are absolutely correct on both counts.
+
+1. Enum Confirmation
+Your list is the standard Source Engine definition. If I previously swapped 3 and 5, that was my error.
+
+1 = Pickup
+
+2 = Capture
+
+3 = Defend
+
+4 = Dropped
+
+5 = Returned
+
+2. Does event_data have a flag identifier?
+No. The teamplay_flag_event structure does not include the flag's entity index. It only includes player, carrier, eventtype, home, and team.
+
+Because event_data.index does not exist, the logic in FS_OnFlagEvent (specifically the loop trying to match pkg.flag.entindex() == idx) will fail to find the correct flag.
+
+The Fix: Drive Refunds via Outputs
+Since the global event can't tell us which flag was captured/returned, you must use the item_teamflag entity outputs. These outputs execute in the context where caller is the specific flag entity.
+
+Step 1: Update the VMF (Template) In bluflag_template (specifically the item_teamflag named bluflag), add these outputs:
+
+OnReturn -> scripter -> CallScriptFunction -> FS_Direct_Refund
+
+OnCapture -> scripter -> CallScriptFunction -> FS_Direct_Refund
+
+Step 2: Update flagspawn.nut Add this function to handle the refund using caller:
+
+Code snippet
+
+// ----------------------------------------------------------------------------
+// Direct Refund (Driven by OnReturn / OnCapture outputs)
+// ----------------------------------------------------------------------------
+function FS_Direct_Refund() {
+    flagspawn.Init();
+    // 'caller' is the flag entity that fired the output
+    local flag = caller;
+    if (!FS_IsValid(flag)) return;
+
+    // Find the package associated with this flag
+    local nm = "";
+    try { nm = flag.GetName(); } catch (e) { nm = ""; }
+    
+    // Safety check: ensure it's one of ours
+    if (!flagspawn._StartsWith(nm, flagspawn.CFG.PKG_FLAG_BASE)) return;
+    local suf = flagspawn._SuffixFromName(nm, flagspawn.CFG.PKG_FLAG_BASE);
+
+    if (suf in flagspawn.State.Flags) {
+        local pkg = flagspawn.State.Flags[suf];
+        
+        // Calculate refund
+        local refund = pkg.pointValue;
+        if (refund > flagspawn.CFG.VALUE_CAP) refund = flagspawn.CFG.VALUE_CAP;
+        if (refund < 0) refund = 0;
+
+        // Apply refund
+        flagspawn.State.PoolBlu += refund;
+        
+        // Clean up entities
+        flagspawn._CleanupDeadPkg(pkg);
+        if (FS_IsValid(pkg.flag)) pkg.flag.Kill();
+        delete flagspawn.State.Flags[suf];
+
+        // UI Update
+        flagspawn._UpdateUI();
+        flagspawn.State.NextTopKTime = 0.0;
+        
+        FS_Log("Direct Refund: " + nm + " value=" + refund + " pool=" + flagspawn.State.PoolBlu);
+    }
+}
+Step 3: Cleanup FS_OnFlagEvent You can now strip the "Refund" logic (Type 2 and 5) out of FS_OnFlagEvent, since it relies on the missing index. Keep FS_OnFlagEvent only if you want to use it for generic logging or if you need to detect "Defend" events (which don't have a direct entity output).
+
+Would you like me to provide the fully updated flagspawn.nut with these changes integrated?
