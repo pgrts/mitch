@@ -1,0 +1,8 @@
+teamplay_flag_event
+Name:	teamplay_flag_event
+Structure:	
+short	player	player this event involves
+short	carrier	the carrier if needed
+short	eventtype	pick up, capture, defend, dropped
+byte	home	whether or not the flag was home (only set for TF_FLAGEVENT_PICKEDUP)
+byte	team	which team the flag belongs to
