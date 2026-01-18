@@ -1,989 +1,847 @@
-// flagspawn_merge_verify_glowfix_v44.nut
-// -----------------------------------------------------------------------------
-// Goal (v44):
-//  - STATE FIX (FINAL): "No Carrier = Dropped".
-//    * Logic: If FS_FindCarrier() returns null, we treat the flag as DROPPED
-//      immediately, even if the Engine Status (m_nFlagStatus) claims it is 2 (Carried).
-//    * This solves the "Sticky Status" issue where the table says CARRIED after a drop.
-//  - SIMPLIFIED: Removed complex timestamp overrides. Physical checks are definitive.
-// -----------------------------------------------------------------------------
+// ============================================================================
+// Flagspawn v29 (The Megalith - "Heavy Industry" Edition)
+// ----------------------------------------------------------------------------
+// MASTER SCRIPT - BLU SIDE AUTHORITATIVE LOGIC
+// ----------------------------------------------------------------------------
+//
+// SUMMARY OF ARCHITECTURE:
+//
+// 1. THE "HARD TRUTH" (Engine Physics)
+//    - We respect 'item_teamflag' as the definitive source of truth for:
+//      * Pickup / Drop / Capture events
+//      * Merging logic (managed by TF2)
+//      * Point values (via NetProp m_nPointValue)
+//
+// 2. THE "VISUAL TRUTH" (VScript Override)
+//    - We override all visuals to stop the "Flag fighting":
+//      * CARRIED: item_teamflag is HIDDEN.
+//                 'bluflag_prop' is parented to player (!partyhat).
+//                 'bluflag_glow' targets the PLAYER (!activator).
+//      * DROPPED: item_teamflag is VISIBLE.
+//                 'bluflag_prop' is parented to 'blu_lmm_target' (follower).
+//                 'bluflag_glow' targets the FLAG entity.
+//
+// 3. THE ECONOMY (The Bank)
+//    - POOL: A global integer ('PoolBlu') starting at 1000.
+//    - SPAWN: Decrements Pool. Emits ONE flag worth min(Pool, 500).
+//    - REFUND: Captures/Returns increment Pool (Recycling points).
+//    - SINK: Merged flags are destroyed WITHOUT refund (Inflation control).
+//
+// 4. EVENT MATH (Pinata & Bleed)
+//    - DEATH: 5 Chunks spawned. Each = 20% of carried value. Remainder sunk.
+//    - HURT:  1 Chunk spawned. Value = 20% of carried. Trigger = 12.5% MaxHP dmg.
+//
+// 5. SAFETY & ROBUSTNESS
+//    - "Deep Validation": Every handle checked before use.
+//    - "Retry Latch": Visuals re-applied 8 times after events to catch lag.
+//    - "Safe Origins": Wrappers to prevent GetAbsOrigin crashes on players.
+//    - "Leader Killer": Constant suppression of PD dispenser/beams.
+//
+// ============================================================================
 
-printl("[FS] Script Loading (merge-verify glowfix v45 (budget merge))...");
-
-// -----------------------------------------------------------------------------
-// 1) ROOT SETUP
-// -----------------------------------------------------------------------------
+// --- Root Anchor (TF2 Squirrel Safety) --------------------------------------
+// Ensure we are attached to the root table to persist across scopes
 local _rt = getroottable();
-if (!("flagspawn" in _rt) || typeof _rt.flagspawn != "table") {
+if (!("flagspawn" in _rt)) {
     _rt.flagspawn <- {};
 }
 local flagspawn = _rt.flagspawn;
-try {
-    if (!("flagspawn" in this) || typeof this.flagspawn != "table") this.flagspawn <- flagspawn;
-    else this.flagspawn = flagspawn;
-} catch (_e) {}
 
-// -----------------------------------------------------------------------------
-// 2) CONFIG
-// -----------------------------------------------------------------------------
 flagspawn.CFG <- {
-    DEBUG = true,
-    THINK_DT = 0.10,
-
-    // Makers & Names
-    MAKER_BLU = "fs_flag_maker_blu",
-    MAKER_RED = "fs_flag_maker_red",
-    FLAG_BLU  = "bluflag",
-    FLAG_RED  = "redflag",
+    VERSION = "v29_megalith_release",
     
-    // Helpers to Cleanup
-    TRIG_BLU  = "red_lock_bluflag",
-    TRIG_RED  = "blu_lock_redflag",
-    LMM_BLU   = "blu_lmm",
-    LMM_RED   = "red_lmm",
-    SFX       = "fs_lockpad_sfx_proto",
+    // ... (Keep your Debug flags here) ...
+    DBG_GENERAL  = true,
+    DBG_VISUALS  = true,
+    DBG_ECONOMY  = true,
+    DBG_EVENTS   = true,
+    DBG_VERBOSE  = false,
 
-    // Glows
-    GLOW_BLU  = "bluflag_glow",
-    GLOW_RED  = "redflag_glow",
+    // ... (Keep your Entity Names here) ...
+    MAKER_BLU        = "fs_flag_maker_blu",
+    SPAWNER_PROP_BLU = "blu_flagspawner_prop",
+    ENT_TEXT_BLU     = "blu_pool_text",
+    ENT_SPRITE_LOCK  = "blu_spawner_lock",
+    PD_LOGIC_NAME    = "fs_pd_logic",
+    SCRIPTER_NAME    = "scripter",
+
+    // ... (Keep your Template Suffixes here) ...
+    PKG_FLAG = "bluflag",
+    PKG_PROP = "bluflag_prop",
+    PKG_GLOW = "bluflag_glow",
+    PKG_LMM  = "blu_lmm_target",
+    PKG_LOCK = "red_lock_bluflag",
+
+    // --- ECONOMY SETTINGS ---
+    TEAM_BLU = 3,
+    POOL_START = 1000, // Increased to 1000 so you can spawn multiple flags!
+    LIMIT_ACTIVE_FLAGS = 25,
     
-    // Glow Pulse Settings
-    GLOW_PULSE_RATE     = 1.0, 
-    GLOW_PULSE_DURATION = 5.0, 
-
-    // Spawner Props
-    PROP_BLU_SPAWNER = "blu_flagspawner_prop",
-    PROP_RED_SPAWNER = "red_flagspawner_prop",
-
-    // Visuals
-    PROP_BG_INDEX    = 1,
-    BG_PULSE_ENABLE  = true,   
-    USE_GLOBAL_GLOWS = true,
-
-    // GLOBAL GATES
-    SPAWN_COOLDOWN = 0.50,      
-    SPAWNER_TOUCH_LOCK = 1.00,  
-    ONE_ACTIVE_PER_TEAM = false, 
-
-    // PLAYER GATES
-    PLAYER_SPAWN_COOLDOWN = 0.0, 
-    ONE_FLAG_PER_LIFE     = false, 
-
-    // Merge Detection
-    MERGE_DETECT_ENABLE = true,
-    MERGE_DISTANCE_MAX = 256.0,
-    MERGE_TIME_WINDOW  = 0.75,
-    RECENT_GONE_KEEP   = 2.00,
+    // *** CRITICAL CHANGE ***
+    // This allows the flag to physically hold 500 points
+    VALUE_MAX_CAP = 500, 
     
-    // Cleanup
-    CLEANUP_ENABLE = true,
-    CLEANUP_DELAY  = 0.05,
+    // This clamps the visual model to 100 so it doesn't break
+    MODEL_VISUAL_CAP = 100,
 
-    // -----------------------------------------------------------------
-    // Spawn Budget (per-player, class-based)
-    // -----------------------------------------------------------------
-    BUDGET_ENABLE      = true,
-    BUDGET_RESET_SECS  = 90.0,
-    BUDGET_COST        = 1,
-    BUDGET_TOUCH_CD    = 0.35,   // per-player spam guard
-    // TF2 class indexes: 1 Scout, 2 Sniper, 3 Soldier, 4 Demo, 5 Medic, 6 Heavy, 7 Pyro, 8 Spy, 9 Engi
-    // Edit these to your economy.
+    // ... (Keep the rest of your Config: BUDGET_CLASS_MAX, etc.) ...
     BUDGET_CLASS_MAX = {
-        [1] = 2,   // Scout
-        [2] = 8,   // Sniper
-        [3] = 4,   // Soldier
-        [4] = 3,   // Demoman
-        [5] = 7,   // Medic
-        [6] = 10,  // Heavy
-        [7] = 5,   // Pyro
-        [8] = 1,   // Spy
-        [9] = 6    // Engineer
+        [1] = 2, [2] = 8, [3] = 4, [4] = 3, [5] = 7, 
+        [6] = 10, [7] = 5, [8] = 1, [9] = 6
     },
-    BUDGET_DEFAULT_MAX = 1,
-    // If true, spawner prop bodygroup is set to (remaining budget) of last toucher.
-    // If false, v44's existing BluPropCounter logic is used.
-    BUDGET_PROP_OVERRIDE = false,
-    BUDGET_PROP_BG_INDEX = 1
-
+    ATTACH_POINT = "partyhat",
+    RETRY_COUNT = 8,
+    PULSE_INTERVAL = 0.25,
+    PINATA_CHUNKS = 5,
+    PINATA_PCT = 0.20,
+    ENABLE_DAMAGE_CHUNKS = true,
+    DAMAGE_THRESHOLD_PCT = 0.125,
+    DAMAGE_CHUNK_PCT = 0.20,
 };
 
-// -----------------------------------------------------------------------------
-// 3) STATE
-// -----------------------------------------------------------------------------
-if (!("State" in flagspawn) || typeof flagspawn.State != "table") flagspawn.State <- {};
-if (!("Pkgs" in flagspawn.State) || typeof flagspawn.State.Pkgs != "table") flagspawn.State.Pkgs <- {}; 
-if (!("NextSpawnAt" in flagspawn.State) || typeof flagspawn.State.NextSpawnAt != "table") flagspawn.State.NextSpawnAt <- { blu = 0.0, red = 0.0 };
-if (!("SpawnerLockUntil" in flagspawn.State) || typeof flagspawn.State.SpawnerLockUntil != "table") flagspawn.State.SpawnerLockUntil <- { blu = 0.0, red = 0.0 };
-if (!("BluPropCounter" in flagspawn.State)) flagspawn.State.BluPropCounter <- 100;
-if (!("LastHeartbeat" in flagspawn.State)) flagspawn.State.LastHeartbeat <- 0.0;
-
-// Spawn-budget per-player state
-if (!("Budgets" in flagspawn.State) || typeof flagspawn.State.Budgets != "table") flagspawn.State.Budgets <- {};
-
-
-// -----------------------------------------------------------------------------
-// 4) UTILITIES
-// -----------------------------------------------------------------------------
-function FS_Log(msg) { if (flagspawn.CFG.DEBUG) printl("[FS] " + msg); }
-function FS_Now() { try { return Time(); } catch (_e) { return 0.0; } }
-function FS_Clamp99(v) { if (v == null || v < 0) return 0; if (v > 99) return 99; return v; }
-function FS_IsValid(ent) { try { return ent != null && ent.IsValid(); } catch (_e) { return false; } }
-
-function FS_SetBodyGroup(ent, groupIdx, value) {
-    if (!ent) return;
-    value = FS_Clamp99(value);
-    // Try method forms
-    try { ent.SetBodygroup(groupIdx, value); return; } catch (_e) {}
-    try { ent.SetBodyGroup(groupIdx, value); return; } catch (_e2) {}
-    // Fallback to input (works on prop_dynamic, etc.)
-    try { EntFireByHandle(ent, "SetBodyGroup", groupIdx.tostring() + " " + value.tostring(), 0.0, null, null); } catch (_e3) {}
-}
-
-function FS_ExtractSuffix(nm) {
-    if (nm == null) return null;
-    local i = nm.find("&");
-    if (i == null || i < 0) return null;
-    return nm.slice(i + 1);
-}
-
-function FS_WithSuffix(baseName, suf) { return baseName + "&" + suf; }
-
-function FS_GetOrigin(ent) {
-    if (!ent) return null;
-    // HARD SAFETY: never call GetAbsOrigin() on players (TF2 can hard-crash)
-    try { return ent.GetOrigin(); } catch (_e) {}
-    try {
-        if (!(ent.IsPlayer && ent.IsPlayer())) {
-            return ent.GetAbsOrigin();
-        }
-    } catch (_e2) {}
-    return null;
-}
-
-
-function FS_Dist(a, b) {
-    if (a == null || b == null) return 1e9;
-    local dx = a.x - b.x; local dy = a.y - b.y; local dz = a.z - b.z;
-    return sqrt(dx*dx + dy*dy + dz*dz);
-}
-
-function FS_ReadFlagPoints(flag) {
-    if (!flag) return 0;
-    local v = null;
-    try { v = NetProps.GetPropInt(flag, "m_nPointValue"); } catch (_e) {}
-    if (v == null) try { v = NetProps.GetPropInt(flag, "m_iPointValue"); } catch (_e2) {}
-    if (v == null) v = 1;
-    return FS_Clamp99(v);
-}
-
-function FS_FindGlowForTeam(team, suf) {
-    local baseName = (team == 2) ? flagspawn.CFG.GLOW_BLU : flagspawn.CFG.GLOW_RED;
-    if (flagspawn.CFG.USE_GLOBAL_GLOWS) {
-        local g = Entities.FindByName(null, baseName);
-        if (g) return g;
-    }
-    if (suf != null && suf != "") {
-        local g2 = Entities.FindByName(null, FS_WithSuffix(baseName, suf));
-        if (g2) return g2;
-    }
-    return null;
-}
-
-function FS_BindGlow(glow, targetEnt, enable) {
-    if (!FS_IsValid(glow)) return;
+// ----------------------------------------------------------------------------
+// 2. STATE INITIALIZATION
+// ----------------------------------------------------------------------------
+flagspawn.State <- {
+    InitDone = false,
     
-    if (!FS_IsValid(targetEnt)) {
-        if (enable) EntFireByHandle(glow, "Disable", "", 0, null, null); 
+    // The "Bank" (points available to spawn)
+    PoolBlu = flagspawn.CFG.POOL_START,
+    
+    // The Registry
+    // Key: suffix (string) -> Table { flag, prop, glow, lmm, lock, pointValue, carrier, retry, ... }
+    Flags = {},
+    
+    // Player Tracking
+    // Key: userid (string) -> Table { used, damageAccumulator, nextSpawnTime }
+    PlayerBudgets = {}, 
+    
+    // Internal Handoff (Communication between Spawner logic and Maker hook)
+    NextSpawnValue = 1
+};
+
+// ----------------------------------------------------------------------------
+// 3. LOGGING SUBSYSTEM
+// ----------------------------------------------------------------------------
+
+function FS_Log(msg) { 
+    if (flagspawn.CFG.DBG_GENERAL) printl("[FS] " + msg);
+}
+function FS_LogVis(msg) { 
+    if (flagspawn.CFG.DBG_VISUALS) printl("[FS-VIS] " + msg);
+}
+function FS_LogEco(msg) { 
+    if (flagspawn.CFG.DBG_ECONOMY) printl("[FS-ECO] " + msg);
+}
+function FS_LogEvt(msg) { 
+    if (flagspawn.CFG.DBG_EVENTS) printl("[FS-EVT] " + msg);
+}
+function FS_LogVerb(msg) { 
+    if (flagspawn.CFG.DBG_VERBOSE) printl("[FS-VRB] " + msg);
+}
+function FS_Err(msg) { 
+    printl("\n[FS-ERROR] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    printl("[FS-ERROR] " + msg); 
+    printl("[FS-ERROR] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+}
+
+// ----------------------------------------------------------------------------
+// 4. ROBUST HELPERS & VALIDATION (Global Scope Fix)
+// ----------------------------------------------------------------------------
+// We use '::' to force these into the Root Table, ensuring they are visible
+// even when the script is executed via console or different scopes.
+::FS_IsValid <- function(ent) { 
+    try { 
+        if (ent && ent.IsValid()) return true;
+    } catch(e) {}
+    return false; 
+}
+
+::FS_IsPlayer <- function(ent) {
+    if (!::FS_IsValid(ent)) return false;
+    try { return ent.IsPlayer(); } catch(e) { return false; }
+}
+
+::FS_GetName <- function(ent) {
+    if (!::FS_IsValid(ent)) return "null";
+    try { return ent.GetName(); } catch(e) { return "err"; }
+}
+
+::FS_GetOrigin <- function(ent) {
+    if (!::FS_IsValid(ent)) return Vector(0,0,0);
+    try { 
+        // Crash Prevention: Player.GetAbsOrigin() is unstable in VScript
+        if (ent.IsPlayer()) return ent.EyePosition() - Vector(0,0,20);
+        return ent.GetOrigin();
+    } catch(e) { return Vector(0,0,0); }
+}
+
+// EntFire Wrapper with Exception Handling
+flagspawn._EntFire <- function(ent, input, param="", delay=0.0, activator=null) {
+    if (!::FS_IsValid(ent)) {
+        // FS_LogVerb("EntFire Ignored: Invalid Entity");
         return;
     }
-    try { NetProps.SetPropEntity(glow, "m_hTarget", targetEnt); } catch (_e) {}
+    try { 
+        // FS_LogVerb("EntFire: " + ::FS_GetName(ent) + " -> " + input);
+        EntFireByHandle(ent, input, param, delay, activator, null); 
+    } catch(e) {
+        printl("[FS-ERR] EntFire Exception: " + e);
+    }
+}
+
+// Helper: Find Entity by Name safely
+::FS_FindByName <- function(name) {
+    if (!name || name == "") return null;
+    return Entities.FindByName(null, name);
+}
+
+// Helper: Get Player by UserID
+::FS_GetPlayerFromUserID <- function(uid) {
+    try { return GetPlayerFromUserID(uid);
+    } catch(e) { return null; }
+}
+
+// Helper: Get Max Health (Safe)
+::FS_GetMaxHealth <- function(ply) {
+    if (!::FS_IsPlayer(ply)) return 100;
+    try { return ply.GetMaxHealth(); } catch(e) { return 100; }
+}
+
+// ----------------------------------------------------------------------------
+// 5. LEADER LOGIC (Suppression)
+// ----------------------------------------------------------------------------
+// Runs every pulse to ensure the PD dispenser and beams don't interfere
+flagspawn._KillLeaderDispenser <- function() {
+    // 1. Kill Physical Dispenser
+    local dispenser = Entities.FindByClassname(null, "pd_dispenser");
+    if (FS_IsValid(dispenser)) {
+        // Only log once per existence to avoid spam, but kill immediately
+        // FS_LogVerb("Killing PD Leader Dispenser entity.");
+        dispenser.Kill();
+    }
+
+    // 2. Clear Beams on Logic Entity
+    local pdLogic = FS_FindByName(flagspawn.CFG.PD_LOGIC_NAME);
+    if (!FS_IsValid(pdLogic)) {
+        // Fallback search
+        pdLogic = Entities.FindByClassname(null, "tf_logic_player_destruction");
+    }
+
+    if (FS_IsValid(pdLogic)) {
+        // Force leader handles to null to prevent beams
+        NetProps.SetPropEntity(pdLogic, "m_hRedTeamLeader", null);
+        NetProps.SetPropEntity(pdLogic, "m_hBlueTeamLeader", null);
+    }
+}
+
+// ----------------------------------------------------------------------------
+// 6. ECONOMY & POOL MANAGEMENT
+// ----------------------------------------------------------------------------
+
+flagspawn._ModifyPool <- function(amount, reason) {
+    local old = flagspawn.State.PoolBlu;
+    flagspawn.State.PoolBlu += amount;
     
-    if (enable) EntFireByHandle(glow, "Enable", "", 0, null, null);
-}
-
-// --- HELPER: Find First Valid Player in Props ---
-function FS_FindCarrier(flag) {
-    local candidates = ["m_hOwner", "m_hOwnerEntity", "m_hMoveParent"];
-    foreach (prop in candidates) {
-        try {
-            local e = NetProps.GetPropEntity(flag, prop);
-            if (e && e.IsValid() && e.IsPlayer()) return e;
-        } catch(_e) {}
+    // Clamp at 0 (No debt)
+    if (flagspawn.State.PoolBlu < 0) flagspawn.State.PoolBlu = 0;
+    local diff = flagspawn.State.PoolBlu - old;
+    if (diff != 0) {
+        FS_LogEco("Pool Update: " + old + " -> " + flagspawn.State.PoolBlu + " (Delta: " + diff + ") Reason: " + reason);
+        flagspawn._UpdateWorldUI();
     }
-    return null;
 }
 
+flagspawn._UpdateWorldUI <- function() {
+    // 1. Calculate Slots
+    local activeCount = flagspawn.State.Flags.len();
+    local limit = flagspawn.CFG.LIMIT_ACTIVE_FLAGS;
+    local slotsLeft = limit - activeCount;
+    if (slotsLeft < 0) slotsLeft = 0;
 
-// -----------------------------------------------------------------------------
-// 4B) SPAWN BUDGET (per-player)
-// -----------------------------------------------------------------------------
-function FS_EntIndex(ent) {
-    if (!ent) return 0;
-    try { return ent.entindex(); } catch (_e) {}
-    try { return ent.EntIndex(); } catch (_e2) {}
-    return 0;
+    // 2. Update WorldText
+    local txt = FS_FindByName(flagspawn.CFG.ENT_TEXT_BLU);
+    if (FS_IsValid(txt)) {
+        flagspawn._EntFire(txt, "SetMessage", slotsLeft.tostring());
+    }
+
+    // 3. Update Lock Sprite
+    local spr = FS_FindByName(flagspawn.CFG.ENT_SPRITE_LOCK);
+    if (FS_IsValid(spr)) {
+        if (slotsLeft == 0) flagspawn._EntFire(spr, "ShowSprite");
+        else flagspawn._EntFire(spr, "HideSprite");
+    }
+    
+    // 4. Update Spawner Meter
+    local prop = FS_FindByName(flagspawn.CFG.SPAWNER_PROP_BLU);
+    if (FS_IsValid(prop)) {
+        local v = flagspawn.State.PoolBlu;
+        if (v > 100) v = 100; if (v < 0) v = 0;
+        flagspawn._EntFire(prop, "SetBodyGroup", "1 " + v);
+    }
 }
 
-function FS_IsPlayer(ent) {
-    if (!ent) return false;
-    try { return ent.IsPlayer(); } catch (_e) {}
-    return false;
+// ----------------------------------------------------------------------------
+// 7. VISUAL STATE MACHINE
+// ----------------------------------------------------------------------------
+
+// Helper: Sync bodygroups on both Flag and Prop
+// UPDATED: Clamps visuals to 100 even if points are 500
+flagspawn._SyncBodygroups <- function(pkg) {
+    if (!pkg) return;
+    local val = pkg.pointValue;
+    
+    // LOGICAL CLAMP (Prevent negative points)
+    if (val < 1) val = 1;
+
+    // VISUAL CLAMP (Prevent model breaking)
+    local visualVal = val;
+    if (visualVal > flagspawn.CFG.MODEL_VISUAL_CAP) {
+        visualVal = flagspawn.CFG.MODEL_VISUAL_CAP;
+    }
+
+    // Apply the VISUAL value to the model
+    if (::FS_IsValid(pkg.prop)) flagspawn._EntFire(pkg.prop, "SetBodyGroup", "1 " + visualVal);
+    if (::FS_IsValid(pkg.flag)) flagspawn._EntFire(pkg.flag, "SetBodyGroup", "1 " + visualVal);
 }
 
-function FS_GetPropFloat(ent, prop) {
-    try { return NetProps.GetPropFloat(ent, prop); } catch (_e) {}
-    return 0.0;
-}
+// Helper: Retarget Glow (The "Sticky Glow" fix)
+flagspawn._UpdateGlow <- function(pkg, state) {
+    if (!FS_IsValid(pkg.glow)) return;
 
-function FS_GetPropInt(ent, prop) {
-    try { return NetProps.GetPropInt(ent, prop); } catch (_e) {}
-    return 0;
-}
-
-function FS_GetPlayerClassIndex(ply) {
-    if (!ply) return 0;
-    // method first
-    try {
-        if ("GetPlayerClass" in ply) {
-            local c = ply.GetPlayerClass();
-            if (c != null) return c;
+    // Always enable first
+    flagspawn._EntFire(pkg.glow, "Enable");
+    
+    if (state == "CARRIED" && FS_IsValid(pkg.carrier)) {
+        // High-fidelity retargeting to Player model
+        // Note: SetTarget uses !activator as the parameter slot for the entity handle in VScript
+        EntFireByHandle(pkg.glow, "SetTarget", "!activator", 0.0, pkg.carrier, null);
+    } 
+    else {
+        // Retarget to physical flag entity when dropped
+        if (FS_IsValid(pkg.flag)) {
+            EntFireByHandle(pkg.glow, "SetTarget", "!activator", 0.0, pkg.flag, null);
         }
-    } catch (_e) {}
-    // netprops
-    local c2 = FS_GetPropInt(ply, "m_PlayerClass.m_iClass");
-    if (c2 > 0) return c2;
-    local c3 = FS_GetPropInt(ply, "m_iClass");
-    if (c3 > 0) return c3;
-    return 0;
+    }
 }
 
-function FS_BudgetKey(ply) { return "p" + FS_EntIndex(ply); }
+// CORE: Apply Visuals basend on Logic Truth Table
+flagspawn._ApplyVisualState <- function(pkg) {
+    if (!pkg || !FS_IsValid(pkg.flag)) return;
 
-function FS_BudgetForClass(c) {
-    // Coerce class index to an integer key (TF2 can hand us ints/floats/strings depending on source).
-    local ci = 0;
-    try {
-        local tc = typeof c;
-        if (tc == "integer") ci = c;
-        else if (tc == "float") ci = c.tointeger();
-        else ci = c.tointeger();
-    } catch (_e) {
-        ci = 0;
+    // A. Detect Reality (Carrier)
+    local owner = pkg.flag.GetOwner();
+
+    // Retry Latch: If we think we have a carrier but engine says null, trust us for a few frames
+    if (!FS_IsValid(owner) && pkg.retry > 0 && FS_IsValid(pkg.carrier)) {
+        owner = pkg.carrier;
     }
 
-    if (ci <= 0) return flagspawn.CFG.BUDGET_DEFAULT_MAX;
+    // B. Detect Reality (Value)
+    try { 
+        local rv = NetProps.GetPropInt(pkg.flag, "m_nPointValue");
+        if (rv != pkg.pointValue) {
+            FS_LogVis("Value Change Detected [" + pkg.suffix + "]: " + pkg.pointValue + " -> " + rv);
+            pkg.pointValue = rv;
+        }
+    } catch(e){}
+    
+    flagspawn._SyncBodygroups(pkg);
 
-    // Prefer rawin over 'in' to avoid any older-squirrel edge cases.
-    try {
-        if (flagspawn.CFG.BUDGET_CLASS_MAX.rawin(ci)) return flagspawn.CFG.BUDGET_CLASS_MAX[ci];
-        local ks = "" + ci;
-        if (flagspawn.CFG.BUDGET_CLASS_MAX.rawin(ks)) return flagspawn.CFG.BUDGET_CLASS_MAX[ks];
-    } catch (_e2) {}
+    // C. Apply State
+    if (FS_IsValid(owner) && FS_IsPlayer(owner)) {
+        // === STATE: CARRIED ===
+        if (pkg.state != "CARRIED") FS_LogVis("State Transition [" + pkg.suffix + "] -> CARRIED by " + FS_GetName(owner));
+        pkg.state = "CARRIED";
+        pkg.carrier = owner;
+        
+        // 1. Hide Physics Flag
+        flagspawn._EntFire(pkg.flag, "DisableDraw");
+        if (FS_IsValid(pkg.lock)) flagspawn._EntFire(pkg.lock, "Disable");
 
-    return flagspawn.CFG.BUDGET_DEFAULT_MAX;
-}
-
-function FS_PlayerFromUserID(userid) {
-    if (userid == null) return null;
-    local p = null;
-    try { p = GetPlayerFromUserID(userid); } catch (_e) { p = null; }
-    if (p != null) return p;
-
-    // Fallback: iterate players and match by user id (best-effort)
-    local it = null;
-    while ((it = Entities.FindByClassname(it, "player")) != null) {
-        try {
-            if ("GetPlayerUserId" in it) {
-                if (it.GetPlayerUserId() == userid) return it;
+        // 2. Attach Prop to Player
+        if (FS_IsValid(pkg.prop)) {
+            if (pkg.prop.GetMoveParent() != owner) {
+                flagspawn._EntFire(pkg.prop, "ClearParent");
+                flagspawn._EntFire(pkg.prop, "SetParent", "!activator", 0.02, owner);
+                flagspawn._EntFire(pkg.prop, "SetParentAttachment", flagspawn.CFG.ATTACH_POINT, 0.04);
+                flagspawn._EntFire(pkg.prop, "Enable");
+                // Ensure visible
             }
-        } catch (_e2) {}
-        try {
-            if (NetProps.GetPropInt(it, "m_iUserID") == userid) return it;
-        } catch (_e3) {}
-        try {
-            if (NetProps.GetPropInt(it, "m_iUserId") == userid) return it;
-        } catch (_e4) {}
+        }
+        
+        // 3. Target Glow
+        flagspawn._UpdateGlow(pkg, "CARRIED");
+    } else {
+        // === STATE: DROPPED ===
+        if (pkg.state != "DROPPED") FS_LogVis("State Transition [" + pkg.suffix + "] -> DROPPED");
+        pkg.state = "DROPPED";
+        pkg.carrier = null;
+        
+        // 1. Show Physics Flag
+        flagspawn._EntFire(pkg.flag, "EnableDraw");
+        if (FS_IsValid(pkg.lock)) flagspawn._EntFire(pkg.lock, "Enable");
+
+        // 2. Attach Prop to Follower (LMM)
+        if (FS_IsValid(pkg.prop) && FS_IsValid(pkg.lmm)) {
+            if (pkg.prop.GetMoveParent() != pkg.lmm) {
+                flagspawn._EntFire(pkg.prop, "ClearParent");
+                flagspawn._EntFire(pkg.prop, "SetParent", pkg.lmm.GetName(), 0.02);
+                flagspawn._EntFire(pkg.prop, "SetLocalOrigin", "0 0 0", 0.04);
+                flagspawn._EntFire(pkg.prop, "SetLocalAngles", "0 0 0", 0.04);
+                flagspawn._EntFire(pkg.prop, "Enable");
+            }
+        }
+        
+        // 3. Target Glow
+        flagspawn._UpdateGlow(pkg, "DROPPED");
     }
-    return null;
 }
 
+// ----------------------------------------------------------------------------
+// 8. FLAG EVENTS (Refunds, Destroys)
+// ----------------------------------------------------------------------------
 
-function FS_BudgetEnsure(ply) {
-    local key = FS_BudgetKey(ply);
-    local B = flagspawn.State.Budgets;
-    if (!(key in B)) {
-        B[key] <- {
-            max = 0,
-            used = 0,
-            resetAt = 0.0,
-            lastSpawnTime = 0.0,
-            lastLifeState = -999,
-            lastClass = 0,
-            lastTouch = 0.0
+function FS_OnFlagEvent() {
+    // 1. VMF SAFETY CHECK (Critical Fix)
+    if (!("event_data" in getroottable())) {
+        FS_Err("EVENT DATA MISSING! Fix 'FetchEventDate' -> 'FetchEventData' in VMF!");
+        // We cannot proceed without data
+        return;
+    }
+    
+    local evt = event_data;
+    local type = evt.eventtype;
+    // 1:Pickup, 2:Capture, 4:Drop, 5:Return
+    local idx = evt.index;
+
+    // HANDLE REFUNDS (Capture (2) or Return (5))
+    // Note: Merges are handled silently by the Pulse cleaning up dead entities.
+    if (type == 2 || type == 5) {
+        // Find Flag Package by Index
+        local foundSuffix = null;
+        foreach (suf, pkg in flagspawn.State.Flags) {
+            if (FS_IsValid(pkg.flag) && pkg.flag.entindex() == idx) {
+                foundSuffix = suf;
+                break;
+            }
+        }
+        
+        if (foundSuffix) {
+            local pkg = flagspawn.State.Flags[foundSuffix];
+            // Refund Calc
+            local refund = pkg.pointValue;
+            // Cap refund to prevent runaway economy
+            if (refund > flagspawn.CFG.VALUE_MAX_CAP) refund = flagspawn.CFG.VALUE_MAX_CAP;
+
+            FS_LogEco("Flag Refund Triggered: " + foundSuffix + " (Type " + type + "). Refunding " + refund);
+            // Execute Refund
+            flagspawn._ModifyPool(refund, "FlagReturn_" + type);
+            // Destroy Entity (Free Slot)
+            flagspawn._DestroyPackage(foundSuffix);
+        }
+    }
+}
+
+flagspawn._DestroyPackage <- function(suffix) {
+    if (suffix in flagspawn.State.Flags) {
+        local pkg = flagspawn.State.Flags[suffix];
+        // Cleanup all entities in the package
+        if (FS_IsValid(pkg.flag)) pkg.flag.Kill();
+        if (FS_IsValid(pkg.prop)) pkg.prop.Kill();
+        if (FS_IsValid(pkg.glow)) pkg.glow.Kill();
+        if (FS_IsValid(pkg.lock)) pkg.lock.Kill();
+        if (FS_IsValid(pkg.lmm))  pkg.lmm.Kill();
+        
+        delete flagspawn.State.Flags[suffix];
+        flagspawn._UpdateWorldUI();
+        FS_Log("Package Destroyed: " + suffix);
+    }
+}
+
+// ----------------------------------------------------------------------------
+// 9. SPAWNER LOGIC (One Big Flag - Megalith)
+// ----------------------------------------------------------------------------
+
+function FS_OnSpawnerTouchBlu() {
+    flagspawn.Init();
+    local ply = activator;
+    
+    // 1. Validation
+    if (!::FS_IsValid(ply) || !ply.IsPlayer()) return;
+    if (ply.GetTeam() != flagspawn.CFG.TEAM_BLU) return;
+
+    // 2. Active Limit Check
+    if (flagspawn.State.Flags.len() >= flagspawn.CFG.LIMIT_ACTIVE_FLAGS) {
+        FS_LogVerb("Spawn Denied: Limit Reached");
+        flagspawn._UpdateWorldUI();
+        return;
+    }
+
+    // 3. Pool Check
+    if (flagspawn.State.PoolBlu <= 0) {
+        FS_LogVerb("Spawn Denied: Empty Pool");
+        return;
+    }
+
+    // 4. Budget Check (Count based)
+    local uid = ply.entindex().tostring();
+    if (!(uid in flagspawn.State.PlayerBudgets)) 
+        flagspawn.State.PlayerBudgets[uid] <- { used=0, damageAccumulator=0, nextSpawnTime=0.0 };
+
+    local bud = flagspawn.State.PlayerBudgets[uid];
+    if (Time() < bud.nextSpawnTime) return;
+
+    local pClass = ply.GetPlayerClass();
+    local limit = (pClass in flagspawn.CFG.BUDGET_CLASS_MAX) ?
+        flagspawn.CFG.BUDGET_CLASS_MAX[pClass] : 1;
+    
+    // This limits the NUMBER of flags, not the value.
+    // A Heavy can pull 1 flag worth 500 points, consuming 1 budget slot.
+    if (bud.used >= limit) {
+        FS_LogVerb("Spawn Denied: Class Budget Limit");
+        return;
+    }
+
+    // 5. Spawn Value Calculation (One Big Flag)
+    // Take all points from pool up to VALUE_MAX_CAP (Now 500)
+    local val = flagspawn.State.PoolBlu;
+    if (val > flagspawn.CFG.VALUE_MAX_CAP) val = flagspawn.CFG.VALUE_MAX_CAP;
+    
+    // 6. Execute Spawn
+    local maker = ::FS_FindByName(flagspawn.CFG.MAKER_BLU);
+    if (maker) {
+        // Handoff Value to Maker callback
+        flagspawn.State.NextSpawnValue = val;
+        // Deduct FIRST to be safe
+        flagspawn._ModifyPool(-val, "PlayerSpawn");
+        // Cooldown & Budget
+        bud.used += 1;
+        bud.nextSpawnTime = Time() + 1.0; 
+        
+        maker.SpawnEntity();
+        FS_LogEco("Spawned Flag Value: " + val + " for " + ply.GetName());
+    } else {
+        FS_Err("Spawner Maker Entity Not Found: " + flagspawn.CFG.MAKER_BLU);
+    }
+}
+
+// ----------------------------------------------------------------------------
+// 9.5 MAKER CALLBACK (The Missing Link Fix)
+// ----------------------------------------------------------------------------
+
+function FS_OnMakerSpawned() {
+    // Scan for the newly created flag
+    // The Maker appends a unique suffix (e.g. "bluflag&0001")
+    // We look for any flag we haven't registered yet.
+    local flagPrefix = flagspawn.CFG.PKG_FLAG; // FIXED: Renamed 'base' to 'flagPrefix'
+    local foundEnt = null;
+    local foundSuffix = null;
+
+    local ent = Entities.FindByClassname(null, "item_teamflag");
+    while (ent) {
+        local name = FS_GetName(ent);
+        if (name.find(flagPrefix) == 0) {
+            local suf = name.slice(flagPrefix.len());
+            if (!(suf in flagspawn.State.Flags)) {
+                foundEnt = ent;
+                foundSuffix = suf;
+                break;
+            }
+        }
+        ent = Entities.FindByClassname(ent, "item_teamflag");
+    }
+
+    if (foundEnt && foundSuffix != null) {
+        // Register the package
+        local pkg = {
+            suffix     = foundSuffix,
+            flag       = foundEnt,
+            prop       = FS_FindByName(flagspawn.CFG.PKG_PROP + foundSuffix),
+            glow       = FS_FindByName(flagspawn.CFG.PKG_GLOW + foundSuffix),
+            lmm        = FS_FindByName(flagspawn.CFG.PKG_LMM + foundSuffix),
+            lock       = FS_FindByName(flagspawn.CFG.PKG_LOCK + foundSuffix),
+            pointValue = flagspawn.State.NextSpawnValue,
+            state      = "SPAWNING",
+            carrier    = null,
+            retry      = flagspawn.CFG.RETRY_COUNT
         };
-    }
-    return B[key];
-}
 
-function FS_BudgetReset(ply, reason, classOverride = null) {
-    if (!flagspawn.CFG.BUDGET_ENABLE) return;
-    if (!FS_IsPlayer(ply)) return;
+        flagspawn.State.Flags[foundSuffix] <- pkg;
 
-    local st = FS_BudgetEnsure(ply);
+        // Apply Points Authority
+        NetProps.SetPropInt(pkg.flag, "m_nPointValue", pkg.pointValue);
 
-    // Determine class (optionally from event_data for more reliable immediate post-spawn values)
-    local c = 0;
-    if (classOverride != null) {
-        try {
-            local tc = typeof classOverride;
-            if (tc == "integer") c = classOverride;
-            else if (tc == "float") c = classOverride.tointeger();
-            else c = classOverride.tointeger();
-        } catch (_e0) {
-            c = 0;
-        }
-    }
-    if (c <= 0) c = FS_GetPlayerClassIndex(ply);
+        // Apply Visuals
+        flagspawn._ApplyVisualState(pkg);
 
-    st.lastClass = c;
-    st.max = FS_BudgetForClass(c);
-
-    // IMPORTANT: spawning/capture always refreshes to a clean 0/max budget.
-    st.used = 0;
-
-    st.resetAt = FS_Now() + flagspawn.CFG.BUDGET_RESET_SECS;
-    st.lastSpawnTime = FS_GetPropFloat(ply, "m_flSpawnTime");
-    st.lastLifeState = FS_GetPropInt(ply, "m_lifeState");
-
-    if (flagspawn.CFG.DEBUG) {
-        FS_Log("RESET " + FS_EntIndex(ply) + " class=" + c + " max=" + st.max + " (" + reason + ")");
+        FS_Log("Registered flag suffix: " + foundSuffix + " | Value: " + pkg.pointValue);
+        flagspawn._UpdateWorldUI();
+    } else {
+        FS_Err("Maker spawned entity, but could not find unregistered 'item_teamflag' with prefix: " + flagPrefix);
     }
 }
 
-function FS_BudgetCanTouch(ply) {
-    local st = FS_BudgetEnsure(ply);
-    local now = FS_Now();
-    if ((now - st.lastTouch) < flagspawn.CFG.BUDGET_TOUCH_CD) return false;
-    st.lastTouch = now;
-    return true;
-}
+// ----------------------------------------------------------------------------
+// 10. EVENT LOGIC (Pinata / Hurt)
+// ----------------------------------------------------------------------------
 
-function FS_BudgetUpdateClass(ply, st) {
-    local c = FS_GetPlayerClassIndex(ply);
-    if (c != 0 && c != st.lastClass) {
-        st.lastClass = c;
-        st.max = FS_BudgetForClass(c);
-        if (st.used > st.max) st.used = st.max;
+function FS_OnPlayerSpawn_Event() {
+    if (!("event_data" in getroottable())) return;
+    local uid = event_data.userid.tostring();
+    // Reset Budget on spawn
+    if (uid in flagspawn.State.PlayerBudgets) {
+        flagspawn.State.PlayerBudgets[uid].used = 0;
+        flagspawn.State.PlayerBudgets[uid].damageAccumulator = 0;
+        flagspawn.State.PlayerBudgets[uid].nextSpawnTime = 0.0;
+        FS_LogEvt("Budget Reset for UserID: " + uid);
     }
 }
 
-// Export budget helpers to root so they are callable from console/debug context.
-// (TF2 console 'script' runs in the root table, not an entity script scope.)
-try {
-    ::FS_BudgetEnsure <- FS_BudgetEnsure;
-    ::FS_BudgetReset <- FS_BudgetReset;
-    ::FS_BudgetUpdateClass <- FS_BudgetUpdateClass;
-    ::FS_GetPlayerClassIndex <- FS_GetPlayerClassIndex;
-    ::FS_PlayerFromUserID <- FS_PlayerFromUserID;
-    ::FS_IsPlayer <- FS_IsPlayer;
-} catch (_e) {}
-
-function FS_BudgetTrySpend(ply, cost) {
-    if (!flagspawn.CFG.BUDGET_ENABLE) return true;
-    if (!FS_IsPlayer(ply)) return false;
-
-    local st = FS_BudgetEnsure(ply);
-
-    // timed reset
-    if (st.resetAt != 0.0 && FS_Now() >= st.resetAt) {
-        FS_BudgetReset(ply, "timeout");
-        st = FS_BudgetEnsure(ply);
+// THE PINATA: 5 chunks @ 20%
+function FS_OnPlayerDeathEvent() {
+    if (!("event_data" in getroottable())) {
+        FS_Err("NO EVENT DATA (Death) - Check VMF!");
+        return; 
     }
+    local uid = event_data.userid;
+    local victim = FS_GetPlayerFromUserID(uid);
+    if (!FS_IsValid(victim)) return;
 
-    // adjust if class changed
-    FS_BudgetUpdateClass(ply, st);
+    // Scan for carried flags
+    foreach (suf, pkg in flagspawn.State.Flags) {
+        if (pkg.carrier == victim) {
+            local totalVal = pkg.pointValue;
+            FS_LogEvt("Pinata Death: " + victim.GetName() + " carrying " + totalVal);
 
-    // init if needed
-    if (st.max <= 0) {
-        FS_BudgetReset(ply, "init");
-        st = FS_BudgetEnsure(ply);
-    }
+            // 1. Destroy Source Flag (It explodes)
+            flagspawn._DestroyPackage(suf);
 
-    if ((st.used + cost) > st.max) return false;
-    st.used += cost;
-    return true;
-}
+            // 2. Calc Chunk Value (20%)
+            local chunkVal = floor(totalVal * flagspawn.CFG.PINATA_PCT);
 
-function FS_BudgetRemaining(ply) {
-    local st = FS_BudgetEnsure(ply);
-    local rem = st.max - st.used;
-    if (rem < 0) rem = 0;
-    return rem;
-}
-
-function FS_BudgetTick(now) {
-    if (!flagspawn.CFG.BUDGET_ENABLE) return;
-
-    local p = null;
-    while ((p = Entities.FindByClassname(p, "player")) != null) {
-        local st = FS_BudgetEnsure(p);
-
-        // ---- Spawn detection (robust) ----
-        // A) m_lifeState transition into alive (0) catches respawns even if m_flSpawnTime is flaky.
-        local ls = FS_GetPropInt(p, "m_lifeState");
-        if (st.lastLifeState == -999) {
-            st.lastLifeState = ls;
-        } else {
-            if (ls == 0 && st.lastLifeState != 0) {
-                st.lastLifeState = ls;
-                FS_BudgetReset(p, "spawn_life");
-                st = FS_BudgetEnsure(p);
+            // 3. Spawn Chunks
+            if (chunkVal > 0) {
+                local maker = FS_FindByName(flagspawn.CFG.MAKER_BLU);
+                if (maker) {
+                    for (local i=0; i < flagspawn.CFG.PINATA_CHUNKS; i++) {
+                        // Check Active Limit
+                        if (flagspawn.State.Flags.len() >= flagspawn.CFG.LIMIT_ACTIVE_FLAGS) {
+                            FS_Log("Pinata Limit Reached, stopping spawns.");
+                            break;
+                        }
+                        
+                        flagspawn.State.NextSpawnValue = chunkVal;
+                        local scatter = Vector(RandomInt(-30,30), RandomInt(-30,30), 40);
+                        maker.SpawnEntityAtLocation(victim.GetOrigin() + scatter, Vector(0,0,0));
+                    }
+                }
             } else {
-                st.lastLifeState = ls;
+                FS_Log("Pinata value too low to chunk.");
             }
         }
-
-        // B) respawn detection by m_flSpawnTime netprop (still useful)
-        local sp = FS_GetPropFloat(p, "m_flSpawnTime");
-        if (sp != 0.0 && sp != st.lastSpawnTime) {
-            st.lastSpawnTime = sp;
-            FS_BudgetReset(p, "spawn_poll");
-            st = FS_BudgetEnsure(p);
-        }
-
-        // ---- Timeout reset ----
-        if (st.resetAt != 0.0 && now >= st.resetAt) {
-            FS_BudgetReset(p, "timeout");
-            st = FS_BudgetEnsure(p);
-        }
-
-        // Keep max synced with class even without touching spawner
-        FS_BudgetUpdateClass(p, st);
     }
 }
 
-// Console debug: script FS_DumpBudgets()
-::FS_DumpBudgets <- function() {
-    printl("[FS] ---- budgets ----");
+// DAMAGE CHUNKS: 1 chunk @ 20% per 12.5% MaxHP damage
+function FS_OnPlayerHurtEvent() {
+    if (!flagspawn.CFG.ENABLE_DAMAGE_CHUNKS) return;
 
-    local rt = getroottable();
-    if (!("flagspawn" in rt) || typeof rt.flagspawn != "table") {
-        printl("[FS] (no flagspawn table in root)");
+    if (!("event_data" in getroottable())) {
+        FS_Err("NO EVENT DATA (Hurt) - Check VMF!"); 
         return;
     }
-    local fs = rt.flagspawn;
-    if (!("State" in fs) || typeof fs.State != "table" || !("Budgets" in fs.State) || typeof fs.State.Budgets != "table") {
-        printl("[FS] (no budgets state)");
-        return;
+    
+    local dmg = event_data.damageamount;
+    local uid = event_data.userid.tostring();
+    local victim = FS_GetPlayerFromUserID(event_data.userid);
+
+    // Dynamic Threshold Calc
+    local maxHp = FS_GetMaxHealth(victim);
+    local threshold = maxHp * flagspawn.CFG.DAMAGE_THRESHOLD_PCT;
+
+    if (!(uid in flagspawn.State.PlayerBudgets)) 
+        flagspawn.State.PlayerBudgets[uid] <- { used=0, damageAccumulator=0, nextSpawnTime=0.0 };
+
+    local rec = flagspawn.State.PlayerBudgets[uid];
+    rec.damageAccumulator += dmg;
+    
+    // Check Acc
+    while (rec.damageAccumulator >= threshold) {
+        rec.damageAccumulator -= threshold;
+        flagspawn._DropDamageChunk(victim);
     }
+}
 
-    local B = fs.State.Budgets;
-    local now = 0.0;
-    try { now = Time(); } catch (_e) { now = 0.0; }
+function FS_DropDamageChunk(ply) {
+    if (!FS_IsValid(ply)) return;
+    // Limit Check
+    if (flagspawn.State.Flags.len() >= flagspawn.CFG.LIMIT_ACTIVE_FLAGS) return;
+    
+    // Find Source Flag
+    local source = null;
+    foreach (suf, pkg in flagspawn.State.Flags) {
+        if (pkg.carrier == ply) { source = pkg; break; }
+    }
+    
+    if (!source) return; // No flag to bleed points from
+    
+    // Calc 20% Value of carried flag
+    local chunkVal = floor(source.pointValue * flagspawn.CFG.DAMAGE_CHUNK_PCT);
+    if (chunkVal < 1) chunkVal = 1;
+    
+    // Spawn Chunk (Does NOT deduct from source, inflation bleed logic)
+    local maker = FS_FindByName(flagspawn.CFG.MAKER_BLU);
+    if (maker) {
+        flagspawn.State.NextSpawnValue = chunkVal;
+        maker.SpawnEntityAtLocation(ply.GetOrigin() + Vector(0,0,50), Vector(0,0,0));
+        FS_LogEvt("Hurt Chunk: " + chunkVal + "pts from " + ply.GetName());
+    }
+}
 
-    local p = null;
-    while ((p = Entities.FindByClassname(p, "player")) != null) {
-        // entindex() is safe; avoid relying on script-scope helpers when called from console.
-        local idx = 0;
-        try { idx = p.entindex(); } catch (_e2) { idx = 0; }
-        local key = "p" + idx;
-        if (!(key in B)) {
-            printl("[FS] p" + idx + " (no entry)");
+// ----------------------------------------------------------------------------
+// 11. DIRECT HOOKS & PULSE
+// ----------------------------------------------------------------------------
+
+function FS_Direct_Pickup() { flagspawn._TriggerRetry(caller); }
+function FS_Direct_Drop()   { flagspawn._TriggerRetry(caller); }
+
+flagspawn._TriggerRetry <- function(flag) {
+    if (!FS_IsValid(flag)) return;
+    local n = flag.GetName(); local b = flagspawn.CFG.PKG_FLAG;
+    
+    // Check if valid templated flag
+    if (n.find(b) == 0) {
+        local s = n.slice(b.len());
+        if (s in flagspawn.State.Flags) {
+            FS_LogVis("Triggering Visual Retry for " + s);
+            flagspawn.State.Flags[s].retry = flagspawn.CFG.RETRY_COUNT;
+            flagspawn._Pulse();
+        }
+    }
+}
+
+flagspawn.Think <- function() { flagspawn._Pulse(); return flagspawn.CFG.PULSE_INTERVAL; }
+
+flagspawn._Pulse <- function() {
+    flagspawn._KillLeaderDispenser(); // Suppress beams
+
+    foreach (suf, pkg in flagspawn.State.Flags) {
+        // A. TERMINAL CLEANUP (Detect entities killed by engine PD merges or returns)
+        if (!FS_IsValid(pkg.flag)) {
+            FS_Log("Pulse Prune: " + suf + " (Flag Entity Missing)");
+            flagspawn._DestroyPackage(suf);
             continue;
         }
-        local st = B[key];
-        local rin = 0.0;
-        try { rin = st.resetAt - now; } catch (_e3) { rin = 0.0; }
-        printl("[FS] p" + idx + " used=" + st.used + "/" + st.max + " resetIn=" + rin);
-    }
-};
-
-// Optional: player_spawn listener can call this (CallScriptFunction recommended)
-::FS_OnPlayerSpawn_Event <- function() {
-    // If logic_eventlistener has Fetch Event Data enabled, event_data is available.
-    local ed = null;
-    try { ed = event_data; } catch (_e) { ed = null; }
-
-    if (ed != null && typeof ed == "table") {
-        local p = null;
-        local uid = null;
-        local cls = null;
-
-        try { if (ed.rawin("userid")) uid = ed.userid; } catch (_e1) { uid = null; }
+        
+        // B. LATCHED RETRIES
+        if (pkg.retry > 0) { 
+            pkg.retry--;
+            flagspawn._ApplyVisualState(pkg); 
+        }
+        
+        // C. CONTINUOUS POLL (Value & Carrier)
+        // Detect silent PD merges or value changes
         try {
-            if (ed.rawin("class")) cls = ed["class"];
-            else if (ed.rawin("playerclass")) cls = ed["playerclass"];
-        } catch (_e2) { cls = null; }
-
-        if (uid != null) {
-            try { p = FS_PlayerFromUserID(uid); } catch (_e3) { p = null; }
-        }
-
-        if (p != null && FS_IsPlayer(p)) {
-            if (cls != null) {
-                local ci = null;
-                try {
-                    local tc = typeof cls;
-                    if (tc == "integer") ci = cls;
-                    else if (tc == "float") ci = cls.tointeger();
-                    else ci = cls.tointeger();
-                } catch (_e4) { ci = null; }
-                if (ci != null) FS_BudgetReset(p, "player_spawn_event", ci);
-                else FS_BudgetReset(p, "player_spawn_event");
-            } else {
-                FS_BudgetReset(p, "player_spawn_event");
+            local rv = NetProps.GetPropInt(pkg.flag, "m_nPointValue");
+            if (rv != pkg.pointValue) {
+                pkg.pointValue = rv;
+                flagspawn._ApplyVisualState(pkg);
             }
-            return;
-        }
+        } catch(e){}
     }
-
-    // Fallback: if activator is the player (depends on your wiring)
-    try {
-        if (FS_IsPlayer(activator)) {
-            FS_BudgetReset(activator, "player_spawn_activator");
-        }
-    } catch (_e5) {}
-};
-
-// -----------------------------------------------------------------------------
-// 5) CORE LOGIC: THINK LOOP
-// -----------------------------------------------------------------------------
-flagspawn.Think <- function() {
-    local now = FS_Now();
-
-    // budget housekeeping (spawn polling + timeout resets + class sync)
-    FS_BudgetTick(now);
-
-    if (flagspawn.CFG.DEBUG && (now - flagspawn.State.LastHeartbeat > 5.0)) {
-        FS_Log("Heartbeat... (Tracking " + flagspawn.State.Pkgs.len() + " flags)");
-        flagspawn.State.LastHeartbeat = now;
-    }
-    
-    // A) PRE-CALC BEST GLOW TARGETS
-    local bestBlu = null; local bestBluPts = -1;
-    local bestRed = null; local bestRedPts = -1;
-
-    foreach (suf, pkg in flagspawn.State.Pkgs) {
-        if (pkg && FS_IsValid(pkg.flag)) {
-            // Logic: Is it Carried?
-            local c = FS_FindCarrier(pkg.flag);
-            if (!c) {
-                // If NOT carried, it's a candidate for "Best Dropped Flag"
-                local pts = FS_ReadFlagPoints(pkg.flag);
-                if (pkg.team == 2) {
-                    if (pts >= bestBluPts) { bestBluPts = pts; bestBlu = pkg; }
-                } else {
-                    if (pts >= bestRedPts) { bestRedPts = pts; bestRed = pkg; }
-                }
-            }
-        }
-    }
-
-    // B) ITERATE PACKAGES
-    foreach (suf, pkg in flagspawn.State.Pkgs) {
-        if (!pkg) continue;
-
-        local isValid = FS_IsValid(pkg.flag);
-        
-        if (isValid) {
-            // --- ACTIVE LOGIC ---
-
-            // 1. Determine State (STRICT: NO CARRIER = DROPPED)
-            local carrier = FS_FindCarrier(pkg.flag);
-            
-            // Just for debug logging
-            local st = -1;
-            try { st = NetProps.GetPropInt(pkg.flag, "m_nFlagStatus"); } catch(_e) {}
-            pkg.rawStatus <- st;
-
-            local newState = "";
-
-            if (carrier) {
-                // Found a player attached -> Definitely CARRIED
-                newState = "CARRIED";
-                pkg.carrier = carrier;
-            } else {
-                // Found nobody -> Definitely NOT Carried
-                pkg.carrier = null;
-                // Treat Status 2 (Carried) as a lie if carrier is null -> DROPPED
-                if (st == 1) newState = "HOME";
-                else newState = "DROPPED"; 
-            }
-
-            // State Change Detection
-            if (newState != pkg.state) {
-                pkg.state = newState;
-                pkg.stateTime = now; 
-            }
-
-            // 2. Trigger Follow (LMM handles this)
-
-            // 3. Glow Logic (ANTI-SPAM)
-            if (!FS_IsValid(pkg.glow)) pkg.glow = FS_FindGlowForTeam(pkg.team, pkg.suf);
-            
-            if (pkg.state == "CARRIED") {
-                // Do NOTHING
-            } 
-            else if (pkg.state == "DROPPED") {
-                local isBest = (pkg == bestBlu) || (pkg == bestRed);
-                if (FS_IsValid(pkg.glow) && isBest) {
-                    // Pulse Logic
-                    if ((now - pkg.stateTime) < flagspawn.CFG.GLOW_PULSE_DURATION) {
-                        if (!("lastGlowPulse" in pkg)) pkg.lastGlowPulse <- 0.0;
-                        if ((now - pkg.lastGlowPulse) >= flagspawn.CFG.GLOW_PULSE_RATE) {
-                            FS_BindGlow(pkg.glow, pkg.flag, true);
-                            pkg.lastGlowPulse = now;
-                        }
-                    }
-                }
-            }
-
-            // 4. Bodygroups
-            local pts = FS_ReadFlagPoints(pkg.flag);
-            if (flagspawn.CFG.BG_PULSE_ENABLE) {
-                try { pkg.flag.SetBodygroup(0, pts); } catch (_e) {}
-                try { pkg.flag.SetBodygroup(1, pts); } catch (_e) {}
-                try { pkg.flag.SetBodygroup(2, pts); } catch (_e) {}
-            }
-            pkg.curBg <- pts;
-
-            // 5. Merge Detection
-            if (!("lastPts" in pkg)) pkg.lastPts <- pts;
-            if (pts != pkg.lastPts) {
-                local delta = pts - pkg.lastPts;
-                if (delta > 0) FS_Log("[MERGE] " + pkg.name + " gained " + delta + " points (Total: " + pts + ")");
-                pkg.lastPts = pts;
-            }
-            pkg.lastPos <- FS_GetOrigin(pkg.flag);
-
-        } else {
-            // --- CLEANUP LOGIC ---
-            if (pkg.state == "DROPPED") {
-                FS_Log("[MERGE/RETURN] Dropped Flag " + pkg.name + " deleted. Cleaning debris.");
-            } 
-            else if (pkg.state == "CARRIED") {
-                FS_Log("[SCORE] Carried Flag " + pkg.name + " deleted. Cleaning debris.");
-            }
-            else {
-                FS_Log("[CLEANUP] Flag " + pkg.name + " deleted from state " + pkg.state);
-            }
-
-            if (flagspawn.CFG.CLEANUP_ENABLE) {
-                local killList = [ 
-                    FS_WithSuffix(flagspawn.CFG.TRIG_BLU, suf), 
-                    FS_WithSuffix(flagspawn.CFG.TRIG_RED, suf),
-                    FS_WithSuffix(flagspawn.CFG.LMM_BLU, suf), 
-                    FS_WithSuffix(flagspawn.CFG.LMM_RED, suf),
-                    FS_WithSuffix(flagspawn.CFG.SFX, suf) 
-                ];
-                foreach (nm in killList) {
-                    local ent = Entities.FindByName(null, nm);
-                    if (ent) EntFireByHandle(ent, "Kill", "", 0.1, null, null);
-                }
-            }
-            delete flagspawn.State.Pkgs[suf];
-        }
-    }
-    return flagspawn.CFG.THINK_DT;
-};
-
-// -----------------------------------------------------------------------------
-// 6) DIRECT I/O HANDLERS
-// -----------------------------------------------------------------------------
-::FS_Direct_Pickup <- function() {
-    local flag = caller;
-    if (!FS_IsValid(flag)) return;
-    local nm = flag.GetName();
-    local suf = FS_ExtractSuffix(nm);
-    
-    if (suf && (suf in flagspawn.State.Pkgs)) {
-        local pkg = flagspawn.State.Pkgs[suf];
-        pkg.state = "CARRIED";
-        pkg.stateTime = FS_Now(); // Reset timer
-        pkg.carrier = activator; 
-        if (flagspawn.CFG.DEBUG) FS_Log("[EVENT] Direct Pickup: " + nm);
-    }
-};
-
-::FS_Direct_Drop <- function() {
-    local flag = caller;
-    if (!FS_IsValid(flag)) return;
-    local nm = flag.GetName();
-    local suf = FS_ExtractSuffix(nm);
-    
-    if (suf && (suf in flagspawn.State.Pkgs)) {
-        local pkg = flagspawn.State.Pkgs[suf];
-        pkg.state = "DROPPED";
-        pkg.stateTime = FS_Now(); // Reset timer
-        pkg.carrier = null;
-        if (flagspawn.CFG.DEBUG) FS_Log("[EVENT] Direct Drop: " + nm);
-        
-        // Immediate Retry Logic for Drop (Once)
-        if (pkg.glow) {
-             FS_BindGlow(pkg.glow, pkg.flag, true);
-             EntFireByHandle(pkg.glow, "Enable", "", 0.1, null, null);
-        }
-    }
-};
-
-// -----------------------------------------------------------------------------
-// 7) SPAWN EVENTS
-// -----------------------------------------------------------------------------
-::FS_OnMakerSpawned <- function() {
-    local maker = caller;
-    if (!FS_IsValid(maker)) return;
-    
-    local isBlu = (maker.GetName() == flagspawn.CFG.MAKER_BLU);
-    local team = isBlu ? 2 : 3;
-    local baseName = isBlu ? flagspawn.CFG.FLAG_BLU : flagspawn.CFG.FLAG_RED;
-    local trigBase = isBlu ? flagspawn.CFG.TRIG_BLU : flagspawn.CFG.TRIG_RED;
-
-    local flag = null;
-    while ((flag = Entities.FindByName(flag, baseName + "*")) != null) {
-        local nm = flag.GetName();
-        local suf = FS_ExtractSuffix(nm);
-        if (suf != null && !(suf in flagspawn.State.Pkgs)) {
-            local pkg = {
-                team = team, name = nm, suf = suf, flag = flag,
-                trig = Entities.FindByName(null, FS_WithSuffix(trigBase, suf)),
-                glow = FS_FindGlowForTeam(team, suf),
-                lastPts = FS_ReadFlagPoints(flag),
-                lastPos = FS_GetOrigin(flag),
-                state = "DROPPED", 
-                stateTime = FS_Now(), 
-                lastGlowPulse = FS_Now(), 
-                carrier = null
-            };
-            
-            try { flag.SetBodygroup(0, pkg.lastPts); } catch(_e){}
-            try { flag.SetBodygroup(1, pkg.lastPts); } catch(_e){}
-            try { flag.SetBodygroup(2, pkg.lastPts); } catch(_e){}
-            
-            if (pkg.glow) {
-                FS_BindGlow(pkg.glow, flag, true);
-                EntFireByHandle(pkg.glow, "Enable", "", 0.2, null, null);
-                EntFireByHandle(pkg.glow, "Enable", "", 0.6, null, null);
-            }
-            
-            flagspawn.State.Pkgs[suf] <- pkg;
-            FS_Log("Spawned: " + nm);
-            break;
-        }
-    }
-};
-
-::FS_OnFlagEvent <- function() {
-    // Handles teamplay_flag_event when called from a logic_eventlistener
-    // (Fetch Event Data must be enabled). We use it to reset budget on capture.
-    if (!flagspawn.CFG.BUDGET_ENABLE) return;
-
-    local ed = null;
-    try { ed = event_data; } catch (_e) { ed = null; }
-    if (ed == null || typeof ed != "table") return;
-
-    local et = 0;
-    try { if (ed.rawin("eventtype")) et = ed.eventtype; } catch (_e2) {}
-    // 2 = Captured
-    if (et != 2) return;
-
-    local idx = 0;
-    try { if (ed.rawin("player")) idx = ed.player; } catch (_e3) {}
-    if (idx <= 0) return;
-
-    local p = null;
-    try { p = PlayerInstanceFromIndex(idx); } catch (_e4) { p = null; }
-    if (p == null) { try { p = EntIndexToHScript(idx); } catch (_e5) { p = null; } }
-    if (p != null && FS_IsPlayer(p)) {
-        FS_BudgetReset(p, "capture");
-    }
-};
-
-// -----------------------------------------------------------------------------
-// 8) TOUCH HANDLERS
-// -----------------------------------------------------------------------------
-function FS_CheckPlayerGate(player) {
-    if (!player) return false;
-    local now = FS_Now();
-    local sc = player.GetScriptScope();
-    if (!sc) { player.ValidateScriptScope(); sc = player.GetScriptScope(); }
-
-    if (flagspawn.CFG.ONE_FLAG_PER_LIFE) {
-        local spawnTime = NetProps.GetPropFloat(player, "m_flSpawnTime");
-        if (!("fs_lastSpawnTime" in sc)) sc.fs_lastSpawnTime <- -1.0;
-        if (!("fs_flagsTaken" in sc)) sc.fs_flagsTaken <- 0;
-        if (spawnTime != sc.fs_lastSpawnTime) { sc.fs_lastSpawnTime = spawnTime; sc.fs_flagsTaken = 0; }
-        if (sc.fs_flagsTaken > 0) {
-            if (flagspawn.CFG.DEBUG) FS_Log("Player denied: One Flag Per Life limit reached.");
-            return false;
-        }
-    }
-    return true;
 }
+// ----------------------------------------------------------------------------
+// 12. DEBUG COMMANDS
+// ----------------------------------------------------------------------------
 
-function FS_ConsumePlayerGate(player) {
-    if (!player) return;
-    local now = FS_Now();
-    local sc = player.GetScriptScope();
-    if (!("fs_flagsTaken" in sc)) sc.fs_flagsTaken <- 0;
-    sc.fs_flagsTaken++;
-}
-
-::FS_OnSpawnerTouchBlu <- function() {
-    if (!(activator && activator.IsPlayer && activator.IsPlayer())) return;
-    local now = FS_Now();
-    
-    if (now < flagspawn.State.SpawnerLockUntil.blu) return;
-    if (now < flagspawn.State.NextSpawnAt.blu) return;
-    if (flagspawn.CFG.ONE_ACTIVE_PER_TEAM && FS_TeamHasActiveFlag(2)) return; 
-    if (!FS_CheckPlayerGate(activator)) return;
-
-
-    // Budget gate (per-player)
-    if (flagspawn.CFG.BUDGET_ENABLE) {
-        if (!FS_BudgetCanTouch(activator)) return;
-        if (!FS_BudgetTrySpend(activator, flagspawn.CFG.BUDGET_COST)) {
-            local st = FS_BudgetEnsure(activator);
-            FS_Log("DENY BLU spawn: " + st.used + "/" + st.max + " for player " + FS_EntIndex(activator));
-            return;
+function FS_DbgDump() {
+    printl("\n===============================================");
+    printl(" FLAGSPAWN v28 DEBUG DUMP");
+    printl("===============================================");
+    printl(" Pool: " + flagspawn.State.PoolBlu);
+    printl(" Active Flags: " + flagspawn.State.Flags.len() + " / " + flagspawn.CFG.LIMIT_ACTIVE_FLAGS);
+    printl("-----------------------------------------------");
+    printl(" FLAGS REGISTRY:");
+    foreach (s, p in flagspawn.State.Flags) {
+        local cStr = ::FS_IsValid(p.carrier) ? p.carrier.GetName() : "null";
+        printl(format(" [%s] Val:%d | State:%s | Carr:%s | Rtry:%d", s, p.pointValue, p.state, cStr, p.retry));
+        printl(format("    > Handle Check: Flag=%s Prop=%s Glow=%s", 
+            ::FS_IsValid(p.flag).tostring(), ::FS_IsValid(p.prop).tostring(), ::FS_IsValid(p.glow).tostring()));
+    }
+    printl("-----------------------------------------------");
+    printl(" PLAYER BUDGETS:");
+    foreach (u, b in flagspawn.State.PlayerBudgets) {
+        if (b.used > 0 || b.damageAccumulator > 0) {
+            printl(format(" [UserID %s] Used:%d | DmgAcc:%.1f", u, b.used, b.damageAccumulator));
         }
     }
-
-    flagspawn.State.NextSpawnAt.blu = now + flagspawn.CFG.SPAWN_COOLDOWN;
-    flagspawn.State.SpawnerLockUntil.blu = now + flagspawn.CFG.SPAWNER_TOUCH_LOCK;
-    FS_ConsumePlayerGate(activator); 
-    
-    EntFire(flagspawn.CFG.MAKER_BLU, "ForceSpawn", "", 0, activator);
-    
-    EntFire(flagspawn.CFG.GLOW_BLU, "Enable", "", 0.1, activator);
-    EntFire(flagspawn.CFG.GLOW_BLU, "Enable", "", 0.5, activator);
-    
-    local prop = Entities.FindByName(null, flagspawn.CFG.PROP_BLU_SPAWNER);
-    if (prop) {
-        if (flagspawn.CFG.BUDGET_ENABLE && flagspawn.CFG.BUDGET_PROP_OVERRIDE) {
-            local rem = FS_BudgetRemaining(activator);
-            if (rem > 99) rem = 99;
-            try { FS_SetBodyGroup(prop, flagspawn.CFG.BUDGET_PROP_BG_INDEX, rem); } catch(_e){}
-        } else {
-            flagspawn.State.BluPropCounter--;
-            if (flagspawn.State.BluPropCounter < 0) flagspawn.State.BluPropCounter = 0;
-            if (flagspawn.State.BluPropCounter > 99) flagspawn.State.BluPropCounter = 99;
-            try { FS_SetBodyGroup(prop, flagspawn.CFG.PROP_BG_INDEX, flagspawn.State.BluPropCounter); } catch(_e){}
-        }
-    }
-};
-
-::FS_OnSpawnerTouchRed <- function() {
-    if (!(activator && activator.IsPlayer && activator.IsPlayer())) return;
-    local now = FS_Now();
-    if (now < flagspawn.State.SpawnerLockUntil.red) return;
-    if (now < flagspawn.State.NextSpawnAt.red) return;
-    if (flagspawn.CFG.ONE_ACTIVE_PER_TEAM && FS_TeamHasActiveFlag(3)) return;
-    if (!FS_CheckPlayerGate(activator)) return;
-
-    // Budget gate (per-player)
-    if (flagspawn.CFG.BUDGET_ENABLE) {
-        if (!FS_BudgetCanTouch(activator)) return;
-        if (!FS_BudgetTrySpend(activator, flagspawn.CFG.BUDGET_COST)) {
-            local st = FS_BudgetEnsure(activator);
-            FS_Log("DENY RED spawn: " + st.used + "/" + st.max + " for player " + FS_EntIndex(activator));
-            return;
-        }
-    }
-
-    flagspawn.State.NextSpawnAt.red = now + flagspawn.CFG.SPAWN_COOLDOWN;
-    flagspawn.State.SpawnerLockUntil.red = now + flagspawn.CFG.SPAWNER_TOUCH_LOCK;
-    FS_ConsumePlayerGate(activator);
-
-    EntFire(flagspawn.CFG.MAKER_RED, "ForceSpawn", "", 0, activator);
-
-    EntFire(flagspawn.CFG.GLOW_RED, "Enable", "", 0.1, activator);
-    EntFire(flagspawn.CFG.GLOW_RED, "Enable", "", 0.5, activator);
-
-    // Optional: show remaining budget on red spawner prop
-    if (flagspawn.CFG.BUDGET_ENABLE && flagspawn.CFG.BUDGET_PROP_OVERRIDE) {
-        local prop = Entities.FindByName(null, flagspawn.CFG.PROP_RED_SPAWNER);
-        if (prop) {
-            local rem = FS_BudgetRemaining(activator);
-            if (rem > 99) rem = 99;
-            try { FS_SetBodyGroup(prop, flagspawn.CFG.BUDGET_PROP_BG_INDEX, rem); } catch(_e){}
-        }
-    }
-};
-
-// -----------------------------------------------------------------------------
-// 9) DEBUG COMMANDS (DEEP PROBE EDITION)
-// -----------------------------------------------------------------------------
-::FS_DumpPkgs <- function() {
-    printl("\n================ FS FLAG TABLE ================");
-    local count = 0;
-    foreach (suf, pkg in flagspawn.State.Pkgs) {
-        if (pkg) {
-            local tName = (pkg.team == 2) ? "BLU" : "RED";
-            local pts = ("lastPts" in pkg) ? pkg.lastPts : "?";
-            local state = ("state" in pkg ? pkg.state : "UNKNOWN");
-            local bg = ("curBg" in pkg ? pkg.curBg : "?");
-            local raw = ("rawStatus" in pkg ? pkg.rawStatus : -1);
-            
-            local cStr = "None";
-            if (pkg.carrier && pkg.carrier.IsValid()) {
-                if (pkg.carrier.IsPlayer()) cStr = "PLY:" + pkg.carrier.GetName();
-                else cStr = "ENT:" + pkg.carrier.GetClassname();
-            }
-
-            // PROBE STRING
-            local probe = "";
-            local props = ["m_hOwner", "m_hOwnerEntity", "m_hMoveParent"];
-            foreach (p in props) {
-                try {
-                    local e = NetProps.GetPropEntity(pkg.flag, p);
-                    if (e) {
-                        if (e.IsPlayer()) probe += "[" + p + "=PLY(" + e.EntIndex() + ")] ";
-                        else probe += "[" + p + "=" + e.GetClassname() + "] ";
-                    } else {
-                        probe += "[" + p + "=null] ";
-                    }
-                } catch(_e) { probe += "[" + p + "=err] "; }
-            }
-
-            printl(format("PKG [%s] %s | Pts: %s | State: %s (Raw: %d) | Carrier: %s | BG: %s", 
-                suf, tName, pts.tostring(), state, raw, cStr, bg.tostring()));
-            printl("   > PROBE: " + probe);
-            count++;
-        }
-    }
-    printl("Total Tracked: " + count);
     printl("===============================================\n");
-};
-
-// -----------------------------------------------------------------------------
-// 10) STARTUP & CLEANUP
-// -----------------------------------------------------------------------------
-function FS_FullCleanup() {
-    FS_Log("Performing Soft Tracker Cleanup...");
-    flagspawn.State.Pkgs.clear();
-    flagspawn.State.NextSpawnAt = { blu = 0.0, red = 0.0 };
-    flagspawn.State.SpawnerLockUntil = { blu = 0.0, red = 0.0 };
 }
 
-::FS_Start <- function() {
-    local sc = self.GetScriptScope();
-    if (sc) {
-        sc.Think <- flagspawn.Think;
-        AddThinkToEnt(self, "Think");
+// Usage in console: script FS_Track(123) <-- Use the Entity Index
+::FS_Track <- function(index) {
+    printl("--- TRACKING FLAG INDEX " + index + " ---");
+    foreach (s, p in flagspawn.State.Flags) {
+        if (::FS_IsValid(p.flag) && p.flag.entindex() == index) {
+            printl("Found Suffix: " + s);
+            printl("Origin: " + p.flag.GetOrigin());
+            printl("State: " + p.state);
+            
+            // Visual Debug: Draw a box around the flag for 10 seconds
+            DebugDrawBox(p.flag.GetOrigin(), Vector(-16,-16,0), Vector(16,16,72), 0, 255, 0, 100, 10.0);
+            if (::FS_IsValid(p.carrier)) {
+                printl("Carrier: " + p.carrier.GetName());
+                // Draw box around carrier too
+                DebugDrawBox(p.carrier.GetOrigin(), Vector(-24,-24,0), Vector(24,24,82), 255, 0, 0, 100, 10.0);
+            }
+            return;
+        }
     }
-    printl("[FS] System Started (v44).");
-};
-
-::FS_Clamp99 <- FS_Clamp99;
-
-// AUTO-EXECUTE CLEANUP
-FS_FullCleanup();
-
-// AUTO-EXECUTE STARTUP (SAFE for Console)
-try {
-    if (self && self.IsValid()) {
-        FS_Start();
-    }
-} catch(e) {
-    printl("[FS] Loaded in console. Run FS_Start() on an entity to begin.");
+    printl("Flag index " + index + " not found in registry.");
 }
+
+// ----------------------------------------------------------------------------
+// 13. BOOTSTRAP (ROBUST VERSION)
+// ----------------------------------------------------------------------------
+flagspawn.Init <- function() {
+    if (flagspawn.State.InitDone) return;
+    flagspawn.State.InitDone = true;
+
+    // SAFETY: Determine the host entity. 
+    // If 'self' exists (Map Spawn), use it.
+    // If 'self' is missing (Console script_execute), find the entity by name.
+    local host = null;
+    if ("self" in getroottable() && self != null && self.IsValid()) {
+        host = self;
+    } else {
+        // Fallback for manual console execution
+        host = Entities.FindByName(null, flagspawn.CFG.SCRIPTER_NAME);
+    }
+
+    if (host) {
+        // Ensure the host scope has the Think function attached
+        local sc = host.GetScriptScope();
+        if (!("Think" in sc)) {
+            sc.Think <- flagspawn.Think;
+        }
+        
+        // Restart the Think loop
+        AddThinkToEnt(host, "Think");
+        printl("[FS28] Hooked to host entity: " + host.GetName());
+    } else {
+        // Critical Failure: Could not find the scripter entity
+        printl("[FS-ERR] CRITICAL: Host entity '" + flagspawn.CFG.SCRIPTER_NAME + "' not found! Logic disabled.");
+        return;
+    }
+    
+    flagspawn._UpdateWorldUI();
+    
+    printl("\n[FS28] Flagspawn Megalith Loaded.");
+    printl("[FS28] Active Limit: " + flagspawn.CFG.LIMIT_ACTIVE_FLAGS);
+    printl("[FS28] REMINDER: ENSURE VMF FETCHEVENTDATA IS CORRECT!");
+    printl("[FS28] Run 'script FS_DbgDump()' for status.\n");
+}
+
+// Auto-start on script load
+flagspawn.Init();

@@ -123,6 +123,9 @@ $staticprop
 $surfaceprop "metal"
 $contents "solid"
 
+// Force a valid bounding box just in case (optional, but good safety)
+$bbox -16 -16 -16 16 16 16
+
 $collisionmodel "smd/collision_box.smd"
 {
     $mass 10
