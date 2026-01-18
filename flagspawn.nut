@@ -209,6 +209,15 @@ flagspawn._EntFire <- function(ent, input, param="", delay=0.0, activator=null) 
     try { return ply.GetMaxHealth(); } catch(e) { return 100; }
 }
 
+// Local aliases for root helpers (TF2 VScript scopes are not the root table).
+FS_IsValid <- ::FS_IsValid;
+FS_IsPlayer <- ::FS_IsPlayer;
+FS_GetName <- ::FS_GetName;
+FS_GetOrigin <- ::FS_GetOrigin;
+FS_FindByName <- ::FS_FindByName;
+FS_GetPlayerFromUserID <- ::FS_GetPlayerFromUserID;
+FS_GetMaxHealth <- ::FS_GetMaxHealth;
+
 // ----------------------------------------------------------------------------
 // 4.5 TIMING-HOLE GUARDS (ForceDrop + Rewind)
 // ----------------------------------------------------------------------------

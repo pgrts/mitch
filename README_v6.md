@@ -4,6 +4,13 @@ This README describes the **current implementation plan** for Flagspawn v6 and h
 
 ---
 
+## Two biggest takeaways (latest)
+
+1. **Do NOT use `teamplay_flag_event` to identify a specific flag.** It does not provide an entity index/name for “which flag”.
+2. **Drive Return/Capture refunds from `item_teamflag` outputs.** In those outputs, `caller` **is** the specific flag instance.
+
+---
+
 ## Goals (what v6 is trying to be)
 
 1. **One Big Flag**: the spawner emits **one** `item_teamflag` worth as many points as possible (clamped to 100) so we don’t explode the entity count.
@@ -24,7 +31,7 @@ This README describes the **current implementation plan** for Flagspawn v6 and h
 
 ---
 
-## Critical project rules
+## Hard project rules
 
 - **Never call `GetAbsOrigin()` on players.**
 - Spawner prop meter uses **bodygroup index 1**: `SetBodyGroup(1, value)`.
