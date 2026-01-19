@@ -1,262 +1,112 @@
-# Flagspawn v6 (Hybrid Reparent + Economy + Robust `tf_glow` Retarget)
+# Flagspawn v6 (Hybrid Reparent + Budget Bonus + NetProp `tf_glow`)
 
-This README describes the **current implementation plan** for Flagspawn v6 and how to wire it in Hammer (based on `fs3_test.vmf`).
-
----
+This README is the current v6 plan + wiring guide for `fs3_test.vmf`.
 
 ## Two biggest takeaways (latest)
 
-1. **Do NOT use `teamplay_flag_event` to identify a specific flag.** It does not provide an entity index/name for “which flag”.
-2. **Drive Return/Capture refunds from `item_teamflag` outputs.** In those outputs, `caller` **is** the specific flag instance.
-
----
-
-## Goals (what v6 is trying to be)
-
-1. **One Big Flag**: the spawner emits **one** `item_teamflag` worth as many points as possible (clamped to 100) so we don’t explode the entity count.
-2. **Hard Active Limit (25)**: there may be at most **25 active flags** per team at once. When full:
-   - the spawner does nothing
-   - `point_worldtext` shows `0`
-   - the lock sprite can show
-3. **Economy Loop**:
-   - **Spend**: spawning reduces the team pool
-   - **Refund**: **Return/Capture** refunds the flag value into the pool and **kills** the flag so it doesn’t “return to base” and consume a slot
-   - **Sink**: **Merge** is a money sink (no refund) to prevent infinite inflation
-4. **Cosmetics / Visibility (“hybrid reparenting”)**:
-   - **Dropped**: `item_teamflag` is visible
-   - **Carried**: `item_teamflag` is hidden and (optional) a `prop_dynamic` meter is attached to the carrier’s head
-5. **Glow Logic**:
-   - **TopK highlights**: the **5 highest-value flags** are always glowed
-   - **Event glow**: spawn/pickup/drop/pinata/damage briefly “force glows” additional flags
-
----
+1) Do NOT use `teamplay_flag_event` to identify a specific flag. It does not include a flag entindex/name.
+2) Drive Return/Capture refunds from `item_teamflag` outputs, because in those outputs `caller` IS the specific flag.
 
 ## Hard project rules
 
-- **Never call `GetAbsOrigin()` on players.**
-- Spawner prop meter uses **bodygroup index 1**: `SetBodyGroup(1, value)`.
-- **Do not rely on `point_template` Name Fixup for `tf_glow` target.**
-  - `tf_glow` has a known quirk: the `target` keyvalue does not behave like normal I/O fixups.
-  - v6 fixes this by retargeting in VScript using `NetProps.SetPropEntity(glow, "m_hTarget", entityHandle)`.
+- Never call `GetAbsOrigin()` on players.
+- `fs_meter` fill bodygroup uses index `1`: `SetBodyGroup(1, value)`.
+- Do not rely on `point_template` NameFixup to fix `tf_glow` targets for spawned copies.
+  - v6 retargets glows via `NetProps.SetPropEntity(glow, "m_hTarget", handle)`.
 
----
+## Economy model (v6)
 
-## File install
+- Spawn slots: max `25` active spawned flags (`LIMIT_ACTIVE_FLAGS`); this is what `point_worldtext` shows.
+- Budget bonus (points): starts at `0`, increases only on Return/Capture, and does not decrement on spawn.
+  - Merges destroy flags without Return/Capture, so they do not add to the budget bonus.
+- Spawned flag value: `budgetBonus + classBonus` clamped to `VALUE_CAP` (default `100`).
+  - Default class bonus: Heavy=5, Sniper=3, Soldier=2, everyone else=1 (`CLASS_VALUE_BONUS`).
 
-- Put the script at:
-  - `tf/scripts/vscripts/flagspawnv6.nut`
-- Update your `logic_script` to load it:
-  - `vscripts = flagspawnv6.nut`
+## Visual truth table
 
----
+- Dropped: flag visible (PD), optional meter prop parented to `blu_lmm_target` but hidden, glow targets flag.
+- Carried: flag hidden (PD), optional meter prop attached to player, glow targets player mesh.
 
-## Entities required (Blu-side)
+## Files
 
-These names are what the script expects by default.
+- Script: `tf/scripts/vscripts/flagspawn.nut`
 
-### Controller / script
-- `logic_script` **`scripter`**
-  - `vscripts = flagspawnv6.nut`
+## Required entities (Blu side)
 
-### Spawner
-- `trigger_multiple` **`fs_spawner_blu`**
-  - **OnStartTouch** → `scripter` **CallScriptFunction** `FS_OnSpawnerTouchBlu()`
-  - (Optional) put your team filter here; v6 checks team in script anyway.
+### Controller
+- `logic_script` `scripter`
+  - `vscripts = flagspawn.nut`
 
-- `env_entity_maker` **`fs_flag_maker_blu`**
-  - **IMPORTANT**: `spawnflags` must include **1** (unique name suffix / name fixup)
+### Spawner trigger
+- `trigger_multiple` `fs_spawner_blu`
+  - `OnStartTouch` -> `scripter` -> `RunScriptCode` -> `FS_OnSpawnerTouchBlu()`
+
+### Maker
+- `env_entity_maker` `fs_flag_maker_blu`
+  - `spawnflags` includes `1` (name fixup / unique suffix)
   - `EntityTemplate = bluflag_template`
-  - **OnEntitySpawned** → `scripter` RunScriptCode `FS_OnMakerSpawned()`
+  - `OnEntitySpawned` -> `scripter` -> `RunScriptCode` -> `FS_OnMakerSpawned()`
 
-### UI / feedback
-- `point_worldtext` **`blu_pool_text`**
-  - script uses input `SetMessage` to show **slots remaining**
+### UI / meters
+- `point_worldtext` `blu_pool_text`
+  - v6 updates text via `AddOutput` -> `message <slotsRemaining>`
+  - IMPORTANT: `point_worldtext` does not have `SetMessage` (that is `game_text`)
 
-- `env_sprite` **`blu_spawner_lock`**
-  - script uses `ShowSprite` / `HideSprite` when full vs not full
+- `env_sprite` `blu_spawner_lock`
+  - place this near `blu_pool_text`
+  - v6 uses `ShowSprite` / `HideSprite` when slots reach `0`
 
-- `prop_dynamic` **`blu_flagspawner_prop`**
-  - script sets bodygroup **(1, clampedPool)** to show pool value (0–100)
+- `prop_dynamic` meters (segmented): `blu_flagspawner_prop01..05`
+  - each prop shows `0..100` using bodygroup index `1`
+  - total display is `0..500` (5 segments)
 
----
+## Template package (`point_template`)
 
-## The template package (`point_template`) 
+`point_template` `bluflag_template` should have `Name Fixup = 1` and include (minimum):
 
-`point_template` **`bluflag_template`** should have **Name Fixup = 1** and include (minimum):
+1) `item_teamflag` `bluflag`
+2) `tf_glow` `bluflag_glow` (often `StartDisabled = 1`, `Mode = 2`)
+3) `info_target` `blu_lmm_target` (recommended)
+4) `trigger_multiple` `red_lock_bluflag` (optional deny trigger)
 
-1. `item_teamflag` **`bluflag`**
-2. `tf_glow` **`bluflag_glow`**
-   - `StartDisabled = 1`
-   - `Mode = 2` (outline)
-   - NOTE: the template’s `target = bluflag` is **not reliable** for spawned copies → v6 retargets using NetProps.
-3. `info_target` **`blu_lmm_target`** (optional but recommended if you’re using a follower)
-4. `trigger_multiple` **`red_lock_bluflag`** (optional “deny pad”)
+Optional (if included, v6 will use it):
+- `prop_dynamic` `bluflag_prop` (meter model to attach to player)
 
-Optional visual add-ons (v6 supports them *if present*):
-- `prop_dynamic` **`bluflag_prop`** (the meter mesh you attach to player)
+### Required direct outputs on `item_teamflag`
 
-> Your current `fs3_test.vmf` template includes `bluflag`, `bluflag_glow`, `blu_lmm_target`, `red_lock_bluflag`.
-> It does **not** include `bluflag_prop` yet — v6 will simply skip prop attachment if it doesn’t exist.
+These outputs run in the context of the specific flag instance, so `caller` is correct.
 
----
+- `OnPickup`  -> `scripter` -> `CallScriptFunction` -> `FS_Direct_Pickup`
+- `OnDrop`    -> `scripter` -> `CallScriptFunction` -> `FS_Direct_Drop`
+- `OnReturn`  -> `scripter` -> `CallScriptFunction` -> `FS_Direct_Refund`
+- `OnCapture` -> `scripter` -> `CallScriptFunction` -> `FS_Direct_Refund`
 
-## Event listeners (required for economy + pinata/chunks)
+Note: `CallScriptFunction` wants the function name only (no parentheses).
 
-### Flag events
-- `logic_eventlistener` **`flag_listener`**
+## Event listeners (required for pinata/chunks + debug cadence)
+
+### Flag events (global)
+- `logic_eventlistener` `flag_listener`
   - `EventName = teamplay_flag_event`
   - `FetchEventData = 1`
-  - **OnEventFired** → `scripter` **CallScriptFunction** `FS_OnFlagEvent()`
+  - `OnEventFired` -> `scripter` -> `CallScriptFunction` -> `FS_OnFlagEvent`
 
-**Structure (no flag identifier):**
-- `short player` — player this event involves
-- `short carrier` — the carrier if needed
-- `short eventtype` — see IDs below
-- `byte home` — only set for PICKUP
-- `byte team` — which team the flag belongs to
-
-**Standard `eventtype` IDs (TF2):**
-- `1` Picked Up
-- `2` Captured
-- `3` Defended
-- `4` Dropped
-- `5` Returned
-
-Important: `teamplay_flag_event` does **not** include a flag entindex/name, so you can’t reliably know *which* specific flag instance was returned/captured when multiple flags exist.
-
-This powers:
-- Generic event-driven retries/FX/logging.
-- Pickup/Drop catchups (plus direct pickup/drop outputs if you add them).
+`teamplay_flag_event` structure (no flag identifier):
+- `short player`
+- `short carrier`
+- `short eventtype` (1 pickup, 2 capture, 3 defend, 4 dropped, 5 returned)
+- `byte home` (only set for pickup)
+- `byte team`
 
 ### Player events
-You want **separate** listeners:
+- `logic_eventlistener` `player_spawn_listener` (`player_spawn`, `FetchEventData = 1`)
+  - `OnEventFired` -> `FS_OnPlayerSpawn_Event`
+- `logic_eventlistener` `player_death_listener` (`player_death`, `FetchEventData = 1`)
+  - `OnEventFired` -> `FS_OnPlayerDeathEvent`
+- `logic_eventlistener` `player_hurt_listener` (`player_hurt`, `FetchEventData = 1`)
+  - `OnEventFired` -> `FS_OnPlayerHurtEvent`
 
-- `logic_eventlistener` **`player_spawn_listener`**
-  - `EventName = player_spawn`
-  - `FetchEventData = 1`
-  - OnEventFired → `FS_OnPlayerSpawn_Event()`
+## Enemy pickup guard (RED denied)
 
-- `logic_eventlistener` **`player_death_listener`**
-  - `EventName = player_death`
-  - `FetchEventData = 1`
-  - OnEventFired → `FS_OnPlayerDeathEvent()`
+If a RED player manages to pick up a spawned `bluflag&####` (timing hole), v6 does ForceDrop + snap-back to the last known dropped position.
 
-- `logic_eventlistener` **`player_hurt_listener`**
-  - `EventName = player_hurt`
-  - `FetchEventData = 1`
-  - OnEventFired → `FS_OnPlayerHurtEvent()`
-
----
-
-## Direct outputs (recommended “instant catch”)
-
-Even with `teamplay_flag_event`, the engine can be a frame late (merges, fast pickups). Add these outputs on the spawned flag:
-
-- `item_teamflag` output **OnPickup** → `scripter` CallScriptFunction `FS_Direct_Pickup()`
-- `item_teamflag` output **OnDrop** → `scripter` CallScriptFunction `FS_Direct_Drop()`
-- `item_teamflag` output **OnReturn** → `scripter` CallScriptFunction `FS_Direct_Refund()`
-- `item_teamflag` output **OnCapture** → `scripter` CallScriptFunction `FS_Direct_Refund()`
-
-v6 will then do a few retry ticks for that specific flag to make sure the cosmetic state “sticks”.
-
----
-
-## What v6 does internally
-
-### Tracking
-- On spawn, v6 registers a “package” by suffix:
-  - `bluflag&####`
-  - optional siblings: `bluflag_glow&####`, `blu_lmm_target&####`, `red_lock_bluflag&####`, `bluflag_prop&####`
-
-### Bodygroups
-- When a flag’s point value changes, v6 tries to set bodygroup **1** on:
-  - the authoritative `item_teamflag`
-  - the optional `prop_dynamic` meter
-
-### Visual state
-- **Carried**
-  - `flag.DisableDraw`
-  - attach `prop` to player and `prop.Enable`
-  - glow target → **player**
-
-- **Dropped**
-  - `flag.EnableDraw`
-  - `prop.Disable` (and optionally parent it back to LMM target)
-  - glow target → **flag**
-
-### Glow retarget (the important part)
-- `point_template` fixups don’t reliably fix `tf_glow.target`.
-- v6 calls:
-  - `NetProps.SetPropEntity(glow, "m_hTarget", <entityHandle>)`
-
-So even if the glow still thinks its target is `bluflag`, the netprop is the real target.
-
----
-
-## Pinata & damage chunks
-
-### Pinata (death)
-If a player is carrying a flag and they die:
-- delete the carried flag
-- spawn up to **5** chunks
-  - each chunk value = `floor(totalValue * 0.20)`
-  - remainder is destroyed
-
-### Damage chunks (hurt)
-If enabled:
-- accumulate damage
-- every time you cross `MaxHP * 0.125` damage, drop a chunk:
-  - chunk value = `floor(currentValue * 0.20)`
-  - subtract from carried flag (minimum 1)
-
-Both events also temporarily “force glow” involved flags.
-
----
-
-## Known required fixes in `fs3_test.vmf`
-
-Your uploaded `fs3_test.vmf` has a few wiring/typo issues that will break events:
-
-1. **Spawner trigger calls the wrong function**
-   - Currently: `FS_OnMakerSpawned()` on touch
-   - Should be: `FS_OnSpawnerTouchBlu()`
-
-2. **logic_eventlistener key typo**
-   - Several listeners use `FetchEventDate` (wrong)
-   - Should be: `FetchEventData`
-
-3. **The second “death” listener is actually hurt**
-   - There is a `logic_eventlistener` named `player_death_listener` whose output calls `FS_OnPlayerHurtEvent()`
-   - It should be:
-     - `targetname = player_hurt_listener`
-     - `EventName = player_hurt`
-     - output calls `FS_OnPlayerHurtEvent()`
-
-If you fix those three, v6’s event-driven pieces behave much more predictably.
-
----
-
-## Debugging checklist
-
-1. In console:
-   - `developer 2`
-   - `glow_outline_effect_enable 1`
-
-2. Validate spawn pipeline:
-   - touch spawner → should print `[FS6] SpawnerTouch...`
-   - maker OnEntitySpawned → should print `Registered flag suffix...`
-
-3. Validate glow targeting:
-   - on drop: glow should outline the flag
-   - on pickup: glow should outline the player
-
-If something doesn’t stick, v6 will re-try a few times on the next pulse after the direct event.
-
----
-
-## Next TODOs
-
-- Add RED-side parity (duplicate CFG + state tables, or generalize to team loops)
-- Tune thresholds / chunk sizing
-- Decide whether dropped glow should be flag vs prop meter (config toggle)
-- Optional: keep TopK flags always “forced glow” across events

@@ -22,6 +22,7 @@
 // --- Root Anchor (TF2 Squirrel Safety) --------------------------------------
 local _rt = getroottable();
 if (!("flagspawn" in _rt)) { _rt.flagspawn <- {}; }
+local flagspawn = _rt.flagspawn;
 
 // ----------------------------------------------------------------------------
 // 1) CONFIG
@@ -72,13 +73,28 @@ flagspawn.CFG <- {
     TEAM_RED = 2,
     TEAM_BLU = 3,
 
-    // Economy
-    POOL_START = 100,
-    // Optional: cap pool growth (for UI / segment display). Set to 0 to disable.
+    // Enemy pickup guard (timing-hole protection)
+    // If a RED player picks up a BLU flag (bluflag&####), we ForceDrop + snap it back.
+    DENY_RED_PICKUP_BLU = true,
+    ENEMY_PICKUP_REWIND_RETRIES = [0.05, 0.15],
+
+    // Budget bonus (points)
+    // Starts at 0 and increases on Return/Capture (merges do not add).
+    POOL_START = 0,
+    // Optional: cap bonus growth (for UI / segment display). Set to 0 to disable.
     // With 5 meter props, set to 500 so UI matches physical meters.
     POOL_HARDCAP = 500,
     VALUE_CAP = 100,
     LIMIT_ACTIVE_FLAGS = 25,
+
+    // Base value bonus by class (added to the budget bonus, then clamped to VALUE_CAP).
+    // TF2 class indices: 1 Scout, 2 Sniper, 3 Soldier, 4 Demo, 5 Medic, 6 Heavy, 7 Pyro, 8 Spy, 9 Engy
+    CLASS_VALUE_BONUS = {
+        [6] = 5, // Heavy
+        [2] = 3, // Sniper
+        [3] = 2  // Soldier
+    },
+    CLASS_VALUE_BONUS_DEFAULT = 1,
 
     // Budgets (spawns-per-life per class)
     // TF2 class indices: 1 Scout, 2 Sniper, 3 Soldier, 4 Demo, 5 Medic, 6 Heavy, 7 Pyro, 8 Spy, 9 Engy
@@ -127,7 +143,7 @@ flagspawn.CFG <- {
 flagspawn.State <- {
     InitDone = false,
 
-    // Team pool
+    // Budget bonus points (shared)
     PoolBlu = flagspawn.CFG.POOL_START,
 
     // suffix -> pkg
@@ -181,6 +197,12 @@ function FS_GetOrigin(ent) {
     return Vector(0,0,0);
 }
 
+// Export small helpers to root to avoid scope surprises with RunScriptCode.
+::FS_Log <- FS_Log;
+::FS_IsValid <- FS_IsValid;
+::FS_IsPlayer <- FS_IsPlayer;
+::FS_GetOrigin <- FS_GetOrigin;
+
 flagspawn._EntFire <- function(ent, input, param = "", delay = 0.0, activator = null, caller = null) {
     if (!FS_IsValid(ent)) return;
     try {
@@ -219,6 +241,57 @@ flagspawn._SafeSetOrigin <- function(ent, org) {
     }
 };
 
+flagspawn._SafeSetVelocity <- function(ent, vel) {
+    if (!FS_IsValid(ent) || vel == null) return;
+    try { ent.SetVelocity(vel); return; } catch (e0) {}
+    // best-effort netprop fallbacks
+    try { NetProps.SetPropVector(ent, "m_vecVelocity", vel); return; } catch (e1) {}
+    try { NetProps.SetPropVector(ent, "m_vecAbsVelocity", vel); } catch (e2) {}
+};
+
+// ----------------------------------------------------------------------------
+// 3b) ForceDrop + rewind (enemy pickup timing-hole guard)
+// ----------------------------------------------------------------------------
+flagspawn._RewindFlagByEntIndex <- function(entIdx, x, y, z) {
+    local f = null;
+    try { f = EntIndexToHScript(entIdx); } catch (e0) { f = null; }
+    if (!FS_IsValid(f)) return;
+    local pos = Vector(x, y, z);
+    flagspawn._SafeSetOrigin(f, pos);
+    flagspawn._SafeSetVelocity(f, Vector(0,0,0));
+};
+
+flagspawn._ScheduleFlagRewind <- function(flag, pos, delay) {
+    if (!FS_IsValid(flag) || pos == null) return;
+    local idx = 0;
+    try { idx = flag.entindex(); } catch (e0) { idx = 0; }
+    if (idx <= 0) return;
+
+    local code = "flagspawn._RewindFlagByEntIndex(" + idx + "," + pos.x + "," + pos.y + "," + pos.z + ")";
+    local te = flagspawn._GetThinkEnt();
+    if (FS_IsValid(te)) {
+        flagspawn._EntFire(te, "RunScriptCode", code, delay, null, null);
+    } else {
+        EntFire(flagspawn.CFG.SCRIPTER_NAME, "RunScriptCode", code, delay, null);
+    }
+};
+
+flagspawn._ForceDropAndRewindFlag <- function(flag, ply, pos) {
+    if (!FS_IsValid(flag) || !FS_IsPlayer(ply) || pos == null) return;
+
+    // ForceDrop should undo PD credit (revert the pickup) without kill/respawn.
+    try { EntFireByHandle(flag, "ForceDrop", "", 0.0, ply, ply); } catch (e0) {}
+
+    // Snap back immediately and also schedule a couple rewinds to win tick races.
+    flagspawn._SafeSetOrigin(flag, pos);
+    flagspawn._SafeSetVelocity(flag, Vector(0,0,0));
+
+    local retries = flagspawn.CFG.ENEMY_PICKUP_REWIND_RETRIES;
+    for (local i = 0; i < retries.len(); i++) {
+        flagspawn._ScheduleFlagRewind(flag, pos, retries[i]);
+    }
+};
+
 flagspawn._SafeSetBodygroup <- function(ent, groupIdx, value) {
     if (!FS_IsValid(ent)) return;
     try { ent.SetBodygroup(groupIdx, value); return; } catch (e0) {}
@@ -251,6 +324,16 @@ flagspawn._GetFlagOwner <- function(flag) {
 flagspawn._GetMaxHealth <- function(ply) {
     if (!FS_IsPlayer(ply)) return 100;
     try { return ply.GetMaxHealth(); } catch (e) { return 100; }
+};
+
+flagspawn._GetClassValueBonus <- function(ply) {
+    local defv = flagspawn.CFG.CLASS_VALUE_BONUS_DEFAULT;
+    if (!FS_IsPlayer(ply)) return defv;
+
+    local cls = 0;
+    try { cls = ply.GetPlayerClass(); } catch (e0) { cls = 0; }
+    if (cls in flagspawn.CFG.CLASS_VALUE_BONUS) return flagspawn.CFG.CLASS_VALUE_BONUS[cls];
+    return defv;
 };
 
 // ----------------------------------------------------------------------------
@@ -372,6 +455,10 @@ flagspawn._ApplyVisualState <- function(pkg) {
     } else {
         // --- DROPPED ---
         pkg.carrier = null;
+
+        // Cache last known dropped position for ForceDrop+rewind (prefer the LMM target).
+        if (FS_IsValid(pkg.lmm)) pkg.lastDropOrigin = FS_GetOrigin(pkg.lmm);
+        else pkg.lastDropOrigin = FS_GetOrigin(pkg.flag);
 
         // NOTE: PD shows the dropped flag automatically.
 
@@ -604,7 +691,8 @@ function FS_OnMakerSpawned() {
         retry = flagspawn.CFG.RETRY_COUNT,
         glowRetry = flagspawn.CFG.GLOW_RETRY_COUNT,
         glowUntil = 0.0,
-        isTopK = false
+        isTopK = false,
+        lastDropOrigin = (tpOrg != null) ? tpOrg : FS_GetOrigin(best)
     };
 
     flagspawn.State.Flags[suffix] <- pkg;
@@ -661,17 +749,13 @@ function FS_OnSpawnerTouchBlu() {
 
     if (rec.used >= maxSpawns) return;
 
-    // Pool
-    if (flagspawn.State.PoolBlu <= 0) {
-        flagspawn._UpdateUI();
-        return;
-    }
-
     // Rate limit
     if (Time() < rec.nextSpawnTime) return;
 
-    // One big flag (cap 100)
-    local val = flagspawn.State.PoolBlu;
+    // Spawn value = budget bonus + class bonus (clamped). Budget can be 0.
+    local bonus = flagspawn.State.PoolBlu;
+    if (bonus < 0) bonus = 0;
+    local val = bonus + flagspawn._GetClassValueBonus(ply);
     if (val > flagspawn.CFG.VALUE_CAP) val = flagspawn.CFG.VALUE_CAP;
     if (val < 1) val = 1;
 
@@ -685,15 +769,13 @@ function FS_OnSpawnerTouchBlu() {
     // Spawn
     flagspawn._EntFire(maker, "ForceSpawn", "", 0.0, null, null);
 
-    // Deduct and consume 1 spawn
-    flagspawn.State.PoolBlu -= val;
-    if (flagspawn.State.PoolBlu < 0) flagspawn.State.PoolBlu = 0;
+    // Consume 1 spawn use (budget bonus does NOT decrement on spawn)
     rec.used += 1;
     rec.nextSpawnTime = Time() + 0.75;
 
     flagspawn._UpdateUI();
 
-    FS_Log("Spawner touch: spawned value=" + val + " pool=" + flagspawn.State.PoolBlu);
+    FS_Log("Spawner touch: spawned value=" + val + " bonus=" + flagspawn.State.PoolBlu);
 }
 
 // ----------------------------------------------------------------------------
@@ -740,17 +822,61 @@ function FS_Direct_Pickup() {
     if (!flagspawn._StartsWith(nm, flagspawn.CFG.PKG_FLAG_BASE)) return;
 
     local suf = flagspawn._SuffixFromName(nm, flagspawn.CFG.PKG_FLAG_BASE);
-    if (suf in flagspawn.State.Flags) {
-        local pkg = flagspawn.State.Flags[suf];
+    local pkg = (suf in flagspawn.State.Flags) ? flagspawn.State.Flags[suf] : null;
+
+    // Enemy pickup guard: if RED picks up a BLU flag, ForceDrop + rewind.
+    if (flagspawn.CFG.DENY_RED_PICKUP_BLU) {
+        local ply = null;
+        try { ply = activator; } catch (e1) { ply = null; }
+        if (FS_IsPlayer(ply)) {
+            local team = 0;
+            try { team = ply.GetTeam(); } catch (e2) { team = 0; }
+            if (team == flagspawn.CFG.TEAM_RED) {
+                local rewindPos = null;
+                try { if (pkg && ("lastDropOrigin" in pkg)) rewindPos = pkg.lastDropOrigin; } catch (e3) { rewindPos = null; }
+                if (rewindPos == null && pkg && FS_IsValid(pkg.lmm)) rewindPos = FS_GetOrigin(pkg.lmm);
+                if (rewindPos == null) rewindPos = FS_GetOrigin(flag);
+
+                if (pkg) {
+                    pkg.retry = flagspawn.CFG.RETRY_COUNT;
+                    pkg.glowRetry = flagspawn.CFG.GLOW_RETRY_COUNT;
+                    flagspawn._BumpGlowUntil(pkg, flagspawn.CFG.EVENT_GLOW_DURATION);
+                }
+
+                if (flagspawn.CFG.DBG) FS_Log("Enemy pickup guard: RED picked up " + nm + " -> ForceDrop+rewind");
+                flagspawn._ForceDropAndRewindFlag(flag, ply, rewindPos);
+                flagspawn._Pulse();
+                return;
+            }
+        }
+    }
+
+    if (pkg) {
         pkg.retry = flagspawn.CFG.RETRY_COUNT;
         flagspawn._BumpGlowUntil(pkg, flagspawn.CFG.EVENT_GLOW_DURATION);
-        flagspawn._Pulse();
     }
+    flagspawn._Pulse();
 }
 
 function FS_Direct_Drop() {
-    // Same handling as pickup
-    FS_Direct_Pickup();
+    flagspawn.Init();
+
+    local flag = caller;
+    if (!FS_IsValid(flag)) return;
+
+    local nm = "";
+    try { nm = flag.GetName(); } catch (e0) { nm = ""; }
+    if (!flagspawn._StartsWith(nm, flagspawn.CFG.PKG_FLAG_BASE)) return;
+
+    local suf = flagspawn._SuffixFromName(nm, flagspawn.CFG.PKG_FLAG_BASE);
+    if (suf in flagspawn.State.Flags) {
+        local pkg = flagspawn.State.Flags[suf];
+        pkg.lastDropOrigin = FS_GetOrigin(flag);
+        pkg.retry = flagspawn.CFG.RETRY_COUNT;
+        flagspawn._BumpGlowUntil(pkg, flagspawn.CFG.EVENT_GLOW_DURATION);
+    }
+
+    flagspawn._Pulse();
 }
 
 
@@ -798,7 +924,7 @@ function FS_Direct_Refund() {
     flagspawn._UpdateUI();
     flagspawn.State.NextTopKTime = 0.0;
 
-    FS_Log("Direct Refund: " + nm + " +" + refund + " pool=" + flagspawn.State.PoolBlu);
+    FS_Log("Direct Refund: " + nm + " +" + refund + " bonus=" + flagspawn.State.PoolBlu);
 }
 
 // ----------------------------------------------------------------------------
