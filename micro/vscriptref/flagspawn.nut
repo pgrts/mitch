@@ -1,36 +1,76 @@
 local rt=getroottable();
-if(!("flagspawn" in rt)||typeof rt.flagspawn!="table")rt.flagspawn<-{};
+if(!("flagspawn" in rt) || typeof rt.flagspawn != "table") rt.flagspawn <- {};
 
-IncludeScript("flagspawn/cfg",rt);
-IncludeScript("flagspawn/core",rt);
-IncludeScript("flagspawn/spw",rt);
-IncludeScript("flagspawn/eco",rt);
-IncludeScript("flagspawn/dmg",rt);
+IncludeScript("flagspawn/cfg", rt);
+IncludeScript("flagspawn/core", rt);
+IncludeScript("flagspawn/spw", rt);
+IncludeScript("flagspawn/eco", rt);
+IncludeScript("flagspawn/dmg", rt);
 
 rt.flagspawn.Init();
 
-// spawner trigger touch
-function FS_OnSpawnerTouchBlu(){ rt.flagspawn.OnSpawnerTouch(3,activator); }
-function FS_OnSpawnerTouchRed(){ rt.flagspawn.OnSpawnerTouch(2,activator); }
+// ---------------- Hammer entry points ----------------
 
-// maker OnEntitySpawned: spawned ent is usually activator, sometimes caller
-function FS_OnMakerSpawned(){
-    local spawnedEnt=null;
-    try{spawnedEnt=activator;}catch(_e){}
-    if(spawnedEnt==null){try{spawnedEnt=caller;}catch(_e2){}}
-    if(spawnedEnt!=null && spawnedEnt.IsValid()) rt.flagspawn.OnMakerSpawned(spawnedEnt);
+function FS_OnSpawnerTouchBlu(){ rt.flagspawn.OnSpawnerTouch(3, activator); }
+function FS_OnSpawnerTouchRed(){ rt.flagspawn.OnSpawnerTouch(2, activator); }
+function FS_OnMakerSpawned(){ rt.flagspawn.OnMakerSpawned(caller); }
+
+// Direct flag lifecycle (caller MUST be the item_teamflag)
+function FS_Direct_Pickup(){ if("DirectPickup" in rt.flagspawn) rt.flagspawn.DirectPickup(caller, activator); }
+function FS_Direct_Drop(){ if("DirectDrop" in rt.flagspawn) rt.flagspawn.DirectDrop(caller, activator); }
+function FS_Direct_Return(){ if("DirectReturn" in rt.flagspawn) rt.flagspawn.DirectReturn(caller, activator); }
+function FS_Direct_Refund(){ if("DirectReturn" in rt.flagspawn) rt.flagspawn.DirectReturn(caller, activator); }
+function FS_Direct_Capture(){ if("DirectCapture" in rt.flagspawn) rt.flagspawn.DirectCapture(caller, activator); }
+
+// GameEvent listeners (these are optional; only call if module defines them)
+function FS_OnPlayerHurtEvent(){ if("OnPlayerHurtEvent" in rt.flagspawn) rt.flagspawn.OnPlayerHurtEvent(); }
+function FS_OnPlayerDeathEvent(){ if("OnPlayerDeathEvent" in rt.flagspawn) rt.flagspawn.OnPlayerDeathEvent(); }
+
+// Your listener name in fs3_test.vmf is FS_OnPlayerSpawn_Event (keep both names just in case)
+function FS_OnPlayerSpawn_Event(){ if("OnPlayerSpawnEvent" in rt.flagspawn) rt.flagspawn.OnPlayerSpawnEvent(); }
+function FS_OnPlayerSpawnEvent(){ if("OnPlayerSpawnEvent" in rt.flagspawn) rt.flagspawn.OnPlayerSpawnEvent(); }
+
+// ---------------- Relay helpers (fs3_test_relay.vmf) ----------------
+// NOTE: logic_relay becomes the caller, so we recover the flag by suffix.
+
+function _FS_FindFlagBySuffix(prefix, relayEnt)
+{
+    if (relayEnt == null) return null;
+
+    local nm = "";
+    try { nm = relayEnt.GetName(); } catch(_e) {}
+
+    local amp = nm.find("&");
+    if (amp == null || amp < 0) return null;
+
+    local suf = nm.slice(amp);
+    return Entities.FindByName(null, prefix + suf);
 }
 
-// item_teamflag direct outputs -> THESE NAMES EXIST in eco.nut
-function FS_Direct_Pickup(){  rt.flagspawn.DirectPickup(caller,activator); }
-function FS_Direct_Drop(){    rt.flagspawn.DirectDrop(caller,activator); }
-function FS_Direct_Return(){  rt.flagspawn.DirectReturn(caller); }
-function FS_Direct_Refund(){  rt.flagspawn.DirectReturn(caller); }
-function FS_Direct_Capture(){ rt.flagspawn.DirectCapture(caller); }
+function FS_Relay_PickupBlu()
+{
+    local flagEnt = _FS_FindFlagBySuffix("bluflag", caller);
+    if (flagEnt == null) return;
+    if ("DirectPickup" in rt.flagspawn) rt.flagspawn.DirectPickup(flagEnt, activator);
+}
 
-// logic_eventlistener events (these exist in dmg.nut)
-function FS_OnPlayerHurtEvent(){  rt.flagspawn.OnPlayerHurtEvent(); }
-function FS_OnPlayerDeathEvent(){ rt.flagspawn.OnPlayerDeathEvent(); }
+function FS_Relay_DropBlu()
+{
+    local flagEnt = _FS_FindFlagBySuffix("bluflag", caller);
+    if (flagEnt == null) return;
+    if ("DirectDrop" in rt.flagspawn) rt.flagspawn.DirectDrop(flagEnt, activator);
+}
 
-// no spawn handler in your modules right now, so make it safe/no-op
-function FS_OnPlayerSpawnEvent(){ if("OnPlayerSpawnEvent" in rt.flagspawn) rt.flagspawn.OnPlayerSpawnEvent(); }
+function FS_Relay_ReturnBlu()
+{
+    local flagEnt = _FS_FindFlagBySuffix("bluflag", caller);
+    if (flagEnt == null) return;
+    if ("DirectReturn" in rt.flagspawn) rt.flagspawn.DirectReturn(flagEnt, activator);
+}
+
+function FS_Relay_CaptureBlu()
+{
+    local flagEnt = _FS_FindFlagBySuffix("bluflag", caller);
+    if (flagEnt == null) return;
+    if ("DirectCapture" in rt.flagspawn) rt.flagspawn.DirectCapture(flagEnt, activator);
+}

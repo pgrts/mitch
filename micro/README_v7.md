@@ -13,8 +13,13 @@ TF2 expects these paths:
 - `tf/scripts/vscripts/flagspawn/` (folder)
 
 Copy from this repo:
-- `micro/flagspawn.nut` -> `tf/scripts/vscripts/flagspawn.nut`
-- `micro/flagspawn/` -> `tf/scripts/vscripts/flagspawn/`
+Current build (vscriptref microservices):
+- `micro/vscriptref/flagspawn.nut` -> `tf/scripts/vscripts/flagspawn.nut`
+- `micro/vscriptref/flagspawn/` -> `tf/scripts/vscripts/flagspawn/`
+
+Legacy/older folder (keep for reference):
+- `micro/flagspawn.nut`
+- `micro/flagspawn/`
 
 ---
 
@@ -49,6 +54,7 @@ We split the concept cleanly:
 - Spawner denies if stock == 0.
 - Stock counts **spawner-dispensed flags only** (pinata/damage chunks bypass stock).
 - Optional lock icon: an `env_sprite` near the worldtext is shown when stock == 0 (`blu_spawner_lock` / `red_spawner_lock`).
+- Merge safety: vscriptref runs a small reconcile tick that detects spawner flags that vanished (PD merge delete) and frees a stock slot, plus cleans up any orphaned templated siblings for that `&####`.
 
 **Why:** This prevents runaway template spam and makes the spawner behave like a reliable dispenser even when budget is 0.
 
@@ -74,6 +80,10 @@ We split the concept cleanly:
 - `blu_flagspawner_prop02`
 - `blu_flagspawner_prop03`
 
+Optional (recommended): non-templated “ghost” on-deck flag prop (one per team):
+- `blu_ondeck_bonus_propflag`
+- `red_ondeck_bonus_propflag`
+
 All three props are kept **in sync** (same bodygroup value). `prop01` is the main "budget bonus" meter; `prop02/03` are optional duplicates for visibility.
 
 Config:
@@ -91,6 +101,7 @@ To render (same number on all 3 props):
 - Call: `prop01/02/03.SetBodygroup(1, onDeck)`  
 
 At round start, `PoolBluTotal = 0`, so **all props show 0**.
+The optional ghost prop (`*_ondeck_bonus_propflag`) is also driven to the same onDeck value (bodygroup 1) every time the pool changes.
 
 ---
 
@@ -99,6 +110,11 @@ When a player touches the spawner:
 
 ### Step 1: Stock gate (NOT pool gate)
 - Deny if active + pending flags >= 25.
+
+### Step 1b: Per-player cooldown + rate (vscriptref)
+In the vscriptref build, each player has:
+- A **sliding 90s reset**: if you stop using the spawner for `WINDOW_RESET_SEC` (default `90`), your per-life use counter resets. Every successful use pushes the reset out to “90 seconds from now” (no overlapping timers).
+- A **class-scaled pull rate**: successful spawner pulls are rate-limited per player using `SPW_RATE_BASE_SEC`. Higher-budget classes pull faster per-flag, but still take longer overall to finish their full budget.
 
 ### Step 2: Compute pool portion
 - `poolPortion = floor(PoolBluTotal / 5)`  
@@ -170,6 +186,25 @@ Not `"player_death"`.
 - DO: `CallScriptFunction(FS_OnPlayerHurtEvent)`
 - DO: `CallScriptFunction(FS_OnPlayerDeathEvent)`
 - DON'T: `RunScriptCode(FS_OnPlayerHurtEvent())` (drops event_data)
+
+### E) New pattern: logic_relay fanout per flag (recommended)
+We now use `logic_relay` to keep the `item_teamflag` outputs clean and to provide a small “de-jank” delay knob.
+
+Per spawned flag suffix `&####`, template these relays:
+- `fs_evt_pickup&####`
+- `fs_evt_drop&####`
+- `fs_evt_return&####`
+- `fs_evt_capture&####`
+
+On the `item_teamflag` (only 4 outputs total), wire each event to its relay:
+- `OnPickup`  -> `fs_evt_pickup&####`  `Trigger` (delay `0.05`)
+- `OnDrop`    -> `fs_evt_drop&####`    `Trigger` (delay `0.05`)
+- `OnReturn`  -> `fs_evt_return&####`  `Trigger` (delay `0.05`)
+- `OnCapture` -> `fs_evt_capture&####` `Trigger` (delay `0.05`)
+
+Put all the “fanout” outputs on the relays instead (lock trigger, LMM enable/disable, glow calls, and calling our VScript functions).
+
+VScript compatibility note: when a relay calls `CallScriptFunction`, `caller` is the relay, not the flag. Our vscriptref build resolves the actual flag by parsing the `&####` suffix from the relay name.
 
 ---
 
@@ -304,6 +339,13 @@ Our current best practice:
   - enable glow on the prop
 
 Add a short delay + a few retries if the entity isn't ready instantly.
+
+### Ghost/translucent “on-deck” prop tips
+You don’t need a special VMT to make it look ghostly:
+- In Hammer: set the prop’s render mode to a translucent mode and lower render amount.
+- Or via I/O: `AddOutput` `rendermode 5` + `renderamt 80` (tune to taste).
+
+If you *do* want a material-based ghost, you typically need a custom VMT (e.g., `$translucent 1` with `$alpha`), which is more work and usually not worth it for this.
 
 ---
 

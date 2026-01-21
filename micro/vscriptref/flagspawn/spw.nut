@@ -1,464 +1,409 @@
-// spw.nut (FULL FILE) - Flagspawn spawner service + meter sync (prop01/02/03)
-// Uses bodygroup INDEX 1 (SetBodygroup(1,val))
-
 local rt = getroottable();
-if (!("flagspawn" in rt)) rt.flagspawn <- {};
 local FS = rt.flagspawn;
 
-// ---------------------------- small safe helpers ----------------------------
+// ----------------------------------------------------------------------------
+// Spawner microservice
+//  - Uses EntFireByHandle(maker,"ForceSpawn") (NEVER mk.ForceSpawn())
+//  - Per-player use window (90s) + per-player touch lock
+//  - Value = floor(pool/5) + (class bonus points * multiplier)
+//  - Sets script-scope marker fs_spawner = 1
+//  - Tracks spawner-origin flags so MERGE KILLS free a slot (reconcile think)
+// ----------------------------------------------------------------------------
 
-FS.SpwOkEnt <- function(entHandle)
-{
-    return (entHandle != null && entHandle.IsValid());
-};
-
-FS.SpwTok <- function(teamNum)
-{
-    local redNum = ("TEAM_RED" in FS.CFG) ? FS.CFG.TEAM_RED : 2;
-    local bluNum = ("TEAM_BLU" in FS.CFG) ? FS.CFG.TEAM_BLU : 3;
-    return (teamNum == redNum || teamNum == bluNum);
-};
-
-FS.SpwPid <- function(plrEnt)
-{
-    if (!FS.SpwOkEnt(plrEnt)) return 0;
-    local pidVal = 0;
-    try { pidVal = plrEnt.GetPlayerUserId(); } catch (_e) {}
-    if (pidVal > 0) return pidVal;
-    try { pidVal = plrEnt.GetEntityIndex(); } catch (_e2) {}
-    return pidVal;
-};
-
-FS.SpwClamp <- function(v, lo, hi)
-{
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-};
-
-FS.SpwCfgGet <- function(k, defVal)
-{
-    if (!("CFG" in FS)) FS.CFG <- {};
-    return (k in FS.CFG) ? FS.CFG[k] : defVal;
-};
-
-// ---------------------------- state init ----------------------------
+if (!("SpwInit" in FS)) FS.SpwInit <- function() {};
 
 FS.SpwInit <- function()
 {
-    if (!("S" in FS)) FS.S <- {};
-
-    if (!("Q" in FS.S))  FS.S.Q  <- [];      // spawn context queue
-    if (!("N" in FS.S))  FS.S.N  <- { [2]=0, [3]=0 }; // inflight spawns per team
-    if (!("A" in FS.S))  FS.S.A  <- { [2]=0, [3]=0 }; // active spawner flags per team
-    if (!("P" in FS.S))  FS.S.P  <- { [2]=0, [3]=0 }; // pool per team (eco.nut normally owns this)
-
-    if (!("BU" in FS.S)) FS.S.BU <- {};  // uses in window per pid
-    if (!("BT" in FS.S)) FS.S.BT <- {};  // window start time per pid
-    if (!("TL" in FS.S)) FS.S.TL <- {};  // touch lock until time per pid
-
-    if (!("BM" in FS.S)) FS.S.BM <- {};  // mult per pid (1/3)
-    if (!("BE" in FS.S)) FS.S.BE <- {};  // mult expiry per pid
-
-    if (!("SF" in FS.S)) FS.S.SF <- {};  // entindex -> { h=handle, t=team }
-
-    if (!("MS" in FS.S)) FS.S.MS <- { [2]=0, [3]=0 }; // meter flash seq per team
+    if (!("BU" in FS.S)) FS.S.BU <- {};   // uses in window
+    if (!("BT" in FS.S)) FS.S.BT <- {};   // window start time
+    if (!("BM" in FS.S)) FS.S.BM <- {};   // multiplier (1 or 3)
+    if (!("BE" in FS.S)) FS.S.BE <- {};   // multiplier expiry time
+    if (!("TL" in FS.S)) FS.S.TL <- {};   // touch lock until time
+    if (!("NX" in FS.S)) FS.S.NX <- {};   // next allowed time per pid (rate limiting)
+    if (!("SF" in FS.S)) FS.S.SF <- {};   // suffix -> { h=handle, t=team, v=val, c=carrierEntIndex }
 };
 
-// ---------------------------- meter (sync 01/02/03) ----------------------------
-
-FS.SpwMeterPrefix <- function(teamNum)
+FS.SpwGetUseMax <- function(plr)
 {
-    if ("MPF" in FS.CFG && teamNum in FS.CFG.MPF) return FS.CFG.MPF[teamNum];
-
-    // fallback names (your note: blu_flagspawner_prop01 etc.)
-    local redNum = FS.SpwCfgGet("TEAM_RED", 2);
-    if (teamNum == redNum) return "red_flagspawner_prop";
-    return "blu_flagspawner_prop";
-};
-
-FS.SpwMeterCount <- function()
-{
-    return FS.SpwCfgGet("MC", 3);
-};
-
-FS.SpwMeterSetAll <- function(teamNum, bgVal)
-{
-    local prefixStr = FS.SpwMeterPrefix(teamNum);
-    local countNum = FS.SpwMeterCount();
-
-    bgVal = FS.SpwClamp(bgVal, 0, 100);
-
-    for (local idx = 1; idx <= countNum; idx++)
-    {
-        local entName = prefixStr + format("%02d", idx);
-        local propEnt = Entities.FindByName(null, entName);
-        if (FS.SpwOkEnt(propEnt))
-        {
-            if ("Bg" in FS) { try { FS.Bg(propEnt, 1, bgVal); } catch (_e0) {} }
-            else { try { propEnt.SetBodygroup(1, bgVal); } catch (_e1) {} }
-        }
-    }
-};
-
-FS.SpwMeterPortion <- function(teamNum)
-{
-    local divAmt = FS.SpwCfgGet("PORTION_DIV", 5);
-    if (divAmt < 1) divAmt = 5;
-
-    local poolNow = 0;
-    if ("P" in FS.S && teamNum in FS.S.P) poolNow = FS.S.P[teamNum];
-
-    local poolCap = FS.SpwCfgGet("PCAP", 300);
-    if (poolNow < 0) poolNow = 0;
-    if (poolNow > poolCap) poolNow = poolCap;
-
-    return floor(poolNow.tofloat() / divAmt.tofloat());
-};
-
-FS.SpwMeterUpdate <- function(teamNum)
-{
-    local showVal = FS.SpwMeterPortion(teamNum);
-    FS.SpwMeterSetAll(teamNum, showVal);
-};
-
-FS.SpwMeterFlashTaken <- function(teamNum, takenVal)
-{
-    if (FS.SpwCfgGet("METER_FLASH_TAKEN", 0) == 0) { FS.SpwMeterUpdate(teamNum); return; }
-
-    FS.S.MS[teamNum] = FS.S.MS[teamNum] + 1;
-    local seqNum = FS.S.MS[teamNum];
-
-    FS.SpwMeterSetAll(teamNum, takenVal);
-
-    local ctrlName = FS.SpwCfgGet("SCRIPTER_NAME", "scripter");
-    local ctrlEnt = Entities.FindByName(null, ctrlName);
-    if (!FS.SpwOkEnt(ctrlEnt)) return;
-
-    local delaySec = FS.SpwCfgGet("METER_FLASH_SEC", 0.75);
-    if (delaySec < 0.05) delaySec = 0.05;
-
-    local cmdStr = format("getroottable().flagspawn.SpwMeterRevert(%d,%d)", teamNum, seqNum);
-    EntFireByHandle(ctrlEnt, "RunScriptCode", cmdStr, delaySec, null, null);
-};
-
-FS.SpwMeterRevert <- function(teamNum, seqNum)
-{
-    if (!FS.SpwTok(teamNum)) return;
-    if (!(teamNum in FS.S.MS)) return;
-    if (FS.S.MS[teamNum] != seqNum) return;
-    FS.SpwMeterUpdate(teamNum);
-};
-
-// ---------------------------- class bonus + window ----------------------------
-
-FS.SpwGetUseMax <- function(plrEnt)
-{
-    local clsNum = 0; try { clsNum = plrEnt.GetPlayerClass(); } catch (_e) {}
-    if ("BUDGET_CLASS_MAX" in FS.CFG && (clsNum in FS.CFG.BUDGET_CLASS_MAX)) return FS.CFG.BUDGET_CLASS_MAX[clsNum];
+    local cls = 0;
+    try { cls = plr.GetPlayerClass(); } catch (_e) {}
+    if ("BUDGET_CLASS_MAX" in FS.CFG && (cls in FS.CFG.BUDGET_CLASS_MAX)) return FS.CFG.BUDGET_CLASS_MAX[cls];
     return 1;
 };
 
-FS.SpwGetClassBonus <- function(plrEnt)
+FS.SpwGetClassBonus <- function(plr)
 {
-    local clsNum = 0; try { clsNum = plrEnt.GetPlayerClass(); } catch (_e) {}
-
-    if ("BONUS_CLASS_POINTS" in FS.CFG && (clsNum in FS.CFG.BONUS_CLASS_POINTS)) return FS.CFG.BONUS_CLASS_POINTS[clsNum];
-    // fallback: use BUDGET_CLASS_MAX as class bonus if you never defined BONUS_CLASS_POINTS
-    if ("BUDGET_CLASS_MAX" in FS.CFG && (clsNum in FS.CFG.BUDGET_CLASS_MAX)) return FS.CFG.BUDGET_CLASS_MAX[clsNum];
-
+    local cls = 0;
+    try { cls = plr.GetPlayerClass(); } catch (_e) {}
+    if ("BONUS_CLASS_POINTS" in FS.CFG && (cls in FS.CFG.BONUS_CLASS_POINTS)) return FS.CFG.BONUS_CLASS_POINTS[cls];
     return 0;
 };
 
-FS.SpwGetMult <- function(pidVal)
+FS.SpwGetMult <- function(pid)
 {
-    if (!(pidVal in FS.S.BM)) return 1;
-    if ((pidVal in FS.S.BE) && Time() > FS.S.BE[pidVal]) { delete FS.S.BM[pidVal]; delete FS.S.BE[pidVal]; return 1; }
-    return FS.S.BM[pidVal];
+    if (!(pid in FS.S.BM)) return 1;
+    if ((pid in FS.S.BE) && Time() > FS.S.BE[pid]) { delete FS.S.BM[pid]; delete FS.S.BE[pid]; return 1; }
+    return FS.S.BM[pid];
 };
 
-FS.SpwResetWindowIfNeeded <- function(pidVal)
+// Window reset is SLIDING from last successful use:
+// - If you stop using for WINDOW_RESET_SEC, your BU counter resets to 0.
+// - Every successful use sets BT[pid]=now (so it always resets 90s after last use).
+FS.SpwResetWindowIfNeeded <- function(pid)
 {
-    local resetSec = FS.SpwCfgGet("WINDOW_RESET_SEC", 90.0);
-    if (!(pidVal in FS.S.BT)) { FS.S.BT[pidVal] <- Time(); FS.S.BU[pidVal] <- 0; return; }
-    if (Time() - FS.S.BT[pidVal] >= resetSec) { FS.S.BT[pidVal] <- Time(); FS.S.BU[pidVal] <- 0; }
+    if (!(pid in FS.S.BT)) { FS.S.BT[pid] <- 0.0; FS.S.BU[pid] <- 0; return; }
+    local lastUse = FS.S.BT[pid];
+    if (lastUse <= 0.0) return;
+    if (Time() - lastUse >= FS.CFG.WINDOW_RESET_SEC) { FS.S.BT[pid] <- 0.0; FS.S.BU[pid] <- 0; }
 };
 
-FS.SpwTouchLocked <- function(pidVal)
+FS.SpwTouchLocked <- function(pid)
 {
-    if (!(pidVal in FS.S.TL)) return false;
-    return Time() < FS.S.TL[pidVal];
+    if (!(pid in FS.S.TL)) return false;
+    return Time() < FS.S.TL[pid];
 };
 
-FS.SpwLockTouch <- function(pidVal, durSec)
+FS.SpwLockTouch <- function(pid, dur)
 {
-    FS.S.TL[pidVal] <- Time() + durSec;
+    FS.S.TL[pid] <- Time() + dur;
 };
 
-FS.SpwUnlockTouch <- function(pidVal)
+FS.SpwUnlockTouch <- function(pid)
 {
-    if (pidVal in FS.S.TL) FS.S.TL[pidVal] <- 0.0;
+    if (pid in FS.S.TL) FS.S.TL[pid] <- 0.0;
 };
 
-// ---------------------------- slots (spawner-only) ----------------------------
-
-FS.SpwSlotMax <- function(teamNum)
+FS.SpwTrackFlag <- function(flagEnt, teamNum, val)
 {
-    if ("SPAWN_SLOT_MAX" in FS.CFG && teamNum in FS.CFG.SPAWN_SLOT_MAX) return FS.CFG.SPAWN_SLOT_MAX[teamNum];
-    if ("SLOT_MAX" in FS.CFG && teamNum in FS.CFG.SLOT_MAX) return FS.CFG.SLOT_MAX[teamNum];
-    return 99;
-};
-
-FS.SpwSlotsLeft <- function(teamNum)
-{
-    local slotMax = FS.SpwSlotMax(teamNum);
-    local active = (teamNum in FS.S.A) ? FS.S.A[teamNum] : 0;
-    local inflight = (teamNum in FS.S.N) ? FS.S.N[teamNum] : 0;
-    local left = slotMax - (active + inflight);
-    if (left < 0) left = 0;
-    return left;
-};
-
-// ---------------------------- maker find ----------------------------
-
-FS.SpwFindMaker <- function(teamNum)
-{
-    if ("Mk" in FS) {
-        local mkEnt = null;
-        try { mkEnt = FS.Mk(teamNum, false); } catch (_e) { mkEnt = null; }
-        if (FS.SpwOkEnt(mkEnt)) return mkEnt;
-    }
-
-    local bluNum = FS.SpwCfgGet("TEAM_BLU", 3);
-    local nm = (teamNum == bluNum) ? FS.SpwCfgGet("MAKER_BLU", "fs_flag_maker_blu") : FS.SpwCfgGet("MAKER_RED", "fs_flag_maker_red");
-    return Entities.FindByName(null, nm);
-};
-
-// ---------------------------- flag track (merge-kill reclaim) ----------------------------
-
-FS.SpwTrackFlag <- function(flagEnt, teamNum)
-{
-    local entIdx = 0; try { entIdx = flagEnt.GetEntityIndex(); } catch (_e) { return; }
-    FS.S.SF[entIdx] <- { h = flagEnt, t = teamNum };
+    local suf = ("Suf" in FS) ? FS.Suf(flagEnt) : "";
+    if (suf == "") return;
+    FS.S.SF[suf] <- { h = flagEnt, t = teamNum, v = val, c = 0 };
 };
 
 FS.SpwUntrackFlag <- function(flagEnt)
 {
-    local entIdx = 0;
-    try { entIdx = flagEnt.GetEntityIndex(); } catch (_e) { return; }
-    if ("SF" in FS.S && (entIdx in FS.S.SF)) delete FS.S.SF[entIdx];
+    local suf = ("Suf" in FS) ? FS.Suf(flagEnt) : "";
+    if (suf == "") return;
+    if (suf in FS.S.SF) delete FS.S.SF[suf];
+};
+
+FS.SpwSetCarrier <- function(flagEnt, carrierEntOrNull)
+{
+    local suf = ("Suf" in FS) ? FS.Suf(flagEnt) : "";
+    if (suf == "" || !(suf in FS.S.SF)) return;
+    local pid = 0;
+    if (carrierEntOrNull != null && carrierEntOrNull.IsValid())
+    {
+        try { pid = carrierEntOrNull.GetEntityIndex(); } catch (_e) { pid = 0; }
+    }
+    FS.S.SF[suf].c <- pid;
+};
+
+FS.SpwSetValue <- function(flagEnt, val)
+{
+    local suf = ("Suf" in FS) ? FS.Suf(flagEnt) : "";
+    if (suf == "" || !(suf in FS.S.SF)) return;
+    FS.S.SF[suf].v <- val;
+};
+
+FS.SpwCarrySum <- function(pid)
+{
+    if (pid <= 0) return 0;
+    local sum = 0;
+    foreach (_suf, rec in FS.S.SF)
+    {
+        if (!("c" in rec) || rec.c != pid) continue;
+        local v = ("v" in rec) ? rec.v : 0;
+        if (v > 0) sum += v;
+    }
+    return sum;
+};
+
+FS.SpwCleanupSuffix <- function(teamNum, suf)
+{
+    if (suf == "") return;
+
+    // common siblings
+    local propPfx = ("PPF" in FS.CFG && teamNum in FS.CFG.PPF) ? FS.CFG.PPF[teamNum] : ((teamNum == 2) ? "redflag_prop" : "bluflag_prop");
+    local glowPfx = (teamNum == 2) ? "redflag_glow" : "bluflag_glow";
+    local lockPfx = ("LOCKPFX" in FS.CFG && teamNum in FS.CFG.LOCKPFX) ? FS.CFG.LOCKPFX[teamNum] : null;
+    local lmmPfx  = ("LMMPFX" in FS.CFG && teamNum in FS.CFG.LMMPFX) ? FS.CFG.LMMPFX[teamNum] : null;
+
+    local names = [
+        propPfx + suf,
+        glowPfx + suf
+    ];
+    if (lockPfx) names.append(lockPfx + suf);
+    if (lmmPfx) names.append(lmmPfx + suf);
+
+    // new relay pattern
+    names.append("fs_evt_pickup" + suf);
+    names.append("fs_evt_drop" + suf);
+    names.append("fs_evt_return" + suf);
+    names.append("fs_evt_capture" + suf);
+
+    foreach (_i, nm in names)
+    {
+        local e = Entities.FindByName(null, nm);
+        if (e != null && e.IsValid()) { try { e.Kill(); } catch (_e2) {} }
+    }
 };
 
 FS.SpwReconcile <- function()
 {
-    foreach (entIdx, rec in FS.S.SF)
+    // If a spawner-origin flag vanishes (MERGE KILL), free a slot.
+    local dead = [];
+    foreach (suf, rec in FS.S.SF)
     {
-        local hEnt = ("h" in rec) ? rec.h : null;
-        local tNum = ("t" in rec) ? rec.t : 0;
+        local h = ("h" in rec) ? rec.h : null;
+        local t = ("t" in rec) ? rec.t : 0;
 
-        if (hEnt == null || !hEnt.IsValid())
+        if (h == null || !h.IsValid())
         {
-            if (FS.SpwTok(tNum))
+            if (FS.Tok(t))
             {
-                if (!(tNum in FS.S.A)) FS.S.A[tNum] <- 0;
-                FS.S.A[tNum] = FS.S.A[tNum] - 1;
-                if (FS.S.A[tNum] < 0) FS.S.A[tNum] = 0;
+                FS.S.A[t] = FS.S.A[t] - 1;
+                if (FS.S.A[t] < 0) FS.S.A[t] = 0;
+                FS.Utxt(t);
             }
-            delete FS.S.SF[entIdx];
+
+            // Optional: treat merge-delete as "returned" for economy.
+            if (FS.Tok(t) && ("MERGE_REFUND" in FS.CFG) && FS.CFG.MERGE_REFUND == 1)
+            {
+                local ok = true;
+                if (("MERGE_REFUND_DROPPED_ONLY" in FS.CFG) && FS.CFG.MERGE_REFUND_DROPPED_ONLY == 1)
+                {
+                    if (("c" in rec) && rec.c != 0) ok = false;
+                }
+                if (ok)
+                {
+                    local v = ("v" in rec) ? rec.v : 0;
+                    if (v > 0) { FS.AddP(t, v); FS.Umet(t); }
+                }
+            }
+
+            // Cleanup orphaned templated siblings (glow/prop/lock/lmm/relays).
+            FS.SpwCleanupSuffix(t, suf);
+
+            dead.append(suf);
+            continue;
         }
+
+        // Keep last-known value + carrier for carry cap / merge decisions.
+        try { FS.S.SF[suf].v <- FS.Gv(h); } catch (_e3) {}
+        local owner = null;
+        if ("Owner" in FS) owner = FS.Owner(h);
+        local pid = 0;
+        if (owner != null && owner.IsValid()) { try { pid = owner.GetEntityIndex(); } catch (_e4) { pid = 0; } }
+        FS.S.SF[suf].c <- pid;
+    }
+
+    foreach (_j, suf2 in dead)
+    {
+        if (suf2 in FS.S.SF) delete FS.S.SF[suf2];
     }
 };
 
 function FS_SpwThink()
 {
     local FS2 = getroottable().flagspawn;
-    if ("SpwReconcile" in FS2) FS2.SpwReconcile();
-    return FS2.SpwCfgGet("SPW_RECONCILE_SEC", 1.5);
+    FS2.SpwReconcile();
+    if ("GlowTick" in FS2) { try { FS2.GlowTick(); } catch (_e0) {} }
+    return FS2.CFG.SPW_RECONCILE_SEC;
 }
 
 FS.SpwStartThink <- function()
 {
-    local ctrlName = FS.SpwCfgGet("SCRIPTER_NAME", "scripter");
-    local ctrlEnt = Entities.FindByName(null, ctrlName);
-    if (FS.SpwOkEnt(ctrlEnt))
+    local scripterName = ("SCRIPTER_NAME" in FS.CFG) ? FS.CFG.SCRIPTER_NAME : "scripter";
+    local ctrl = Entities.FindByName(null, scripterName);
+    if (ctrl != null && ctrl.IsValid())
     {
-        try { AddThinkToEnt(ctrlEnt, "FS_SpwThink"); } catch (_e) {}
+        try { ctrl.ValidateScriptScope(); } catch (_e0) {}
+        try {
+            local sc = ctrl.GetScriptScope();
+            sc.FS_SpwThink <- FS_SpwThink;
+        } catch (_e1) {}
+        try { AddThinkToEnt(ctrl, "FS_SpwThink"); } catch (_e2) {}
     }
 };
 
-// ---------------------------- MAIN ENTRY ----------------------------
+// ------------------------ MAIN ENTRY ------------------------
 
-FS.OnSpawnerTouch <- function(teamNum, plrEnt)
+FS.OnSpawnerTouch <- function(teamNum, plr)
 {
     FS.SpwInit();
-    if (!FS.SpwTok(teamNum) || !FS.SpwOkEnt(plrEnt)) return;
 
-    local pidVal = FS.SpwPid(plrEnt);
-    if (pidVal <= 0) return;
+    if (!FS.Tok(teamNum) || !FS.Ok(plr)) return;
 
-    if (FS.SpwTouchLocked(pidVal)) return;
-    if (FS.SpwSlotsLeft(teamNum) <= 0) return;
+    local pid = FS.Pid(plr);
+    if (pid <= 0) return;
 
-    FS.SpwResetWindowIfNeeded(pidVal);
+    if (FS.SpwTouchLocked(pid)) return;
 
-    local usedAmt = (pidVal in FS.S.BU) ? FS.S.BU[pidVal] : 0;
-    local useMax = FS.SpwGetUseMax(plrEnt);
-    if (usedAmt >= useMax) return;
+    // Per-player rate limiter (scales by class budget)
+    if (pid in FS.S.NX)
+    {
+        if (Time() < FS.S.NX[pid]) return;
+    }
 
-    // carry cap (if core provides FS.Cg, use it; else assume 0)
-    local carryNow = 0;
-    if ("Cg" in FS) { try { carryNow = FS.Cg(plrEnt); } catch (_e) { carryNow = 0; } }
-    local carryCap = FS.SpwCfgGet("CCAP", 99);
-    local carryLeft = carryCap - carryNow;
+    // Hard spawner slot limit (spawner-only; chunks ignore)
+    if (FS.Rem(teamNum) <= 0) return;
+
+    // Reset BU counter if they've been idle for >= WINDOW_RESET_SEC
+    FS.SpwResetWindowIfNeeded(pid);
+
+    local used = (pid in FS.S.BU) ? FS.S.BU[pid] : 0;
+    local useMax = FS.SpwGetUseMax(plr);
+    if (used >= useMax) return;
+
+    // Carry cap enforcement
+    local carryNow = FS.SpwCarrySum(pid);
+    local carryLeft = FS.CFG.CCAP - carryNow;
     if (carryLeft <= 0) return;
 
-    // pool portion + class bonus
-    local portionAmt = FS.SpwMeterPortion(teamNum);
+    // Pool portion (20%) — clamp pool to PCAP (you said 300 when using 3 props)
+    local poolNow = FS.S.P[teamNum];
+    if (poolNow < 0) poolNow = 0;
+    if (poolNow > FS.CFG.PCAP) poolNow = FS.CFG.PCAP;
 
-    local clsBonus = FS.SpwGetClassBonus(plrEnt);
-    local multNow = FS.SpwGetMult(pidVal);
-    clsBonus = clsBonus * multNow;
+    local divv = ("PORTION_DIV" in FS.CFG) ? FS.CFG.PORTION_DIV : 5;
+    if (divv <= 0) divv = 5;
+    local portion = floor(poolNow.tofloat() / divv.tofloat());
 
-    local valAmt = portionAmt + clsBonus;
+    // Class bonus points (multiplied)
+    local clsBonus = FS.SpwGetClassBonus(plr);
+    local mult = FS.SpwGetMult(pid);
+    clsBonus = clsBonus * mult;
 
-    local valCap = FS.SpwCfgGet("VCAP", 99);
-    valAmt = FS.SpwClamp(valAmt, 1, valCap);
-    if (valAmt > carryLeft) valAmt = carryLeft;
-    if (valAmt < 1) return;
+    local val = portion + clsBonus;
 
-    local makerEnt = FS.SpwFindMaker(teamNum);
-    if (!FS.SpwOkEnt(makerEnt)) return;
+    // Clamp to [1..VCAP] and to carryLeft
+    val = FS.Cl(val, 1, FS.CFG.VCAP);
+    if (val > carryLeft) val = carryLeft;
+    if (val < 1) return;
 
-    FS.S.BU[pidVal] <- usedAmt + 1;
+    local maker = FS.Mk(teamNum, false);
+    if (!FS.Ok(maker)) return;
 
-    local lockSec = FS.SpwCfgGet("SPW_TOUCHLOCK_SEC", 0.15);
-    FS.SpwLockTouch(pidVal, lockSec);
+    // consume one "use" from the player's window
+    FS.S.BU[pid] <- used + 1;
 
-    if (!(teamNum in FS.S.N)) FS.S.N[teamNum] <- 0;
+    // SLIDING window: reset timer to 90s from NOW on each successful use.
+    FS.S.BT[pid] <- Time();
+
+    // Set next allowed time (higher budgets pull faster per-flag)
+    local base = ("SPW_RATE_BASE_SEC" in FS.CFG) ? FS.CFG.SPW_RATE_BASE_SEC : 0.60;
+    if (base < 0.05) base = 0.05;
+    local denom = useMax.tofloat();
+    if (denom < 1.0) denom = 1.0;
+    local interval = base * sqrt(2.0) / sqrt(denom);
+    if (interval < 0.05) interval = 0.05;
+    FS.S.NX[pid] <- Time() + interval;
+
+    // touch lock so multiple fires in same tick don't queue spam
+    FS.SpwLockTouch(pid, FS.CFG.SPW_TOUCHLOCK_SEC);
+
+    // Track in-flight spawn count (spawner-only)
     FS.S.N[teamNum] = FS.S.N[teamNum] + 1;
 
-    // ctx: [team,val,portion,pid]
-    FS.S.Q.append([teamNum, valAmt, portionAmt, pidVal]);
+    // Queue context: [team,val,spend,pid,originOrNull,isSpawner]
+    local spend = portion;
+    if (("SPEND_CLASS_BONUS_FROM_POOL" in FS.CFG) && FS.CFG.SPEND_CLASS_BONUS_FROM_POOL == 1) spend = val;
+    FS.S.Q.append([teamNum, val, spend, pid, null, 1]);
 
-    EntFireByHandle(makerEnt, "ForceSpawn", "", 0.0, null, null);
+    // Spawn the template
+    EntFireByHandle(maker, "ForceSpawn", "", 0.0, null, null);
 
-    // optional: text update if you have it
-    if ("Utxt" in FS) { try { FS.Utxt(teamNum); } catch (_e2) {} }
+    FS.Utxt(teamNum);
 };
 
-// Called when maker actually spawned the flag entity
 FS.OnMakerSpawned <- function(flagEnt)
 {
     FS.SpwInit();
-    if (!FS.SpwOkEnt(flagEnt)) return;
+
+    if (!FS.Ok(flagEnt)) return;
     if (FS.S.Q.len() <= 0) return;
 
     local ctx = FS.S.Q[0];
     FS.S.Q.remove(0);
 
     local teamNum = ctx[0];
-    local valAmt = ctx[1];
-    local portionAmt = ctx[2];
-    local pidVal = ctx[3];
+    local val = ctx[1];
+    local spend = ctx[2];
+    local pid = ctx[3];
+    local org = ctx[4];
+    local isSpawner = ctx[5];
 
-    if (!FS.SpwTok(teamNum)) return;
+    if (!FS.Tok(teamNum)) return;
 
-    // mark script scope (spawner-origin)
-    try {
-        flagEnt.ValidateScriptScope();
-        flagEnt.GetScriptScope().fs_spawner <- 1;
-        flagEnt.GetScriptScope().fs_team <- teamNum;
-        flagEnt.GetScriptScope().fs_val <- valAmt;
-    } catch (_e3) {}
+    // Spend from pool only for spawner-origin flags
+    if (isSpawner == 1 && spend > 0) FS.ConsP(teamNum, spend);
 
-    // spend from pool (portion only by default)
-    local spendAmt = portionAmt;
-    if (FS.SpwCfgGet("SPEND_CLASS_BONUS_FROM_POOL", 0) == 1) spendAmt = valAmt;
+    // Set point value + bodygroup (make sure core.nut uses bodygroup index 1!)
+    FS.Sv(flagEnt, val);
 
-    if (spendAmt > 0)
-    {
-        if ("ConsP" in FS) { try { FS.ConsP(teamNum, spendAmt); } catch (_e4) {} }
-        else {
-            if (!(teamNum in FS.S.P)) FS.S.P[teamNum] <- 0;
-            FS.S.P[teamNum] = FS.S.P[teamNum] - spendAmt;
-            if (FS.S.P[teamNum] < 0) FS.S.P[teamNum] = 0;
-        }
-    }
-
-    // set PD value + model bodygroup
-    if ("Sv" in FS) { try { FS.Sv(flagEnt, valAmt); } catch (_e5) {} }
-    else {
-        try { NetProps.SetPropInt(flagEnt, "m_nPointValue", valAmt); } catch (_e6) {}
-        try { flagEnt.SetBodygroup(1, FS.SpwClamp(valAmt, 0, 100)); } catch (_e7) {}
-    }
-
-    // Ensure sibling prop has the same value bodygroup even while disabled/hidden.
-    // (When the flag is picked up, the prop replaces the carried flag model on the player.)
-    local suf = "";
-    try {
-        local nm = flagEnt.GetName();
-        local pos = nm.find("&");
-        if (pos != null) suf = nm.slice(pos);
-    } catch (_e7b) {}
+    // Ensure sibling prop has correct value even before first pickup.
+    local suf = ("Suf" in FS) ? FS.Suf(flagEnt) : "";
     if (suf != "")
     {
         local pfx = ("PPF" in FS.CFG && teamNum in FS.CFG.PPF) ? FS.CFG.PPF[teamNum] : ((teamNum == 2) ? "redflag_prop" : "bluflag_prop");
-        local propEnt = Entities.FindByName(null, pfx + suf);
-        if (FS.SpwOkEnt(propEnt))
+        local prop = Entities.FindByName(null, pfx + suf);
+        if (prop != null && prop.IsValid())
         {
-            local bgv = FS.SpwClamp(valAmt, 0, 100);
-            if ("Bg" in FS) { try { FS.Bg(propEnt, 1, bgv); } catch (_e7c) {} }
-            else { try { propEnt.SetBodygroup(1, bgv); } catch (_e7d) {} }
+            if ("Bg" in FS) FS.Bg(prop, 1, val);
+            else { try { prop.SetBodygroup(1, val); } catch (_ePropBg) {} }
 
-            // Default state is dropped: prop stays hidden until pickup.
-            try { EntFireByHandle(propEnt, "DisableDraw", "", 0.0, null, null); } catch (_e7e) {}
-            try { EntFireByHandle(propEnt, "Disable", "", 0.0, null, null); } catch (_e7f) {}
+            // Default dropped state: prop hidden/disabled until pickup.
+            try { EntFireByHandle(prop, "DisableDraw", "", 0.0, null, null); } catch (_ePropHide) {}
+            try { EntFireByHandle(prop, "Disable", "", 0.0, null, null); } catch (_ePropDis) {}
         }
     }
 
-    // meter feedback: flash the *pool portion* (budget bonus), not the class bonus
-    FS.SpwMeterFlashTaken(teamNum, FS.SpwClamp(portionAmt, 0, 100));
+    // Place chunk/pinata spawns at requested origin
+    if (org != null)
+    {
+        try { flagEnt.SetOrigin(org); } catch (_eOrg) {}
+    }
 
-    // finish inflight + active counts
-    FS.S.N[teamNum] = FS.S.N[teamNum] - 1;
-    if (FS.S.N[teamNum] < 0) FS.S.N[teamNum] = 0;
+    // Visual feedback on spawner props: flash the POOL PORTION (on-deck), not total value
+    if (isSpawner == 1 && ("METER_FLASH_TAKEN" in FS.CFG) && FS.CFG.METER_FLASH_TAKEN == 1 && ("UmetFlashTaken" in FS))
+    {
+        local divv = ("PORTION_DIV" in FS.CFG) ? FS.CFG.PORTION_DIV : 5;
+        if (divv <= 0) divv = 5;
+        local poolBefore = FS.S.P[teamNum] + spend; // approx pre-spend
+        local portionShown = floor(poolBefore.tofloat() / divv.tofloat());
+        if (portionShown < 0) portionShown = 0;
+        if (portionShown > 100) portionShown = 100;
+        FS.UmetFlashTaken(teamNum, portionShown);
+    }
 
-    FS.S.A[teamNum] = FS.S.A[teamNum] + 1;
 
-    // track for merge-kill slot reclaim
-    FS.SpwTrackFlag(flagEnt, teamNum);
+    // Mark this flag origin (spawner vs chunk) so eco/dmg can behave correctly
+    try { flagEnt.ValidateScriptScope(); } catch (_e) {}
+    local scp = null;
+    try { scp = flagEnt.GetScriptScope(); } catch (_e2) {}
+    if (scp != null)
+    {
+        scp.fs_team <- teamNum;
+        if (isSpawner == 1) scp.fs_spawner <- 1;
+        else scp.fs_chunk <- 1;
+    }
 
-    // unlock touch
-    if (pidVal > 0) FS.SpwUnlockTouch(pidVal);
+    if (isSpawner == 1)
+    {
+        // Finish in-flight accounting
+        FS.S.N[teamNum] = FS.S.N[teamNum] - 1;
+        if (FS.S.N[teamNum] < 0) FS.S.N[teamNum] = 0;
 
-    if ("Utxt" in FS) { try { FS.Utxt(teamNum); } catch (_e8) {} }
+        FS.S.A[teamNum] = FS.S.A[teamNum] + 1;
+
+        // Track for merge-kill slot reclaim + carry cap
+        FS.SpwTrackFlag(flagEnt, teamNum, val);
+    }
+
+    // Unlock player touch
+    if (pid > 0) FS.SpwUnlockTouch(pid);
+
+    FS.Umet(teamNum);
+    FS.Utxt(teamNum);
 };
-
-// ---------------------------- Hammer wrappers ----------------------------
-
-function FS_OnMakerSpawned()
-{
-    local FS2 = getroottable().flagspawn;
-    local entSpawn = null;
-    try { entSpawn = activator; } catch (_e) {}
-    if (entSpawn == null) { try { entSpawn = caller; } catch (_e2) {} }
-    if (entSpawn != null && entSpawn.IsValid()) FS2.OnMakerSpawned(entSpawn);
-}
-
-function FS_OnSpawnerTouch_Blu()
-{
-    local FS2 = getroottable().flagspawn;
-    local plrEnt = null; try { plrEnt = activator; } catch (_e) {}
-    if (plrEnt == null || !plrEnt.IsValid()) return;
-    local bluNum = ("TEAM_BLU" in FS2.CFG) ? FS2.CFG.TEAM_BLU : 3;
-    FS2.OnSpawnerTouch(bluNum, plrEnt);
-}
-
-function FS_OnSpawnerTouch_Red()
-{
-    local FS2 = getroottable().flagspawn;
-    local plrEnt = null; try { plrEnt = activator; } catch (_e) {}
-    if (plrEnt == null || !plrEnt.IsValid()) return;
-    local redNum = ("TEAM_RED" in FS2.CFG) ? FS2.CFG.TEAM_RED : 2;
-    FS2.OnSpawnerTouch(redNum, plrEnt);
-}

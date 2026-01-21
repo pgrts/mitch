@@ -22,6 +22,28 @@ FS.EcoFlagSuffix <- function(flagEnt)
     return nm.slice(pos);
 };
 
+// If we route through logic_relay, caller will be the relay, not the flag.
+// Relay names include the same "&####" suffix, so we can resolve the actual flag by name.
+FS.EcoResolveFlag <- function(entMaybe)
+{
+    if (!FS.Ok(entMaybe)) return null;
+
+    local cls = "";
+    try { cls = entMaybe.GetClassname(); } catch (_e0) { cls = ""; }
+    if (cls == "item_teamflag") return entMaybe;
+
+    local suf = FS.EcoFlagSuffix(entMaybe);
+    if (suf == "") return null;
+
+    // Try both teams (maps often have both templates present)
+    local f = Entities.FindByName(null, "bluflag" + suf);
+    if (f != null && f.IsValid()) return f;
+    f = Entities.FindByName(null, "redflag" + suf);
+    if (f != null && f.IsValid()) return f;
+
+    return null;
+};
+
 FS.EcoTeamFromFlag <- function(flagEnt)
 {
     // Prefer netprop team if it exists, otherwise infer from name prefix
@@ -37,7 +59,7 @@ FS.EcoTeamFromFlag <- function(flagEnt)
 
 FS.EcoFindPropSibling <- function(teamNum, suffix)
 {
-    local prefixName = (teamNum == 2) ? "redflag_prop" : "bluflag_prop";
+    local prefixName = ("PPF" in FS.CFG && teamNum in FS.CFG.PPF) ? FS.CFG.PPF[teamNum] : ((teamNum == 2) ? "redflag_prop" : "bluflag_prop");
     return Entities.FindByName(null, prefixName + suffix);
 };
 
@@ -67,7 +89,6 @@ FS.EcoSetPropEnabled <- function(propEnt, enableIt)
 {
     if (!FS.Ok(propEnt)) return;
     EntFireByHandle(propEnt, enableIt ? "Enable" : "Disable", "", 0.0, null, null);
-    // prop_dynamic is picky; keep draw state in sync too
     EntFireByHandle(propEnt, enableIt ? "EnableDraw" : "DisableDraw", "", 0.0, null, null);
 };
 
@@ -134,6 +155,10 @@ FS.EcoOnPickup <- function(flagEnt, plr)
     // Ensure visuals match value
     FS.EcoApplyValueToSiblings(flagEnt, teamNum, suffix, val);
 
+    // Update spawner tracking (for carry cap / merge decisions)
+    if ("SpwSetCarrier" in FS) FS.SpwSetCarrier(flagEnt, plr);
+    if ("SpwSetValue" in FS) FS.SpwSetValue(flagEnt, val);
+
     // Glow -> player
     if (FS.Ok(glowEnt)) FS.EcoRetargetGlow(glowEnt, plr);
 	// pickup: glow briefly on player
@@ -165,6 +190,9 @@ FS.EcoOnDrop <- function(flagEnt, plr)
 
     FS.EcoApplyValueToSiblings(flagEnt, teamNum, suffix, val);
 
+    if ("SpwSetCarrier" in FS) FS.SpwSetCarrier(flagEnt, null);
+    if ("SpwSetValue" in FS) FS.SpwSetValue(flagEnt, val);
+
     // Glow -> flag (dropped)
     if (FS.Ok(glowEnt)) FS.EcoRetargetGlow(glowEnt, flagEnt);
 
@@ -173,34 +201,51 @@ FS.GlowFlashByFlag(flagEnt, flagEnt, FS.CFG.GLOW_DURATION_DROP);
 
 };
 
-FS.EcoRefundAndKill <- function(flagEnt, mult)
+FS.EcoIsSpawnerFlag <- function(flagEnt)
 {
-    if (!FS.Ok(flagEnt)) return;
-
-    local teamNum = FS.EcoTeamFromFlag(flagEnt);
-    local val = FS.Gv(flagEnt);
-
-    // Return/Capture should free a spawner slot if this was spawner-origin.
     local isSpawner = false;
     try {
         flagEnt.ValidateScriptScope();
         local scp = flagEnt.GetScriptScope();
         if (scp != null && ("fs_spawner" in scp) && scp.fs_spawner == 1) isSpawner = true;
     } catch (_e) {}
+    return isSpawner;
+};
 
+FS.EcoSpawnerTeam <- function(flagEnt, fallbackTeam)
+{
+    local t = fallbackTeam;
+    try {
+        flagEnt.ValidateScriptScope();
+        local scp = flagEnt.GetScriptScope();
+        if (scp != null && ("fs_team" in scp)) t = scp.fs_team;
+    } catch (_e) {}
+    return t;
+};
+
+FS.EcoRefundAndKill <- function(flagEnt, poolTeamNum, mult)
+{
+    if (!FS.Ok(flagEnt)) return;
+
+    local val = FS.Gv(flagEnt);
     if (mult < 1) mult = 1;
 
     // Add to pool (budget bonus pool)
-    FS.AddP(teamNum, val * mult);
-    FS.Umet(teamNum);
+    if (FS.Tok(poolTeamNum)) { FS.AddP(poolTeamNum, val * mult); FS.Umet(poolTeamNum); }
 
-    if (isSpawner)
+    // Return/Capture should free a spawner slot if this was spawner-origin.
+    if (FS.EcoIsSpawnerFlag(flagEnt))
     {
+        local spwTeam = FS.EcoSpawnerTeam(flagEnt, poolTeamNum);
+
         // Free one active slot immediately and untrack so reconcile doesn't double-free
         FS.SpwUntrackFlag(flagEnt);
-        FS.S.A[teamNum] = FS.S.A[teamNum] - 1;
-        if (FS.S.A[teamNum] < 0) FS.S.A[teamNum] = 0;
-        FS.Utxt(teamNum);
+        if (FS.Tok(spwTeam))
+        {
+            FS.S.A[spwTeam] = FS.S.A[spwTeam] - 1;
+            if (FS.S.A[spwTeam] < 0) FS.S.A[spwTeam] = 0;
+            FS.Utxt(spwTeam);
+        }
     }
 
     // Kill the flag so it doesn't "return to base" and keep a slot alive
@@ -209,18 +254,38 @@ FS.EcoRefundAndKill <- function(flagEnt, mult)
 
 // Hammer entrypoints:
 
-FS.DirectPickup <- function(flagEnt, plr) { FS.EcoOnPickup(flagEnt, plr); };
-FS.DirectDrop <- function(flagEnt, plr) { FS.EcoOnDrop(flagEnt, plr); };
+FS.DirectPickup <- function(flagOrRelay, plr)
+{
+    local f = FS.EcoResolveFlag(flagOrRelay);
+    if (f != null && f.IsValid()) FS.EcoOnPickup(f, plr);
+};
+
+FS.DirectDrop <- function(flagOrRelay, plr)
+{
+    local f = FS.EcoResolveFlag(flagOrRelay);
+    if (f != null && f.IsValid()) FS.EcoOnDrop(f, plr);
+};
 
 FS.DirectReturn <- function(flagEnt)
 {
-    FS.EcoRefundAndKill(flagEnt, 1);
+    local f = FS.EcoResolveFlag(flagEnt);
+    if (f == null || !f.IsValid()) return;
+    local flagTeam = FS.EcoTeamFromFlag(f);
+    FS.EcoRefundAndKill(f, flagTeam, 1);
 };
 
 FS.DirectCapture <- function(flagEnt)
 {
-    // NEW CHANGE: capture adds 3x to economy
-    FS.EcoRefundAndKill(flagEnt, 3);
+    local f = FS.EcoResolveFlag(flagEnt);
+    if (f == null || !f.IsValid()) return;
+
+    // Capture awards pool to the CAPTURER team if possible; fallback to flag team
+    local capTeam = 0;
+    if (activator != null && activator.IsValid()) { try { capTeam = activator.GetTeam(); } catch (_e0) { capTeam = 0; } }
+    if (!FS.Tok(capTeam)) capTeam = FS.EcoTeamFromFlag(f);
+
+    // Capture adds 3x to economy
+    FS.EcoRefundAndKill(f, capTeam, 3);
 
     // Optional: give the capturing player a 3x class bonus window for 90s
     // (only if activator exists)
@@ -236,7 +301,7 @@ FS.DirectCapture <- function(flagEnt)
             FS.S.BE[pid] <- Time() + FS.CFG.WINDOW_RESET_SEC;
 
             // Reset use window on capture (so they can pull again)
-            if ("BT" in FS.S) FS.S.BT[pid] <- Time();
+            if ("BT" in FS.S) FS.S.BT[pid] <- 0.0;
             if ("BU" in FS.S) FS.S.BU[pid] <- 0;
         }
     }

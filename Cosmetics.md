@@ -11,18 +11,17 @@ OnDropevent
 -> attach prop (SetParentAttachment) to the blu_lmm_target (flag follower)
 -> Disable prop/set not render
 
-
 glows start enabled, flag prop start disabled
 
+Me: Further customizability on these glows: add to our event-driven logic. set tf_glows to Enable all in a 'vscript flagspawner template' for a configurable duration on our events:
+on pinata -> 5 damage chunks + (add to readme: optional SFX For the remainder 6th piece ForceReturn)
+    On damage chunk -> same thing 
+    On flagspawner used -> same thing
+    On pickup 
+    On drop
+    
 
-To make the Player glow when they pick it up, you must manually change the tf_glow's target:
-
-On Pickup: Fire input SetTarget -> !activator (The Player). Now the glow outlines the Player's Mesh.
-
-On Drop: Fire input SetTarget -> bluflag_prop (The Floor Meter). Now the glow outlines the Prop.
-
-Alternative Idea to using prop disabling (which we can still keep in this approach for safety):
-me: It seems like we cannot spawn a new glow for a template'd flag without bugs? like a tf_glow for bluflag_prop_glow001 that we control like you are saying...vscript does this fine tho?
+It seems like we cannot spawn a new glow for a template'd flag without bugs? like a tf_glow for bluflag_prop_glow001 that we control like you are saying...vscript does this fine tho?
  Gemini: Yes, VScript does this perfectly, and it is the only way to do it without bugs.
 
 Here is the technical reality of why you might have thought it was "buggy" before, and how v9 fixes it:
@@ -48,13 +47,6 @@ On Drop: We tell that specific glow handle: SetTarget -> bluflag_prop (The Meter
 This allows us to recycle the same single tf_glow entity for both the floor meter and the player model.
 
 
-
-Me: Further customizability on these glows: add to our event-driven logic. set tf_glows to Enable all in a 'vscript flagspawner template' for a configurable duration on our events:
-on pinata -> 5 damage chunks + (add to readme: optional SFX For the remainder 6th piece ForceReturn)
-    On damage chunk -> same thing 
-    On flagspawner used -> same thing
-    On pickup 
-    On drop
 
 
 

@@ -11,6 +11,8 @@ FS.S<-{
     U={},
     F={},
     FC={ [2]=0,[3]=0 },
+    MFS={ [2]=0,[3]=0 },
+    MFV={ [2]=0,[3]=0 },
     T0=Time(),
     SPW_STARTED=false
 };
@@ -22,6 +24,29 @@ FS.Tok<-function(t){return t==2||t==3;}
 FS.Pid<-function(p){return FS.Ok(p)?p.GetEntityIndex():0;}
 FS.Cg<-function(p){local i=FS.Pid(p);return (i in FS.S.C)?FS.S.C[i]:0;}
 FS.Cs<-function(p,v){local i=FS.Pid(p);if(i<=0)return;if(v<=0){if(i in FS.S.C)delete FS.S.C[i];}else FS.S.C[i]<-v;}
+
+// suffix helper: returns "&0004" from "bluflag&0004"
+FS.Suf<-function(ent){
+    if(!FS.Ok(ent))return "";
+    local nm="";try{nm=ent.GetName();}catch(_e){nm="";}
+    local p=nm.find("&");
+    if(p==null)return "";
+    return nm.slice(p);
+}
+
+// owner helper (PD carried flags set owner to player)
+FS.Owner<-function(flagEnt){
+    if(!FS.Ok(flagEnt))return null;
+    try{
+        local o=flagEnt.GetOwner();
+        if(FS.Ok(o))return o;
+    }catch(_e){}
+    try{
+        local o2=NetProps.GetPropEntity(flagEnt,"m_hOwnerEntity");
+        if(FS.Ok(o2))return o2;
+    }catch(_e2){}
+    return null;
+}
 
 // Safe bodygroup setter (index 1 is our value group). Prefer method; fall back to input.
 FS.Bg<-function(ent,idx,val){
@@ -42,75 +67,99 @@ FS.Utxt<-function(t){
     EntFireByHandle(e,"AddOutput","message "+FS.Rem(t),0,null,null);
 }
 
-// sets ALL spawner props (..01..MC) to the same bodygroup value
-FS.UmetSetAll<-function(t,bgVal){
-    local pfx=FS.CFG.MPF[t];if(!pfx)return;
-    bgVal=FS.Cl(bgVal,0,100);
-    for(local i=1;i<=FS.CFG.MC;i++){
-        local ent=FS.Fn(pfx+format("%02d",i));
-        if(FS.Ok(ent))FS.Bg(ent,1,bgVal);
-    }
+// spawner meter props: bodygroup index 1
+FS._OndeckVal<-function(t){
+    if(!FS.Tok(t))return 0;
+    local tot=FS.S.P[t];if(tot<0)tot=0;if(tot>FS.CFG.PCAP)tot=FS.CFG.PCAP;
+    local divv=("PORTION_DIV" in FS.CFG)?FS.CFG.PORTION_DIV:5;
+    if(divv<=0)divv=5;
+    local portion=floor(tot.tofloat()/divv.tofloat());
+    if(portion<0)portion=0;
+    if(portion>100)portion=100;
+    return portion;
 }
 
-// default (METER_MODE='portion_sync'): show the *next payout base portion* on ALL spawner props
-// legacy (METER_MODE='pool_segments'): show total pool split across props by 100s
+FS.Uondeck<-function(t){
+    if(!("ONDECK_PROP" in FS.CFG))return;
+    if(!(t in FS.CFG.ONDECK_PROP))return;
+    local nm=FS.CFG.ONDECK_PROP[t];
+    if(!nm || nm=="")return;
+    local ent=FS.Fn(nm);
+    if(!FS.Ok(ent))return;
+    FS.Bg(ent,1,FS._OndeckVal(t));
+}
+
 FS.Umet<-function(t){
     local pfx=FS.CFG.MPF[t];if(!pfx)return;
+    local tot=FS.S.P[t];if(tot<0)tot=0;if(tot>FS.CFG.PCAP)tot=FS.CFG.PCAP;
 
-    local pool=FS.S.P[t];
-    if(pool<0)pool=0;
-    if(pool>FS.CFG.PCAP)pool=FS.CFG.PCAP;
+    local mode = ("METER_MODE" in FS.CFG) ? FS.CFG.METER_MODE : "pool_segments";
+    local divv = ("PORTION_DIV" in FS.CFG) ? FS.CFG.PORTION_DIV : 5;
+    if (divv <= 0) divv = 5;
 
-    local mode=("METER_MODE" in FS.CFG)?FS.CFG.METER_MODE:"portion_sync";
-
-    if(mode=="pool_segments"){
-        local tot=pool;
+    // portion_sync: show next payout (floor(pool/div)) on ALL props
+    if (mode == "portion_sync")
+    {
+        local portion = FS._OndeckVal(t);
         for(local i=1;i<=FS.CFG.MC;i++){
-            local seg=tot-((i-1)*100);if(seg<0)seg=0;if(seg>100)seg=100;
             local ent=FS.Fn(pfx+format("%02d",i));
-            if(FS.Ok(ent))try{ent.SetBodygroup(1,seg);}catch(_e){}
+            if(FS.Ok(ent)) FS.Bg(ent,1,portion);
         }
+        FS.Uondeck(t);
         return;
     }
 
-    local div=("PORTION_DIV" in FS.CFG)?FS.CFG.PORTION_DIV:5;
-    if(div<1)div=5;
-    local portion=floor(pool.tofloat()/div.tofloat());
-    FS.UmetSetAll(t,portion);
+    // pool_segments: old behavior (300 split across props by 100s)
+    for(local i=1;i<=FS.CFG.MC;i++){
+        local seg=tot-((i-1)*100);if(seg<0)seg=0;if(seg>100)seg=100;
+        local ent=FS.Fn(pfx+format("%02d",i));
+        if(FS.Ok(ent)) FS.Bg(ent,1,seg);
+    }
+    FS.Uondeck(t);
 }
-
-// --- optional: flash the taken value briefly, then revert safely ---
-FS._MetSeqInit<-function(){
-    if(!("MS" in FS.S))FS.S.MS<-{[2]=0,[3]=0};
-}
-FS._MetRevert<-function(t,seq){
-    if(!FS.Tok(t))return;
-    FS._MetSeqInit();
-    if(FS.S.MS[t]!=seq)return;
-    FS.Umet(t);
-}
-FS.UmetFlashTaken<-function(t,takeVal){
-    if(!FS.Tok(t))return;
-    if(!("METER_FLASH_TAKEN" in FS.CFG) || FS.CFG.METER_FLASH_TAKEN==0)return;
-
-    FS._MetSeqInit();
-    FS.S.MS[t]=FS.S.MS[t]+1;
-    local seq=FS.S.MS[t];
-
-    FS.UmetSetAll(t,takeVal);
-
-    local ctl=FS.Fn(FS.CFG.SCRIPTER_NAME);
-    if(!FS.Ok(ctl))return;
-
-    local delay=("METER_FLASH_SEC" in FS.CFG)?FS.CFG.METER_FLASH_SEC:0.75;
-    if(delay<0.05)delay=0.05;
-
-    local cmd=format("getroottable().flagspawn._MetRevert(%d,%d)",t,seq);
-    EntFireByHandle(ctl,"RunScriptCode",cmd,delay,null,null);
-}
-	
 
 // player origin safe wrapper
+
+
+// Flash spawner meters to a specific value, then revert after CFG.METER_FLASH_SEC.
+FS.UmetFlashTaken <- function(teamNum, shownVal)
+{
+    if (!FS.Tok(teamNum)) return;
+
+    local pfx = FS.CFG.MPF[teamNum];
+    if (!pfx) return;
+
+    local v = shownVal;
+    if (v < 0) v = 0;
+    if (v > 100) v = 100;
+
+    FS.S.MFS[teamNum] = FS.S.MFS[teamNum] + 1;
+    local seq = FS.S.MFS[teamNum];
+    FS.S.MFV[teamNum] = v;
+
+    for(local i=1;i<=FS.CFG.MC;i++)
+    {
+        local ent = FS.Fn(pfx+format("%02d",i));
+        if (FS.Ok(ent)) { FS.Bg(ent,1,v); }
+    }
+
+    local scripterEnt = Entities.FindByName(null, FS.CFG.SCRIPTER_NAME);
+    if (!FS.Ok(scripterEnt)) return;
+
+    local sec = ("METER_FLASH_SEC" in FS.CFG) ? FS.CFG.METER_FLASH_SEC : 0.75;
+    if (sec < 0.02) sec = 0.02;
+
+    // schedule revert (seq guard)
+    EntFireByHandle(scripterEnt, "RunScriptCode", "getroottable().flagspawn.SpwMeterRevert("+teamNum+","+seq+")", sec, null, null);
+};
+
+FS.SpwMeterRevert <- function(teamNum, seq)
+{
+    if (!FS.Tok(teamNum)) return;
+    if (!("MFS" in FS.S)) return;
+    if (FS.S.MFS[teamNum] != seq) return; // newer flash happened
+    FS.Umet(teamNum);
+};
 FS.Op<-function(p){
     try{return NetProps.GetPropVector(p,"m_vecAbsOrigin");}catch(_e){}
     try{return p.GetOrigin();}catch(_e2){}
@@ -176,28 +225,26 @@ FS.GlowFlashByFlag <- function(flagEnt, targetEnt, dur)
     FS.GlowSetTarget(scp.fs_glow, targetEnt, true);
 };
 
-function FS_GlowThink()
+FS.GlowTick<-function()
 {
-    local FS2 = getroottable().flagspawn;
     local now = Time();
-
-    // Scan only known flags you already track in FS2.S.F (or whichever table you use)
-    foreach (_k, flagEnt in FS2.S.F)
+    if(!("SF" in FS.S)) return;
+    foreach (_suf, rec in FS.S.SF)
     {
-        if (!FS2.Ok(flagEnt)) continue;
+        local flagEnt = ("h" in rec) ? rec.h : null;
+        if (!FS.Ok(flagEnt)) continue;
 
         try { flagEnt.ValidateScriptScope(); } catch(_e) {}
         local scp = null;
         try { scp = flagEnt.GetScriptScope(); } catch(_e2) {}
         if (scp == null) continue;
 
-        if (("fs_glow" in scp) && FS2.Ok(scp.fs_glow) && ("fs_glow_exp" in scp) && scp.fs_glow_exp > 0 && now >= scp.fs_glow_exp)
+        if (("fs_glow" in scp) && FS.Ok(scp.fs_glow) && ("fs_glow_exp" in scp) && scp.fs_glow_exp > 0 && now >= scp.fs_glow_exp)
         {
             scp.fs_glow_exp <- 0.0;
-            FS2.GlowSetTarget(scp.fs_glow, null, false);
+            FS.GlowSetTarget(scp.fs_glow, null, false);
         }
     }
-    return FS2.CFG.SPW_RECONCILE_SEC; // reuse your slow tick (0.5)
 }
 
 	
@@ -207,6 +254,13 @@ FS.Init<-function(){
     FS.S.A[2]=0;FS.S.A[3]=0;
     FS.S.N[2]=0;FS.S.N[3]=0;
     FS.S.Q.clear();FS.S.C.clear();FS.S.U.clear();FS.S.F.clear();FS.S.FC[2]=0;FS.S.FC[3]=0;
+    if("SF" in FS.S) FS.S.SF.clear();
+    if("BU" in FS.S) FS.S.BU.clear();
+    if("BT" in FS.S) FS.S.BT.clear();
+    if("BM" in FS.S) FS.S.BM.clear();
+    if("BE" in FS.S) FS.S.BE.clear();
+    if("TL" in FS.S) FS.S.TL.clear();
+    if("NX" in FS.S) FS.S.NX.clear();
     FS.S.T0=Time();
 
     FS.Umet(2);FS.Umet(3);FS.Utxt(2);FS.Utxt(3);
@@ -216,7 +270,7 @@ FS.Init<-function(){
         FS.S.SPW_STARTED=true;
         FS.SpwStartThink();
     }
-	local scripterEnt = Entities.FindByName(null, FS.CFG.SCRIPTER_NAME);
-	if (FS.Ok(scripterEnt)) { try { AddThinkToEnt(scripterEnt, "FS_GlowThink"); } catch(_e) {} }
+	// Note: we only attach ONE think to the scripter (spw.nut's FS_SpwThink).
+	// Glow expiry is handled from that tick via FS.GlowTick().
 
 }
